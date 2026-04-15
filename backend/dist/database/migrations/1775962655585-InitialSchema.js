@@ -1,0 +1,76 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.InitialSchema1775962655585 = void 0;
+class InitialSchema1775962655585 {
+    constructor() {
+        this.name = 'InitialSchema1775962655585';
+    }
+    async up(queryRunner) {
+        await queryRunner.query(`CREATE TABLE \`users\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`branch_id\` varchar(36) NULL, \`name\` varchar(100) NOT NULL, \`email\` varchar(100) NOT NULL, \`password_hash\` varchar(255) NOT NULL, \`role\` enum ('superadmin', 'admin', 'manager', 'cashier') NOT NULL DEFAULT 'cashier', \`is_active\` tinyint NOT NULL DEFAULT 1, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), UNIQUE INDEX \`IDX_97672ac88f789774dd47f7c8be\` (\`email\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`tenants\` (\`id\` varchar(36) NOT NULL, \`business_name\` varchar(100) NOT NULL, \`tax_id\` varchar(50) NULL, \`owner_email\` varchar(100) NOT NULL, \`logo_url\` varchar(255) NULL, \`status\` enum ('active', 'suspended', 'trial', 'past_due') NOT NULL DEFAULT 'trial', \`phone\` varchar(50) NULL, \`address\` text NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), UNIQUE INDEX \`IDX_6ba80523edef2759fa36ccdefe\` (\`tax_id\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`customers\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`name\` varchar(150) NOT NULL, \`email\` varchar(100) NULL, \`phone\` varchar(50) NULL, \`credit_limit\` decimal(15,2) NOT NULL DEFAULT '0.00', \`current_debt\` decimal(15,2) NOT NULL DEFAULT '0.00', PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`sale_items\` (\`id\` varchar(36) NOT NULL, \`sale_id\` varchar(36) NOT NULL, \`product_id\` varchar(36) NOT NULL, \`quantity\` decimal(15,2) NOT NULL, \`unit_price\` decimal(15,2) NOT NULL, \`subtotal\` decimal(15,2) NOT NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`sales\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`branch_id\` varchar(36) NOT NULL, \`user_id\` varchar(36) NOT NULL, \`customer_id\` varchar(36) NULL, \`total\` decimal(15,2) NOT NULL, \`payment_method\` enum ('cash', 'card', 'transfer', 'credit_client') NOT NULL DEFAULT 'cash', \`status\` enum ('completed', 'refunded', 'pending') NOT NULL DEFAULT 'completed', PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`cash_registers\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`branch_id\` varchar(36) NOT NULL, \`user_id\` varchar(36) NOT NULL, \`opening_balance\` decimal(15,2) NOT NULL, \`closing_balance\` decimal(15,2) NULL, \`cash_sales\` decimal(15,2) NOT NULL DEFAULT '0.00', \`status\` enum ('open', 'closed') NOT NULL DEFAULT 'open', \`opened_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`closed_at\` timestamp NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`purchase_order_items\` (\`id\` varchar(36) NOT NULL, \`purchase_order_id\` varchar(36) NOT NULL, \`product_id\` varchar(36) NOT NULL, \`quantity\` decimal(15,2) NOT NULL, \`unit_cost\` decimal(15,2) NOT NULL, \`subtotal\` decimal(15,2) NOT NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`purchase_orders\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`supplier_id\` varchar(36) NOT NULL, \`branch_id\` varchar(36) NOT NULL, \`total\` decimal(15,2) NOT NULL, \`status\` enum ('pending', 'received', 'cancelled') NOT NULL DEFAULT 'pending', PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`suppliers\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`name\` varchar(150) NOT NULL, \`contact_name\` varchar(100) NULL, \`phone\` varchar(50) NULL, \`email\` varchar(100) NULL, \`tax_id\` varchar(50) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`units\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`name\` varchar(50) NOT NULL, \`abbreviation\` varchar(10) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`categories\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`name\` varchar(100) NOT NULL, \`color\` varchar(7) NULL, \`icon\` varchar(50) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`price_lists\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`name\` varchar(100) NOT NULL, \`is_default\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`product_prices\` (\`id\` varchar(36) NOT NULL, \`product_id\` varchar(36) NOT NULL, \`price_list_id\` varchar(36) NOT NULL, \`price\` decimal(15,2) NOT NULL DEFAULT '0.00', \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`products\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`name\` varchar(200) NOT NULL, \`description\` text NULL, \`barcode\` varchar(100) NULL, \`internal_code\` varchar(50) NULL, \`unit_id\` varchar(36) NULL, \`category_id\` varchar(36) NULL, \`cost_price\` decimal(15,2) NOT NULL DEFAULT '0.00', \`is_active\` tinyint NOT NULL DEFAULT 1, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`branches\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`name\` varchar(100) NOT NULL, \`address\` text NULL, \`phone\` varchar(50) NULL, \`is_main_branch\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`inventory\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`product_id\` varchar(36) NOT NULL, \`branch_id\` varchar(36) NOT NULL, \`stock_quantity\` decimal(15,2) NOT NULL DEFAULT '0.00', \`min_stock_alert\` decimal(15,2) NOT NULL DEFAULT '5.00', \`last_restock_date\` timestamp NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`subscriptions\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`plan_id\` varchar(36) NOT NULL, \`start_date\` date NOT NULL, \`end_date\` date NOT NULL, \`auto_renew\` tinyint NOT NULL DEFAULT 1, \`last_payment_date\` timestamp NULL, \`next_billing_date\` date NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`plans\` (\`id\` varchar(36) NOT NULL, \`name\` varchar(50) NOT NULL, \`description\` text NULL, \`price_monthly\` decimal(12,2) NOT NULL, \`max_branches\` int NOT NULL DEFAULT '1', \`max_users\` int NOT NULL DEFAULT '1', \`features\` json NULL, \`is_active\` tinyint NOT NULL DEFAULT 1, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`billing_history\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`amount\` decimal(12,2) NOT NULL, \`payment_status\` enum ('paid', 'pending', 'failed') NOT NULL DEFAULT 'pending', \`payment_method\` varchar(50) NULL, \`invoice_url\` varchar(255) NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`accounting_ledgers\` (\`id\` varchar(36) NOT NULL, \`tenant_id\` varchar(36) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`reference_id\` varchar(36) NULL, \`date\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`description\` text NOT NULL, \`account_name\` varchar(100) NOT NULL, \`debit\` decimal(15,2) NOT NULL DEFAULT '0.00', \`credit\` decimal(15,2) NOT NULL DEFAULT '0.00', PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`ALTER TABLE \`sale_items\` ADD CONSTRAINT \`FK_c210a330b80232c29c2ad68462a\` FOREIGN KEY (\`sale_id\`) REFERENCES \`sales\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`sales\` ADD CONSTRAINT \`FK_c51005b2b06cec7aa17462c54f5\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`purchase_order_items\` ADD CONSTRAINT \`FK_3f92bb44026cedfe235c8b91244\` FOREIGN KEY (\`purchase_order_id\`) REFERENCES \`purchase_orders\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`purchase_orders\` ADD CONSTRAINT \`FK_d16a885aa88447ccfd010e739b0\` FOREIGN KEY (\`supplier_id\`) REFERENCES \`suppliers\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`product_prices\` ADD CONSTRAINT \`FK_8218c69c7f5a3706662101fa788\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`product_prices\` ADD CONSTRAINT \`FK_5f64edf713f7612a7dc230e871a\` FOREIGN KEY (\`price_list_id\`) REFERENCES \`price_lists\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`products\` ADD CONSTRAINT \`FK_0b97249dd9e17bbc604a5ba3d07\` FOREIGN KEY (\`unit_id\`) REFERENCES \`units\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`products\` ADD CONSTRAINT \`FK_9a5f6868c96e0069e699f33e124\` FOREIGN KEY (\`category_id\`) REFERENCES \`categories\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`inventory\` ADD CONSTRAINT \`FK_732fdb1f76432d65d2c136340dc\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`inventory\` ADD CONSTRAINT \`FK_5e4d38ade6f246f20f468a7ad4b\` FOREIGN KEY (\`branch_id\`) REFERENCES \`branches\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+    }
+    async down(queryRunner) {
+        await queryRunner.query(`ALTER TABLE \`inventory\` DROP FOREIGN KEY \`FK_5e4d38ade6f246f20f468a7ad4b\``);
+        await queryRunner.query(`ALTER TABLE \`inventory\` DROP FOREIGN KEY \`FK_732fdb1f76432d65d2c136340dc\``);
+        await queryRunner.query(`ALTER TABLE \`products\` DROP FOREIGN KEY \`FK_9a5f6868c96e0069e699f33e124\``);
+        await queryRunner.query(`ALTER TABLE \`products\` DROP FOREIGN KEY \`FK_0b97249dd9e17bbc604a5ba3d07\``);
+        await queryRunner.query(`ALTER TABLE \`product_prices\` DROP FOREIGN KEY \`FK_5f64edf713f7612a7dc230e871a\``);
+        await queryRunner.query(`ALTER TABLE \`product_prices\` DROP FOREIGN KEY \`FK_8218c69c7f5a3706662101fa788\``);
+        await queryRunner.query(`ALTER TABLE \`purchase_orders\` DROP FOREIGN KEY \`FK_d16a885aa88447ccfd010e739b0\``);
+        await queryRunner.query(`ALTER TABLE \`purchase_order_items\` DROP FOREIGN KEY \`FK_3f92bb44026cedfe235c8b91244\``);
+        await queryRunner.query(`ALTER TABLE \`sales\` DROP FOREIGN KEY \`FK_c51005b2b06cec7aa17462c54f5\``);
+        await queryRunner.query(`ALTER TABLE \`sale_items\` DROP FOREIGN KEY \`FK_c210a330b80232c29c2ad68462a\``);
+        await queryRunner.query(`DROP TABLE \`accounting_ledgers\``);
+        await queryRunner.query(`DROP TABLE \`billing_history\``);
+        await queryRunner.query(`DROP TABLE \`plans\``);
+        await queryRunner.query(`DROP TABLE \`subscriptions\``);
+        await queryRunner.query(`DROP TABLE \`inventory\``);
+        await queryRunner.query(`DROP TABLE \`branches\``);
+        await queryRunner.query(`DROP TABLE \`products\``);
+        await queryRunner.query(`DROP TABLE \`product_prices\``);
+        await queryRunner.query(`DROP TABLE \`price_lists\``);
+        await queryRunner.query(`DROP TABLE \`categories\``);
+        await queryRunner.query(`DROP TABLE \`units\``);
+        await queryRunner.query(`DROP TABLE \`suppliers\``);
+        await queryRunner.query(`DROP TABLE \`purchase_orders\``);
+        await queryRunner.query(`DROP TABLE \`purchase_order_items\``);
+        await queryRunner.query(`DROP TABLE \`cash_registers\``);
+        await queryRunner.query(`DROP TABLE \`sales\``);
+        await queryRunner.query(`DROP TABLE \`sale_items\``);
+        await queryRunner.query(`DROP TABLE \`customers\``);
+        await queryRunner.query(`DROP INDEX \`IDX_6ba80523edef2759fa36ccdefe\` ON \`tenants\``);
+        await queryRunner.query(`DROP TABLE \`tenants\``);
+        await queryRunner.query(`DROP INDEX \`IDX_97672ac88f789774dd47f7c8be\` ON \`users\``);
+        await queryRunner.query(`DROP TABLE \`users\``);
+    }
+}
+exports.InitialSchema1775962655585 = InitialSchema1775962655585;
+//# sourceMappingURL=1775962655585-InitialSchema.js.map

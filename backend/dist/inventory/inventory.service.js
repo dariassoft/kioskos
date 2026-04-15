@@ -1,0 +1,230 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.InventoryService = void 0;
+const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const event_emitter_1 = require("@nestjs/event-emitter");
+const product_entity_1 = require("./entities/product.entity");
+const inventory_entity_1 = require("./entities/inventory.entity");
+const branch_entity_1 = require("./entities/branch.entity");
+const unit_entity_1 = require("./entities/unit.entity");
+const category_entity_1 = require("./entities/category.entity");
+const price_list_entity_1 = require("./entities/price-list.entity");
+const product_price_entity_1 = require("./entities/product-price.entity");
+const stock_reduced_event_1 = require("./events/stock-reduced.event");
+let InventoryService = class InventoryService {
+    constructor(productRepo, inventoryRepo, branchRepo, unitRepo, categoryRepo, priceListRepo, productPriceRepo, eventEmitter) {
+        this.productRepo = productRepo;
+        this.inventoryRepo = inventoryRepo;
+        this.branchRepo = branchRepo;
+        this.unitRepo = unitRepo;
+        this.categoryRepo = categoryRepo;
+        this.priceListRepo = priceListRepo;
+        this.productPriceRepo = productPriceRepo;
+        this.eventEmitter = eventEmitter;
+    }
+    async findAllProducts(tenantId, query) {
+        const { search, category_id, page = 1, limit = 25 } = query;
+        const skip = (page - 1) * limit;
+        const qb = this.productRepo.createQueryBuilder('p')
+            .leftJoinAndSelect('p.unit', 'unit')
+            .leftJoinAndSelect('p.category', 'category')
+            .leftJoinAndSelect('p.prices', 'prices')
+            .leftJoinAndSelect('prices.price_list', 'price_list')
+            .where('p.tenant_id = :tenantId', { tenantId })
+            .andWhere('p.is_active = :active', { active: true });
+        if (search) {
+            qb.andWhere('(p.name LIKE :search OR p.barcode LIKE :search OR p.internal_code LIKE :search)', { search: `%${search}%` });
+        }
+        if (category_id) {
+            qb.andWhere('p.category_id = :category_id', { category_id });
+        }
+        const [data, total] = await qb
+            .orderBy('p.name', 'ASC')
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
+        return { data, total, page, limit, pages: Math.ceil(total / limit) };
+    }
+    async findOneProduct(id, tenantId) {
+        const product = await this.productRepo.findOne({
+            where: { id, tenant_id: tenantId },
+            relations: ['unit', 'category', 'prices', 'prices.price_list'],
+        });
+        if (!product)
+            throw new common_1.NotFoundException(`Producto ${id} no encontrado`);
+        return product;
+    }
+    async createProduct(dto, tenantId) {
+        if (dto.barcode) {
+            const existing = await this.productRepo.findOne({
+                where: { barcode: dto.barcode, tenant_id: tenantId },
+            });
+            if (existing) {
+                throw new common_1.ConflictException(`Ya existe un producto con el código de barras: ${dto.barcode}`);
+            }
+        }
+        const product = this.productRepo.create({ ...dto, tenant_id: tenantId });
+        return this.productRepo.save(product);
+    }
+    async updateProduct(id, dto, tenantId) {
+        await this.findOneProduct(id, tenantId);
+        await this.productRepo.update({ id, tenant_id: tenantId }, dto);
+        return this.findOneProduct(id, tenantId);
+    }
+    async deleteProduct(id, tenantId) {
+        await this.findOneProduct(id, tenantId);
+        await this.productRepo.update({ id, tenant_id: tenantId }, { is_active: false });
+    }
+    async setProductPrice(productId, dto, tenantId) {
+        await this.findOneProduct(productId, tenantId);
+        const existing = await this.productPriceRepo.findOne({
+            where: { product_id: productId, price_list_id: dto.price_list_id },
+        });
+        if (existing) {
+            await this.productPriceRepo.update(existing.id, { price: dto.price });
+            return this.productPriceRepo.findOne({ where: { id: existing.id } });
+        }
+        const pp = this.productPriceRepo.create({ ...dto, product_id: productId });
+        return this.productPriceRepo.save(pp);
+    }
+    async getInventoryByBranch(tenantId, branchId) {
+        return this.inventoryRepo.find({
+            where: { tenant_id: tenantId, branch_id: branchId },
+            relations: ['product', 'branch'],
+            order: { product: { name: 'ASC' } },
+        });
+    }
+    async getLowStockItems(tenantId) {
+        return this.inventoryRepo
+            .createQueryBuilder('inv')
+            .leftJoinAndSelect('inv.product', 'product')
+            .leftJoinAndSelect('inv.branch', 'branch')
+            .where('inv.tenant_id = :tenantId', { tenantId })
+            .andWhere('inv.stock_quantity <= inv.min_stock_alert')
+            .orderBy('inv.stock_quantity', 'ASC')
+            .getMany();
+    }
+    async addStock(dto, productId, tenantId) {
+        let inv = await this.inventoryRepo.findOne({
+            where: { product_id: productId, branch_id: dto.branch_id, tenant_id: tenantId },
+        });
+        if (!inv) {
+            inv = this.inventoryRepo.create({
+                tenant_id: tenantId,
+                product_id: productId,
+                branch_id: dto.branch_id,
+                stock_quantity: 0,
+                min_stock_alert: dto.min_stock_alert ?? 5,
+            });
+            await this.inventoryRepo.save(inv);
+        }
+        await this.inventoryRepo.update(inv.id, {
+            stock_quantity: Number(inv.stock_quantity) + Number(dto.quantity),
+            last_restock_date: new Date(),
+            ...(dto.min_stock_alert !== undefined && { min_stock_alert: dto.min_stock_alert }),
+        });
+        return this.inventoryRepo.findOne({
+            where: { id: inv.id },
+            relations: ['product', 'branch'],
+        });
+    }
+    async reduceStock(productId, branchId, quantity, tenantId) {
+        const inv = await this.inventoryRepo.findOne({
+            where: { product_id: productId, branch_id: branchId, tenant_id: tenantId },
+            relations: ['product'],
+        });
+        if (!inv)
+            throw new common_1.NotFoundException(`Stock no encontrado para producto ${productId}`);
+        const newQty = Number(inv.stock_quantity) - Number(quantity);
+        if (newQty < 0) {
+            throw new common_1.BadRequestException(`Stock insuficiente: disponible ${inv.stock_quantity}, solicitado ${quantity}`);
+        }
+        await this.inventoryRepo.update(inv.id, { stock_quantity: newQty });
+        this.eventEmitter.emit('stock.reduced', new stock_reduced_event_1.StockReducedEvent(tenantId, productId, branchId, newQty, inv.product?.name ?? ''));
+        return { ...inv, stock_quantity: newQty };
+    }
+    async findAllBranches(tenantId) {
+        return this.branchRepo.find({
+            where: { tenant_id: tenantId },
+            order: { is_main_branch: 'DESC', name: 'ASC' },
+        });
+    }
+    async createBranch(dto, tenantId) {
+        const branch = this.branchRepo.create({ ...dto, tenant_id: tenantId });
+        return this.branchRepo.save(branch);
+    }
+    async updateBranch(id, dto, tenantId) {
+        await this.branchRepo.update({ id, tenant_id: tenantId }, dto);
+        const updated = await this.branchRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!updated)
+            throw new common_1.NotFoundException(`Sucursal ${id} no encontrada`);
+        return updated;
+    }
+    async findAllCategories(tenantId) {
+        return this.categoryRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
+    }
+    async createCategory(dto, tenantId) {
+        const cat = this.categoryRepo.create({ ...dto, tenant_id: tenantId });
+        return this.categoryRepo.save(cat);
+    }
+    async findAllUnits(tenantId) {
+        return this.unitRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
+    }
+    async createUnit(dto, tenantId) {
+        const unit = this.unitRepo.create({ ...dto, tenant_id: tenantId });
+        return this.unitRepo.save(unit);
+    }
+    async findAllPriceLists(tenantId) {
+        return this.priceListRepo.find({ where: { tenant_id: tenantId } });
+    }
+    async createPriceList(name, tenantId, isDefault = false) {
+        const pl = this.priceListRepo.create({ name, is_default: isDefault, tenant_id: tenantId });
+        return this.priceListRepo.save(pl);
+    }
+    async quickSearch(query, tenantId) {
+        return this.productRepo
+            .createQueryBuilder('p')
+            .leftJoinAndSelect('p.prices', 'prices')
+            .leftJoinAndSelect('prices.price_list', 'pl', 'pl.is_default = :def', { def: true })
+            .leftJoinAndSelect('p.unit', 'unit')
+            .where('p.tenant_id = :tenantId', { tenantId })
+            .andWhere('p.is_active = :active', { active: true })
+            .andWhere('(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)', { q: `%${query}%`, exact: query })
+            .limit(20)
+            .getMany();
+    }
+};
+exports.InventoryService = InventoryService;
+exports.InventoryService = InventoryService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_1.InjectRepository)(product_entity_1.Product)),
+    __param(1, (0, typeorm_1.InjectRepository)(inventory_entity_1.Inventory)),
+    __param(2, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
+    __param(3, (0, typeorm_1.InjectRepository)(unit_entity_1.Unit)),
+    __param(4, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
+    __param(5, (0, typeorm_1.InjectRepository)(price_list_entity_1.PriceList)),
+    __param(6, (0, typeorm_1.InjectRepository)(product_price_entity_1.ProductPrice)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        event_emitter_1.EventEmitter2])
+], InventoryService);
+//# sourceMappingURL=inventory.service.js.map

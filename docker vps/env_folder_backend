@@ -1,0 +1,9 @@
+DB_TYPE=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=myuser
+DB_PASSWORD=mypassword
+DB_NAME=nest_db
+
+JWT_SECRET=cadena-aleatoria-segura
+JWT_EXPIRATION_TIME=3600

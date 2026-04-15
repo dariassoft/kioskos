@@ -1,0 +1,206 @@
+import {
+  Controller, Get, Post, Put, Patch, Delete,
+  Body, Param, Query, UseGuards, HttpCode, HttpStatus,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { InventoryService } from './inventory.service';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles, UserRole } from '../common/decorators/roles.decorator';
+import { GetTenantId } from '../common/decorators/get-tenant.decorator';
+import {
+  CreateProductDto, UpdateProductDto, SetPriceDto,
+  UpdateStockDto, CreateBranchDto, CreateCategoryDto,
+  CreateUnitDto, ProductQueryDto,
+} from './dto/inventory.dto';
+
+@ApiTags('inventory')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('inventory')
+export class InventoryController {
+  constructor(private readonly inventoryService: InventoryService) {}
+
+  // ==========================================
+  // PRODUCTOS
+  // ==========================================
+
+  @Get('products')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @ApiOperation({ summary: 'Listar productos con filtros y paginación' })
+  findAllProducts(@GetTenantId() tenantId: string, @Query() query: ProductQueryDto) {
+    return this.inventoryService.findAllProducts(tenantId, query);
+  }
+
+  @Get('products/search')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @ApiOperation({ summary: 'Búsqueda rápida de productos (para POS)' })
+  @ApiQuery({ name: 'q', description: 'Nombre, código de barras o código interno' })
+  quickSearch(@GetTenantId() tenantId: string, @Query('q') q: string) {
+    return this.inventoryService.quickSearch(q || '', tenantId);
+  }
+
+  @Get('products/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Ver detalle de un producto' })
+  findOne(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.inventoryService.findOneProduct(id, tenantId);
+  }
+
+  @Post('products')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Crear producto' })
+  createProduct(@Body() dto: CreateProductDto, @GetTenantId() tenantId: string) {
+    return this.inventoryService.createProduct(dto, tenantId);
+  }
+
+  @Patch('products/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Actualizar producto' })
+  updateProduct(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.updateProduct(id, dto, tenantId);
+  }
+
+  @Delete('products/:id')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Desactivar producto (soft delete)' })
+  deleteProduct(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.inventoryService.deleteProduct(id, tenantId);
+  }
+
+  // ==========================================
+  // PRECIOS
+  // ==========================================
+
+  @Post('products/:id/prices')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Establecer precio para una lista de precios' })
+  setPrice(
+    @Param('id') productId: string,
+    @Body() dto: SetPriceDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.setProductPrice(productId, dto, tenantId);
+  }
+
+  // ==========================================
+  // STOCK
+  // ==========================================
+
+  @Get('stock')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Ver stock de una sucursal' })
+  @ApiQuery({ name: 'branch_id', required: true })
+  getStock(@GetTenantId() tenantId: string, @Query('branch_id') branchId: string) {
+    return this.inventoryService.getInventoryByBranch(tenantId, branchId);
+  }
+
+  @Get('stock/low')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Productos con stock por debajo del mínimo' })
+  getLowStock(@GetTenantId() tenantId: string) {
+    return this.inventoryService.getLowStockItems(tenantId);
+  }
+
+  @Post('products/:id/stock')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Agregar stock a un producto en una sucursal' })
+  addStock(
+    @Param('id') productId: string,
+    @Body() dto: UpdateStockDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.addStock(dto, productId, tenantId);
+  }
+
+  // ==========================================
+  // SUCURSALES
+  // ==========================================
+
+  @Get('branches')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @ApiOperation({ summary: 'Listar sucursales del negocio' })
+  findBranches(@GetTenantId() tenantId: string) {
+    return this.inventoryService.findAllBranches(tenantId);
+  }
+
+  @Post('branches')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Crear sucursal' })
+  createBranch(@Body() dto: CreateBranchDto, @GetTenantId() tenantId: string) {
+    return this.inventoryService.createBranch(dto, tenantId);
+  }
+
+  @Patch('branches/:id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Actualizar sucursal' })
+  updateBranch(
+    @Param('id') id: string,
+    @Body() dto: CreateBranchDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.updateBranch(id, dto, tenantId);
+  }
+
+  // ==========================================
+  // CATEGORÍAS
+  // ==========================================
+
+  @Get('categories')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @ApiOperation({ summary: 'Listar categorías' })
+  findCategories(@GetTenantId() tenantId: string) {
+    return this.inventoryService.findAllCategories(tenantId);
+  }
+
+  @Post('categories')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Crear categoría' })
+  createCategory(@Body() dto: CreateCategoryDto, @GetTenantId() tenantId: string) {
+    return this.inventoryService.createCategory(dto, tenantId);
+  }
+
+  // ==========================================
+  // UNIDADES
+  // ==========================================
+
+  @Get('units')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @ApiOperation({ summary: 'Listar unidades de medida' })
+  findUnits(@GetTenantId() tenantId: string) {
+    return this.inventoryService.findAllUnits(tenantId);
+  }
+
+  @Post('units')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Crear unidad de medida' })
+  createUnit(@Body() dto: CreateUnitDto, @GetTenantId() tenantId: string) {
+    return this.inventoryService.createUnit(dto, tenantId);
+  }
+
+  // ==========================================
+  // LISTAS DE PRECIOS
+  // ==========================================
+
+  @Get('price-lists')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Listar listas de precios' })
+  findPriceLists(@GetTenantId() tenantId: string) {
+    return this.inventoryService.findAllPriceLists(tenantId);
+  }
+
+  @Post('price-lists')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Crear lista de precios' })
+  createPriceList(
+    @Body() body: { name: string; is_default?: boolean },
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.createPriceList(body.name, tenantId, body.is_default);
+  }
+}

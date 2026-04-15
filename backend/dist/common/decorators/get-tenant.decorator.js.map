@@ -1,0 +1,1 @@
+{"version":3,"file":"get-tenant.decorator.js","sourceRoot":"","sources":["../../../src/common/decorators/get-tenant.decorator.ts"],"names":[],"mappings":";;;AAAA,2CAAwE;AAY3D,QAAA,WAAW,GAAG,IAAA,6BAAoB,EAC7C,CAAC,IAAa,EAAE,GAAqB,EAAU,EAAE;IAC/C,MAAM,OAAO,GAAG,GAAG,CAAC,YAAY,EAAE,CAAC,UAAU,EAAE,CAAC;IAChD,OAAO,OAAO,CAAC,QAAkB,CAAC;AACpC,CAAC,CACF,CAAC"}

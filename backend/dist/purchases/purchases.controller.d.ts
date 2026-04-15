@@ -1,0 +1,13 @@
+import { PurchasesService } from './purchases.service';
+import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto } from './dto/purchases.dto';
+export declare class PurchasesController {
+    private readonly purchasesService;
+    constructor(purchasesService: PurchasesService);
+    findAllSuppliers(tenantId: string): Promise<import("./entities/supplier.entity").Supplier[]>;
+    createSupplier(dto: CreateSupplierDto, tenantId: string): Promise<import("./entities/supplier.entity").Supplier>;
+    updateSupplier(id: string, dto: UpdateSupplierDto, tenantId: string): Promise<import("./entities/supplier.entity").Supplier>;
+    findAllOrders(tenantId: string): Promise<import("./entities/purchase-order.entity").PurchaseOrder[]>;
+    createOrder(dto: CreatePurchaseOrderDto, tenantId: string): Promise<import("./entities/purchase-order.entity").PurchaseOrder>;
+    receiveOrder(id: string, tenantId: string): Promise<import("./entities/purchase-order.entity").PurchaseOrder>;
+    cancelOrder(id: string, tenantId: string): Promise<import("./entities/purchase-order.entity").PurchaseOrder>;
+}

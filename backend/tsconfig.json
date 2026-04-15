@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@common/*": ["src/common/*"],
+      "@auth/*": ["src/auth/*"],
+      "@tenants/*": ["src/tenants/*"],
+      "@inventory/*": ["src/inventory/*"],
+      "@sales/*": ["src/sales/*"],
+      "@billing/*": ["src/billing/*"],
+      "@accounting/*": ["src/accounting/*"],
+      "@purchases/*": ["src/purchases/*"],
+      "@reports/*": ["src/reports/*"],
+      "@notifications/*": ["src/notifications/*"]
+    }
+  }
+}

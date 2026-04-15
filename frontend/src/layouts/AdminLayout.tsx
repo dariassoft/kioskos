@@ -1,0 +1,163 @@
+import { useState } from 'react'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@store/auth.store'
+import { useBranchStore } from '@store/branch.store'
+import {
+  LayoutDashboard, Package, ShoppingCart, Users, Truck,
+  BookOpen, ChevronLeft, ChevronRight,
+  LogOut, Store, Bell, Menu, UserCircle, Moon, Sun
+} from 'lucide-react'
+
+const navItems = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Tablero & Reportes' },
+  { to: '/pos', icon: ShoppingCart, label: 'POS / Venta' },
+  { to: '/inventory', icon: Package, label: 'Inventario' },
+  { to: '/customers', icon: Users, label: 'Clientes / Fiados' },
+  { to: '/purchases', icon: Truck, label: 'Compras' },
+  { to: '/accounting', icon: BookOpen, label: 'Contabilidad' },
+]
+
+export default function AdminLayout() {
+  const [collapsed, setCollapsed] = useState(false)
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
+  const { user, logout } = useAuthStore()
+  const { activeBranch } = useBranchStore()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/auth/login')
+  }
+
+  const toggleTheme = () => {
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.remove('dark')
+      setIsDark(false)
+    } else {
+      root.classList.add('dark')
+      setIsDark(true)
+    }
+  }
+
+  return (
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* ==========================================
+          SIDEBAR
+         ========================================== */}
+      <aside
+        className={`flex flex-col border-r border-border bg-card transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'
+          }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          {!collapsed && (
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Store className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">Kioskos & Despenzas</p>
+                <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                  {activeBranch?.name || 'Sin sucursal'}
+                </p>
+              </div>
+            </div>
+          )}
+          {collapsed && (
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mx-auto">
+              <Store className="w-4 h-4 text-white" />
+            </div>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors ml-auto"
+          >
+            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {/* Navegación */}
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+          {navItems.map(({ to, icon: Icon, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-2' : ''}`
+              }
+              title={collapsed ? label : undefined}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="truncate">{label}</span>}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Perfil de usuario */}
+        <div className="p-2 border-t border-border">
+          <div className={`flex items-center gap-3 px-2 py-2 rounded-lg ${collapsed ? 'justify-center' : ''}`}>
+            <UserCircle className="w-8 h-8 text-muted-foreground flex-shrink-0" />
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">{user?.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+              </div>
+            )}
+            {!collapsed && (
+              <button
+                onClick={handleLogout}
+                className="p-1 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {collapsed && (
+            <button
+              onClick={handleLogout}
+              className="w-full flex justify-center p-2 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors mt-1"
+              title="Cerrar sesión"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {/* ==========================================
+          ÁREA PRINCIPAL
+         ========================================== */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <button className="md:hidden p-1 rounded-md hover:bg-accent">
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              title="Cambiar tema"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button className="relative p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+              <Bell className="w-4 h-4" />
+              {/* Badge de notificaciones */}
+              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+            </button>
+          </div>
+        </header>
+
+        {/* Contenido de las páginas */}
+        <main className="flex-1 overflow-y-auto p-6 animate-fade-in">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}

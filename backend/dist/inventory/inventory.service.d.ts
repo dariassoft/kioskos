@@ -1,0 +1,47 @@
+import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Product } from './entities/product.entity';
+import { Inventory } from './entities/inventory.entity';
+import { Branch } from './entities/branch.entity';
+import { Unit } from './entities/unit.entity';
+import { Category } from './entities/category.entity';
+import { PriceList } from './entities/price-list.entity';
+import { ProductPrice } from './entities/product-price.entity';
+import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto } from './dto/inventory.dto';
+export declare class InventoryService {
+    private readonly productRepo;
+    private readonly inventoryRepo;
+    private readonly branchRepo;
+    private readonly unitRepo;
+    private readonly categoryRepo;
+    private readonly priceListRepo;
+    private readonly productPriceRepo;
+    private readonly eventEmitter;
+    constructor(productRepo: Repository<Product>, inventoryRepo: Repository<Inventory>, branchRepo: Repository<Branch>, unitRepo: Repository<Unit>, categoryRepo: Repository<Category>, priceListRepo: Repository<PriceList>, productPriceRepo: Repository<ProductPrice>, eventEmitter: EventEmitter2);
+    findAllProducts(tenantId: string, query: ProductQueryDto): Promise<{
+        data: Product[];
+        total: number;
+        page: number;
+        limit: number;
+        pages: number;
+    }>;
+    findOneProduct(id: string, tenantId: string): Promise<Product>;
+    createProduct(dto: CreateProductDto, tenantId: string): Promise<Product>;
+    updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<Product>;
+    deleteProduct(id: string, tenantId: string): Promise<void>;
+    setProductPrice(productId: string, dto: SetPriceDto, tenantId: string): Promise<ProductPrice>;
+    getInventoryByBranch(tenantId: string, branchId: string): Promise<Inventory[]>;
+    getLowStockItems(tenantId: string): Promise<Inventory[]>;
+    addStock(dto: UpdateStockDto, productId: string, tenantId: string): Promise<Inventory>;
+    reduceStock(productId: string, branchId: string, quantity: number, tenantId: string): Promise<Inventory>;
+    findAllBranches(tenantId: string): Promise<Branch[]>;
+    createBranch(dto: CreateBranchDto, tenantId: string): Promise<Branch>;
+    updateBranch(id: string, dto: Partial<CreateBranchDto>, tenantId: string): Promise<Branch>;
+    findAllCategories(tenantId: string): Promise<Category[]>;
+    createCategory(dto: CreateCategoryDto, tenantId: string): Promise<Category>;
+    findAllUnits(tenantId: string): Promise<Unit[]>;
+    createUnit(dto: CreateUnitDto, tenantId: string): Promise<Unit>;
+    findAllPriceLists(tenantId: string): Promise<PriceList[]>;
+    createPriceList(name: string, tenantId: string, isDefault?: boolean): Promise<PriceList>;
+    quickSearch(query: string, tenantId: string): Promise<Product[]>;
+}
