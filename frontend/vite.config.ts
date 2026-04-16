@@ -26,20 +26,26 @@ export default defineConfig({
         enabled: true
       },
       manifest: {
-        name: 'Kioskos & Despenzas POS',
-        short_name: 'KioskosPOS',
-        description: 'Punto de Venta y Gestión de Inventario',
-        theme_color: '#0f172a',
+        name: 'Kioskos & Despenzas',
+        short_name: 'Kioskos',
+        description: 'Sistema ERP y POS para Kioskos y Despenzas',
+        theme_color: '#4f46e5',
+        background_color: '#ffffff',
+        display: 'standalone',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }
