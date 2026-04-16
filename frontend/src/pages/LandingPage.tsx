@@ -226,12 +226,14 @@ function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean })
         </p>
       </div>
       <ul className="space-y-3 flex-1 mb-8">
-        {plan.features && Object.entries(plan.features).map(([key, enabled]) => (
+        {plan.features ? Object.entries(plan.features).map(([key, enabled]) => (
           <li key={key} className={`flex items-center gap-2.5 text-sm ${enabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600 line-through'}`}>
             <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${enabled ? 'text-emerald-500' : 'text-gray-300 dark:text-gray-600'}`} />
             {FEATURE_LABELS[key] ?? key.replace(/_/g, ' ')}
           </li>
-        ))}
+        )) : (
+          <li className="text-xs text-muted-foreground italic">Sin características detalladas</li>
+        )}
       </ul>
       <button
         onClick={() => navigate(`/checkout?plan=${plan.id}`)}
@@ -257,8 +259,10 @@ function PricingSection({ plans }: { plans: PublicPlan[] }) {
             Sin contratos. Sin costos ocultos. Cambiá o cancelá cuando quieras.
           </p>
         </div>
-        {plans.length === 0 ? (
-          <div className="text-center text-gray-500 py-12">Cargando planes...</div>
+        {!Array.isArray(plans) || plans.length === 0 ? (
+          <div className="text-center text-gray-500 py-12">
+            {plans && !Array.isArray(plans) ? 'Error al cargar los planes' : 'Cargando planes...'}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             {plans.map((plan, i) => (

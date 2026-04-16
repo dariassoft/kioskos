@@ -217,7 +217,7 @@ export default function DashboardPage() {
                     stroke="none"
                     animationDuration={1000}
                   >
-                    {topProducts.map((_: any, index: number) => (
+                    {Array.isArray(topProducts) && topProducts.map((_: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -237,7 +237,7 @@ export default function DashboardPage() {
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8 text-center">
                  <span className="text-xs text-muted-foreground">Totales</span>
                  <span className="text-2xl font-extrabold text-foreground leading-none mt-1">
-                   {topProducts.reduce((acc: number, p: any) => acc + p.value, 0)}
+                   {Array.isArray(topProducts) ? topProducts.reduce((acc: number, p: any) => acc + (p?.value || 0), 0) : 0}
                  </span>
               </div>
             )}

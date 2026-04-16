@@ -87,7 +87,7 @@ export interface CheckoutStatus {
 
 const checkoutApi = {
   getPlans: (): Promise<PublicPlan[]> =>
-    apiClient.get('/checkout/plans').then((r) => r.data),
+    apiClient.get('/checkout/plans').then((r: any) => Array.isArray(r.data) ? r.data : []),
 
   startCheckout: (payload: StartCheckoutPayload): Promise<CheckoutResult> =>
     apiClient.post('/checkout/start', payload).then((r) => r.data),

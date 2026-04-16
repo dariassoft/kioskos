@@ -5,5 +5,5 @@ export const accountingApi = {
   getLedger: (startDate: string, endDate: string) => 
     apiClient.get<AccountingLedger[]>('/accounting/ledger', {
       params: { startDate, endDate }
-    }).then((res) => res.data),
+    }).then((res: any) => Array.isArray(res.data) ? res.data : []),
 };

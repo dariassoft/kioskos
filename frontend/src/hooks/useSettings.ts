@@ -27,7 +27,7 @@ export function useBranches() {
   })
 
   useEffect(() => {
-    if (!query.data || query.data.length === 0) return
+    if (!Array.isArray(query.data) || query.data.length === 0) return
 
     // Sincronizar la lista en el store
     setBranches(query.data)

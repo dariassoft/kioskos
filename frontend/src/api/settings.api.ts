@@ -11,7 +11,7 @@ const BASE = '/settings'
 // ==========================================
 export const settingsBranchesApi = {
   list: (): Promise<Branch[]> =>
-    apiClient.get(`${BASE}/branches`).then((r) => r.data),
+    apiClient.get(`${BASE}/branches`).then((r: any) => Array.isArray(r.data) ? r.data : []),
   create: (dto: CreateBranchDto): Promise<Branch> =>
     apiClient.post(`${BASE}/branches`, dto).then((r) => r.data),
   update: (id: string, dto: UpdateBranchDto): Promise<Branch> =>
@@ -24,7 +24,7 @@ export const settingsBranchesApi = {
 // ==========================================
 export const settingsUsersApi = {
   list: (): Promise<UserItem[]> =>
-    apiClient.get(`${BASE}/users`).then((r) => r.data),
+    apiClient.get(`${BASE}/users`).then((r: any) => Array.isArray(r.data) ? r.data : []),
   create: (dto: CreateUserDto): Promise<UserItem> =>
     apiClient.post(`${BASE}/users`, dto).then((r) => r.data),
   update: (id: string, dto: UpdateUserDto): Promise<UserItem> =>

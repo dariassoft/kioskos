@@ -45,24 +45,24 @@ export const inventoryApi = {
 
   quickSearch: async (q: string): Promise<Product[]> => {
     const res = await apiClient.get('/inventory/products/search', { params: { q } })
-    return res.data
+    return Array.isArray(res.data) ? res.data : []
   },
 
   // Stock
   getStockByBranch: async (branchId: string): Promise<Inventory[]> => {
     const res = await apiClient.get('/inventory/stock', { params: { branch_id: branchId } })
-    return res.data
+    return Array.isArray(res.data) ? res.data : []
   },
 
   getLowStock: async (): Promise<Inventory[]> => {
     const res = await apiClient.get('/inventory/stock/low')
-    return res.data
+    return Array.isArray(res.data) ? res.data : []
   },
 
   // Sucursales
   getBranches: async (): Promise<Branch[]> => {
     const res = await apiClient.get('/inventory/branches')
-    return res.data
+    return Array.isArray(res.data) ? res.data : []
   },
 
   createBranch: async (data: Partial<Branch>): Promise<Branch> => {
@@ -73,7 +73,7 @@ export const inventoryApi = {
   // Categorías
   getCategories: async (): Promise<Category[]> => {
     const res = await apiClient.get('/inventory/categories')
-    return res.data
+    return Array.isArray(res.data) ? res.data : []
   },
 
   createCategory: async (data: { name: string; color?: string; icon?: string }): Promise<Category> => {
@@ -84,12 +84,12 @@ export const inventoryApi = {
   // Unidades
   getUnits: async (): Promise<Unit[]> => {
     const res = await apiClient.get('/inventory/units')
-    return res.data
+    return Array.isArray(res.data) ? res.data : []
   },
 
   // Listas de precios
   getPriceLists: async (): Promise<PriceList[]> => {
     const res = await apiClient.get('/inventory/price-lists')
-    return res.data
+    return Array.isArray(res.data) ? res.data : []
   },
 }
