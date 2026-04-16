@@ -6,6 +6,8 @@ const typeorm_1 = require("typeorm");
 const swagger_1 = require("@nestjs/swagger");
 const config_1 = require("@nestjs/config");
 const app_module_1 = require("./app.module");
+const fs = require("fs");
+const path = require("path");
 async function ensureAuxiliaryTables(dataSource) {
     await dataSource.query(`
     CREATE TABLE IF NOT EXISTS \`mercadopago_credentials\` (
@@ -82,6 +84,36 @@ async function bootstrap() {
     const configService = app.get(config_1.ConfigService);
     const dataSource = app.get(typeorm_1.DataSource);
     await ensureAuxiliaryTables(dataSource);
+    if (configService.get('DB_RUN_MIGRATIONS') === 'true') {
+        console.log('🔄 [DB] Ejecutando migraciones automáticamente...');
+        try {
+            await dataSource.runMigrations();
+            console.log('✅ [DB] Migraciones completadas.');
+        }
+        catch (error) {
+            console.error('❌ [DB] Error en migraciones:', error.message);
+        }
+    }
+    if (configService.get('DB_RUN_SEED') === 'true') {
+        console.log('🌱 [DB] Ejecutando carga de datos iniciales (seed)...');
+        try {
+            const seedFilePath = path.join(__dirname, 'database/seed.sql');
+            if (fs.existsSync(seedFilePath)) {
+                const seedSql = fs.readFileSync(seedFilePath, 'utf8');
+                const queries = seedSql.split(';').map(q => q.trim()).filter(q => q.length > 0);
+                for (const query of queries) {
+                    await dataSource.query(query);
+                }
+                console.log('✅ [DB] Carga de datos completada (Seed).');
+            }
+            else {
+                console.warn('⚠️ [DB] No se encontró el archivo seed.sql en:', seedFilePath);
+            }
+        }
+        catch (error) {
+            console.error('❌ [DB] Error al ejecutar el seed:', error.message);
+        }
+    }
     app.enableCors({
         origin: [
             configService.get('FRONTEND_URL') || 'http://localhost:5173',

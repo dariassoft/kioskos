@@ -4,6 +4,8 @@ import { DataSource } from 'typeorm';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function ensureAuxiliaryTables(dataSource: DataSource) {
   await dataSource.query(`
@@ -85,6 +87,39 @@ async function bootstrap() {
   const dataSource = app.get(DataSource);
 
   await ensureAuxiliaryTables(dataSource);
+
+  // ==========================================
+  // AUTOMATIZACIÓN DE DB (MIGRACIONES Y SEED)
+  // ==========================================
+  if (configService.get('DB_RUN_MIGRATIONS') === 'true') {
+    console.log('🔄 [DB] Ejecutando migraciones automáticamente...');
+    try {
+      await dataSource.runMigrations();
+      console.log('✅ [DB] Migraciones completadas.');
+    } catch (error) {
+      console.error('❌ [DB] Error en migraciones:', error.message);
+    }
+  }
+
+  if (configService.get('DB_RUN_SEED') === 'true') {
+    console.log('🌱 [DB] Ejecutando carga de datos iniciales (seed)...');
+    try {
+      const seedFilePath = path.join(__dirname, 'database/seed.sql');
+      if (fs.existsSync(seedFilePath)) {
+        const seedSql = fs.readFileSync(seedFilePath, 'utf8');
+        // Separar por ; y ejecutar cada query (ignorando líneas vacías)
+        const queries = seedSql.split(';').map(q => q.trim()).filter(q => q.length > 0);
+        for (const query of queries) {
+          await dataSource.query(query);
+        }
+        console.log('✅ [DB] Carga de datos completada (Seed).');
+      } else {
+        console.warn('⚠️ [DB] No se encontró el archivo seed.sql en:', seedFilePath);
+      }
+    } catch (error) {
+      console.error('❌ [DB] Error al ejecutar el seed:', error.message);
+    }
+  }
 
   // ==========================================
   // CORS — Permitir frontend en dev y prod
