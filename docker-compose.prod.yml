@@ -1,103 +1,118 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  mysql:
+  # ==========================================
+  # BASE DE DATOS — MySQL 8.0
+  # ==========================================
+  db:
     image: mysql:8.0
     container_name: kioskos_mysql
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE:-kioskos_db}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: kioskos_db
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: dev_user
+      MYSQL_PASSWORD: dev_password
+    ports:
+      - "3306:3306"
     volumes:
-      - ./mysql/data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     networks:
       - internal_network
-    restart: always
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "dev_user", "-pdev_password" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  adminer:
-    image: adminer
-    container_name: kioskos_adminer
-    environment:
-      - ADMINER_DEFAULT_SERVER=kioskos_mysql
+  # ==========================================
+  # CACHE — Redis 7
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: kioskos_redis
     restart: always
-    expose:
-      - "80"
+    ports:
+      - "6379:6379"
     networks:
+      - internal_network
       - dokploy-network
-      - internal_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=dokploy-network"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  backend:
+  # ==========================================
+  # BACKEND — NestJS API
+  # ==========================================
+  api:
     build:
       context: ./backend
-      dockerfile: Dockerfile.prod
-    container_name: kioskos_backend
+      dockerfile: Dockerfile
+    container_name: kioskos_api
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
     environment:
-      NODE_ENV: production
-      DB_TYPE: mysql
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_DATABASE: ${DB_DATABASE:-kioskos_db}
-      DB_SYNCHRONIZE: "false"
-      DB_LOGGING: "false"
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      APP_PORT: 3000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=dokploy-network"
+      - DB_HOST=db
+      - REDIS_HOST=redis
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - dokploy-network
       - internal_network
-    depends_on:
-      - mysql
-    restart: always
 
-  frontend:
+  # ==========================================
+  # FRONTEND — React + Vite
+  # ==========================================
+  client:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod
-    container_name: kioskos_frontend
-    expose:
-      - "3000"
-    networks:
-      - dokploy-network
-      - internal_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=dokploy-network"
-    depends_on:
-      - backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: kioskos_client
     restart: always
-
-  db-backup:
-    image: fradelg/mysql-cron-backup
-    container_name: kioskos_db_backup
-    environment:
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=root
-      - MYSQL_PASS=${DB_ROOT_PASSWORD}
-      - MAX_BACKUPS=7
-      - CRON_TIME=0 4 * * *
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env
     volumes:
-      - ./mysql/backups:/backup
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - api
+    networks:
+      - dokploy-network
+      - internal_network
+
+  # ==========================================
+  # ADMINER — Gestor visual de MySQL
+  # ==========================================
+  adminer:
+    image: adminer:latest
+    container_name: kioskos_adminer
+    restart: always
+    ports:
+      - "8080:8080"
     networks:
       - dokploy-network
       - internal_network
     depends_on:
-      - mysql
-    restart: always
+      - db
 
 networks:
-  internal_network:
+  kioskos_network:
     driver: bridge
-  dokploy-network:
-    external: true
+
+volumes:
+  mysql_data:
+    driver: local
