@@ -9,7 +9,16 @@ export interface Customer {
   created_at: string
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'credit_client'
+export type PaymentMethod =
+  | 'cash'
+  | 'debit_card'
+  | 'credit_card'
+  | 'transfer'
+  | 'qr_mercadopago'
+  | 'link_mercadopago'
+  | 'credit_client'
+
+export type PaymentStatus = 'pending' | 'confirmed' | 'failed'
 export type SaleStatus = 'completed' | 'refunded' | 'pending'
 
 export interface CashRegister {
@@ -42,10 +51,35 @@ export interface Sale {
   customer_id?: string
   total: number
   payment_method: PaymentMethod
+  payment_status: PaymentStatus
   status: SaleStatus
+  mp_payment_id?: string | null
+  mp_payment_status?: string | null
+  payer_name?: string | null
+  payer_email?: string | null
+  transfer_voucher?: string | null
+  transfer_origin?: string | null
+  card_last_digits?: string | null
+  card_brand?: string | null
+  authorization_code?: string | null
+  payment_notes?: string | null
+  payment_verified_at?: string | null
   created_at: string
   items: SaleItem[]
   customer?: Customer
+}
+
+export interface PaymentDetailsDto {
+  mp_payment_id?: string
+  mp_payment_status?: string
+  payer_name?: string
+  payer_email?: string
+  transfer_voucher?: string
+  transfer_origin?: string
+  card_last_digits?: string
+  card_brand?: string
+  authorization_code?: string
+  payment_notes?: string
 }
 
 export interface CreateSaleItemDto {
@@ -58,5 +92,23 @@ export interface CreateSaleDto {
   branch_id: string
   customer_id?: string
   payment_method: PaymentMethod
+  payment_status?: PaymentStatus
+  payment_details?: PaymentDetailsDto
   items: CreateSaleItemDto[]
 }
+
+export interface ListSalesQuery {
+  page?: number
+  limit?: number
+  payment_status?: PaymentStatus
+  start_date?: string
+  end_date?: string
+}
+
+export interface SalesListResponse {
+  data: Sale[]
+  total: number
+  page: number
+  limit: number
+}
+

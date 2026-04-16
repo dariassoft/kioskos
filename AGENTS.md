@@ -13,9 +13,10 @@
 | **Fase 3** — POS, Clientes, Caja | ✅ **COMPLETA** | Terminal POS, Fiados, CashRegister |
 | **Fase 4** — Compras y Contabilidad | ✅ **COMPLETA** | Proveedores, OC, Asientos automáticos |
 | **Fase 5** — BI y Reportes | ✅ **COMPLETA** | Dashboard, PDF/Excel, Recharts |
-| **Fase 6** — SuperAdmin Panel Completo | 🔄 **EN CURSO** | Billing, Suscripciones, Pagos — VER PLAN ABAJO |
-| **Fase 7** — Gestión de Sucursales y Usuarios | 🔲 **PENDIENTE** | CRUD Branches, Usuarios por Sucursal, Settings |
-| **Fase 8** — Hardening y Deploy VPS | 🔲 **PENDIENTE** | Migraciones, CI/CD, SSL, Backups, Git Deploy |
+| **Fase 6** — SuperAdmin Panel Completo | ✅ **COMPLETA** | Billing, Suscripciones, Pagos, Planes, MRR |
+| **Fase 7** — Gestión de Sucursales y Usuarios | ✅ **COMPLETA** | CRUD Branches, Usuarios por Sucursal, Settings |
+| **Fase 8** — Hardening y Deploy VPS | ✅ **COMPLETA** | Migraciones, CI/CD, SSL, Backups, Git Deploy |
+| **Fase 9** — Facturación Electrónica AFIP | ✅ **COMPLETA** | Credenciales encriptadas, Facturas A/B/C, CAE, Testing |
 
 ---
 
@@ -110,8 +111,13 @@ frontend/src/
   ✅ pages/customers/CustomersPage.tsx (Fiados, límites de crédito, pagos)
   ✅ pages/accounting/AccountingPage.tsx (Libro Diario)
   ✅ pages/purchases/PurchasesPage.tsx (Órdenes y Proveedores)
-  ✅ pages/superadmin/SuperAdminDashboard.tsx
-  ✅ pages/superadmin/TenantsPage.tsx
+   ✅ pages/superadmin/SuperAdminDashboard.tsx  (MRR, gráfico ingresos, alertas vencimiento)
+   ✅ pages/superadmin/TenantsPage.tsx          (lista + activar/suspender)
+   ✅ pages/superadmin/BillingPage.tsx          ← NUEVO Fase 6 (historial pagos + registrar pago)
+   ✅ pages/superadmin/SubscriptionsPage.tsx    ← NUEVO Fase 6 (gestión suscripciones + cambiar plan)
+   ✅ pages/superadmin/PlansPage.tsx            ← NUEVO Fase 6 (CRUD planes con features toggle)
+   ✅ pages/afip/AfipInvoicesPage.tsx           ← NUEVO Fase 9 (listado de facturas electrónicas)
+   ✅ pages/settings/tabs/AfipTab.tsx           ← NUEVO Fase 9 (configuración AFIP en Settings)
 ```
 
 ### ⚙️ Decisiones técnicas tomadas en Fase 2
@@ -121,6 +127,18 @@ frontend/src/
 3. **`quickSearch` endpoint** en inventario para uso exclusivo del POS: busca por nombre, EAN o código interno, devuelve precio por lista default.
 4. **Docker compose usa `target: development`** en el servicio `client` para evitar el build stage (Vite) dentro del contenedor.
 5. **`InventoryListener` inyecta `NotificationsGateway`** directamente — `NotificationsModule` exporta el Gateway para poder importarlo en `InventoryModule`.
+
+### 🔐 Decisiones técnicas tomadas en Fase 9 (Facturación Electrónica AFIP)
+
+1. **Encriptación AES-256-CBC:** Todos los datos sensibles AFIP (CUIT, certificados, claves, tokens) se almacenan encriptados en la DB usando una clave derivada con `scrypt` desde `AFIP_ENCRYPTION_SECRET`.
+2. **SDK @afipsdk/afip.js:** Se usa el SDK oficial de AfipSDK para comunicación con los servicios WSAA y WSFEv1 de AFIP.
+3. **Dos modos de autenticación:**
+   - `access_token` (recomendado para simplicidad, token gratuito de afipsdk.com)
+   - `certificate` (avanzado, requiere certificado .crt + clave .key de AFIP)
+4. **Determinación automática del tipo de comprobante:** Monotributista siempre emite Factura C, Responsable Inscripto emite A (si receptor tiene CUIT) o B (consumidor final).
+5. **Modo homologación:** Por defecto `production_mode: false` para testing en ambiente de AFIP sin validez fiscal. Solo se activa producción cuando el usuario lo confirma explícitamente.
+6. **Feature por plan:** El módulo `electronic_invoicing` se agregó al JSON `features` de los planes Negocio y Profesional. El servicio valida con `BillingService.isFeatureEnabled()` antes de cada operación.
+7. **Persistencia de respuesta AFIP completa:** El campo `afip_response` (JSON) almacena toda la respuesta de AFIP para auditoría y debugging.
 
 ---
 
@@ -1202,7 +1220,7 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 
 ---
 
-*Última actualización: Abril 2026 | Versión del documento: 2.0 — Fase 2 completada*
+*Última actualización: Abril 2026 | Versión del documento: 8.0 — Fase 8 completada*
 *Basado en los documentos de planificación 01 al 08 del proyecto Kioskos & Despenzas.*
 
 ---
@@ -1216,3 +1234,8 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 3.0 | Abr 2026 | Fase 3 completada: POS Terminal, Clientes (Fiados) y Caja Registradora |
 | 4.0 | Abr 2026 | Fase 4 completada: Compras, Proveedores y Contabilidad |
 | 5.0 | Abr 2026 | Fase 5 completada: Intelligence, Dashboard y Reportes PDF |
+| 6.0 | Abr 2026 | Fase 6 completada: SuperAdmin Panel — Billing, Suscripciones, Planes, MRR |
+| 7.0 | Abr 2026 | Fase 7 completada: Settings — CRUD Sucursales, Usuarios, Perfil del Negocio |
+| 8.0 | Abr 2026 | Fase 8 completada: Hardening — CI/CD GitHub Actions, docker-compose.prod, SSL Traefik, Backups |
+| 6.0 | Abr 2026 | Fase 6 completada: SuperAdmin Panel — Billing, Suscripciones, Planes, MRR |
+| 7.0 | Abr 2026 | Fase 7 completada: Settings — CRUD Sucursales, Usuarios, Perfil del Negocio |

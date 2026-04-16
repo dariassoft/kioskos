@@ -1,15 +1,15 @@
 import {
-  Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, Query, UseGuards, HttpCode, HttpStatus,
-  Request
+  Controller, Get, Post, Patch,
+  Body, Param, Query, UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 import { SalesService } from './sales.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles, UserRole } from '../common/decorators/roles.decorator';
-import { GetTenantId } from '../common/decorators/get-tenant.decorator';
+import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
+import { RolesGuard } from '@common/guards/roles.guard';
+import { Roles, UserRole } from '@common/decorators/roles.decorator';
+import { GetTenantId } from '@common/decorators/get-tenant.decorator';
 
 import {
   CreateSaleDto,
@@ -17,6 +17,7 @@ import {
   CloseCashRegisterDto,
   CreateCustomerDto,
   UpdateCustomerDto,
+  ListSalesQueryDto,
 } from './dto/sales.dto';
 
 @ApiTags('sales')
@@ -70,6 +71,16 @@ export class SalesController {
   // VENTAS (POS)
   // ==========================================
 
+  @Get()
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @ApiOperation({ summary: 'Listar ventas del negocio con filtros de estado y fecha' })
+  listSales(
+    @GetTenantId() tenantId: string,
+    @Query() query: ListSalesQueryDto,
+  ) {
+    return this.salesService.listSales(tenantId, query);
+  }
+
   @Post()
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
   @ApiOperation({ summary: 'Registrar una nueva venta y descontar stock' })
@@ -79,6 +90,16 @@ export class SalesController {
     @Request() req: any,
   ) {
     return this.salesService.createSale(dto, tenantId, req.user.id);
+  }
+
+  @Patch(':id/verify-payment')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Marcar como confirmado un pago pendiente (transferencia, QR o link)' })
+  verifySalePayment(
+    @Param('id') id: string,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.salesService.verifySale(id, tenantId);
   }
 
   // ==========================================

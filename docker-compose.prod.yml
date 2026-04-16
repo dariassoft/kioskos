@@ -5,16 +5,14 @@ services:
     image: mysql:8.0
     container_name: kioskos_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE:-kioskos_db}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./mysql/data:/var/lib/mysql
     networks:
-      - kioskos_net
-      # Se asume que web_proxy es la red de traefik
-      - web_proxy
+      - internal_network
     restart: always
 
   adminer:
@@ -23,55 +21,58 @@ services:
     environment:
       - ADMINER_DEFAULT_SERVER=kioskos_mysql
     restart: always
+    expose:
+      - "80"
     networks:
-      - kioskos_net
+      - dokploy-network
+      - internal_network
     labels:
       - "traefik.enable=true"
-      # Cambia este host por el dominio final para el db-manager
-      - "traefik.http.routers.kioskos-adminer.rule=Host(`db.tudominio.com`)"
-      - "traefik.http.routers.kioskos-adminer.priority=100"
-      - "traefik.http.services.kioskos-adminer.loadbalancer.server.port=8080"
-  
+      - "traefik.docker.network=dokploy-network"
+
   backend:
-    build: 
+    build:
       context: ./backend
-      # Usar Dockerfile normal ya que NestJS compila rápido o puedes hacer path a .prod
+      dockerfile: Dockerfile.prod
     container_name: kioskos_backend
     environment:
+      NODE_ENV: production
+      DB_TYPE: mysql
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_USER: ${DB_USERNAME}
+      DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_DATABASE:-kioskos_db}
-      DB_SYNCHRONIZE: "false" # Migraciones mandan
+      DB_DATABASE: ${DB_DATABASE:-kioskos_db}
+      DB_SYNCHRONIZE: "false"
+      DB_LOGGING: "false"
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      APP_PORT: 3000
     labels:
       - "traefik.enable=true"
-      # El path predominante es tu dominio (reemplazar "pos.tudominio.com")
-      - "traefik.http.routers.kioskos-backend.rule=Host(`pos.tudominio.com`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.kioskos-backend.entrypoints=web"
-      - "traefik.http.routers.kioskos-backend.priority=100"
-      - "traefik.http.services.kioskos-backend.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
     networks:
-      - kioskos_net
+      - dokploy-network
+      - internal_network
     depends_on:
       - mysql
     restart: always
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile.prod
     container_name: kioskos_frontend
+    expose:
+      - "3000"
+    networks:
+      - dokploy-network
+      - internal_network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.kioskos-frontend.rule=Host(`pos.tudominio.com`)"
-      - "traefik.http.routers.kioskos-frontend.entrypoints=web"
-      - "traefik.http.routers.kioskos-frontend.priority=1"
-      - "traefik.http.services.kioskos-frontend.loadbalancer.server.port=80"
-    networks:
-      - kioskos_net
+      - "traefik.docker.network=dokploy-network"
     depends_on:
       - backend
     restart: always
@@ -83,19 +84,20 @@ services:
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
       - MYSQL_USER=root
-      - MYSQL_PASS=${DB_PASSWORD}
+      - MYSQL_PASS=${DB_ROOT_PASSWORD}
       - MAX_BACKUPS=7
-      - CRON_TIME=0 4 * * * # 4:00 AM diario
+      - CRON_TIME=0 4 * * *
     volumes:
       - ./mysql/backups:/backup
     networks:
-      - kioskos_net
+      - dokploy-network
+      - internal_network
     depends_on:
       - mysql
     restart: always
 
 networks:
-  kioskos_net:
+  internal_network:
     driver: bridge
-  web_proxy:
+  dokploy-network:
     external: true

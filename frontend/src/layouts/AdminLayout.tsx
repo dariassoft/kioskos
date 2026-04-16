@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@store/auth.store'
 import { useBranchStore } from '@store/branch.store'
+import { useBranches } from '@hooks/useSettings'
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Truck,
   BookOpen, ChevronLeft, ChevronRight,
-  LogOut, Store, Bell, Menu, UserCircle, Moon, Sun
+  LogOut, Store, Bell, Menu, UserCircle, Moon, Sun, Settings, FileText
 } from 'lucide-react'
 
 const navItems = [
@@ -15,6 +16,8 @@ const navItems = [
   { to: '/customers', icon: Users, label: 'Clientes / Fiados' },
   { to: '/purchases', icon: Truck, label: 'Compras' },
   { to: '/accounting', icon: BookOpen, label: 'Contabilidad' },
+  { to: '/afip/invoices', icon: FileText, label: 'Facturas ARCA' },
+  { to: '/settings', icon: Settings, label: 'Configuración' },
 ]
 
 export default function AdminLayout() {
@@ -23,6 +26,9 @@ export default function AdminLayout() {
   const { user, logout } = useAuthStore()
   const { activeBranch } = useBranchStore()
   const navigate = useNavigate()
+
+  // Carga las sucursales y auto-selecciona la principal si no hay ninguna activa
+  useBranches()
 
   const handleLogout = () => {
     logout()

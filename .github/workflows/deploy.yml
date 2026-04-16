@@ -1,0 +1,167 @@
+name: 🚀 Deploy — Kioskos & Despenzas
+
+on:
+  push:
+    branches:
+      - main       # Producción → deploy automático
+      - master     # Alias de main (por si el repo usa master)
+  workflow_dispatch:  # Trigger manual desde GitHub UI
+
+# ==========================================
+# VARIABLES GLOBALES
+# ==========================================
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ${{ github.repository_owner }}/kioskos-backend
+  IMAGE_FRONTEND: ${{ github.repository_owner }}/kioskos-frontend
+
+jobs:
+  # ==========================================
+  # JOB 1: Verificar calidad del código
+  # ==========================================
+  lint-and-type-check:
+    name: 🔍 Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Instalar deps backend
+        working-directory: backend
+        run: npm ci
+
+      - name: Type check backend
+        working-directory: backend
+        run: npx tsc --noEmit
+
+      - name: Instalar deps frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Type check frontend
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+  # ==========================================
+  # JOB 2: Build y push de imágenes Docker
+  # ==========================================
+  build-and-push:
+    name: 🐳 Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: lint-and-type-check
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Login al GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extraer metadata para backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BACKEND }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build y push imagen Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extraer metadata para frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_FRONTEND }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build y push imagen Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # JOB 3: Deploy al VPS por SSH
+  # ==========================================
+  deploy-vps:
+    name: 🖥️ Deploy al VPS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Deploy por SSH al VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "📁 Accediendo al directorio del proyecto..."
+            cd ${{ secrets.VPS_PROJECT_PATH }}
+
+            echo "🔄 Actualizando código fuente..."
+            git pull origin main || git pull origin master
+
+            echo "🔐 Login al registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            echo "📥 Descargando imágenes actualizadas..."
+            docker compose -f docker-compose.prod.yml pull
+
+            echo "🔄 Reiniciando servicios..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "🗄️ Ejecutando migraciones TypeORM..."
+            docker compose -f docker-compose.prod.yml exec -T backend node dist/database/run-migrations.js || true
+
+            echo "🧹 Limpiando imágenes antiguas..."
+            docker image prune -f
+
+            echo "✅ Deploy completado exitosamente!"
+

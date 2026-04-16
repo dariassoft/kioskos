@@ -1,7 +1,7 @@
 import apiClient from '@api/client'
-import type { Customer, CashRegister, Sale, CreateSaleDto } from './sales.types'
+import type { Customer, CashRegister, Sale, CreateSaleDto, ListSalesQuery, SalesListResponse } from './sales.types'
 
-export const salesApi = {
+export default {
   // ==========================================
   // CAJA REGISTRADORA
   // ==========================================
@@ -34,6 +34,16 @@ export const salesApi = {
     return res.data
   },
 
+  verifySalePayment: async (id: string): Promise<Sale> => {
+    const res = await apiClient.patch(`/sales/${id}/verify-payment`)
+    return res.data
+  },
+
+  listSales: async (query: ListSalesQuery = {}): Promise<SalesListResponse> => {
+    const res = await apiClient.get('/sales', { params: query })
+    return res.data
+  },
+
   // ==========================================
   // CLIENTES (Customers / Fiados)
   // ==========================================
@@ -58,3 +68,5 @@ export const salesApi = {
     return res.data
   },
 }
+
+

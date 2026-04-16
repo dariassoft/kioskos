@@ -14,6 +14,8 @@ import { AccountingModule } from './accounting/accounting.module';
 import { PurchasesModule } from './purchases/purchases.module';
 import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SettingsModule } from './settings/settings.module';
+import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
 import { TenantMiddleware } from './tenants/tenant.middleware';
 
 @Module({
@@ -57,6 +59,8 @@ import { TenantMiddleware } from './tenants/tenant.middleware';
     PurchasesModule,
     ReportsModule,
     NotificationsModule,
+    SettingsModule,
+    ElectronicInvoicingModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -64,7 +68,13 @@ export class AppModule implements NestModule {
     consumer
       .apply(TenantMiddleware)
       .exclude(
-        'api/v1/auth/(.*)', // Login y registro son públicos
+        'api/v1/auth/(.*)',            // Login y registro son públicos
+        'api/v1/checkout/plans',       // Planes públicos para la landing
+        'api/v1/checkout/start',       // Iniciar checkout (pre-pago, sin auth)
+        'api/v1/checkout/status/(.*)', // Estado del pago (polling público)
+        'api/v1/checkout/confirm-transfer', // Confirmar transferencia (público)
+        'api/v1/checkout/webhook/(.*)', // Webhooks de MercadoPago (sin tenant)
+        'api/v1/checkout/sandbox-info', // Info de testing (público)
       )
       .forRoutes('*');     // Aplicar a todas las demás rutas
   }

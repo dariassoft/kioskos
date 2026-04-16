@@ -2,6 +2,20 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import fs from 'fs'
+
+let buildOutDir = 'dist'
+try {
+  const preferredOutDir = path.resolve(__dirname, 'dist')
+  const preferredAssetsDir = path.resolve(preferredOutDir, 'assets')
+
+  fs.accessSync(preferredOutDir, fs.constants.W_OK)
+  if (fs.existsSync(preferredAssetsDir)) {
+    fs.accessSync(preferredAssetsDir, fs.constants.W_OK)
+  }
+} catch {
+  buildOutDir = 'dist-local'
+}
 
 export default defineConfig({
   plugins: [
@@ -52,5 +66,8 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  build: {
+    outDir: buildOutDir,
   },
 })

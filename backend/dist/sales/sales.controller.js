@@ -34,8 +34,14 @@ let SalesController = class SalesController {
     closeCashRegister(branchId, dto, tenantId, req) {
         return this.salesService.closeCashRegister(branchId, dto, tenantId, req.user.id);
     }
+    listSales(tenantId, query) {
+        return this.salesService.listSales(tenantId, query);
+    }
     createSale(dto, tenantId, req) {
         return this.salesService.createSale(dto, tenantId, req.user.id);
+    }
+    verifySalePayment(id, tenantId) {
+        return this.salesService.verifySale(id, tenantId);
     }
     findAllCustomers(tenantId) {
         return this.salesService.findAllCustomers(tenantId);
@@ -88,6 +94,16 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], SalesController.prototype, "closeCashRegister", null);
 __decorate([
+    (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),
+    (0, swagger_1.ApiOperation)({ summary: 'Listar ventas del negocio con filtros de estado y fecha' }),
+    __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, sales_dto_1.ListSalesQueryDto]),
+    __metadata("design:returntype", void 0)
+], SalesController.prototype, "listSales", null);
+__decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),
     (0, swagger_1.ApiOperation)({ summary: 'Registrar una nueva venta y descontar stock' }),
@@ -98,6 +114,16 @@ __decorate([
     __metadata("design:paramtypes", [sales_dto_1.CreateSaleDto, String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesController.prototype, "createSale", null);
+__decorate([
+    (0, common_1.Patch)(':id/verify-payment'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Marcar como confirmado un pago pendiente (transferencia, QR o link)' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], SalesController.prototype, "verifySalePayment", null);
 __decorate([
     (0, common_1.Get)('customers'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),

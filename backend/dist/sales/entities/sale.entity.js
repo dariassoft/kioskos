@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Sale = exports.SaleStatus = exports.PaymentMethod = void 0;
+exports.Sale = exports.SaleStatus = exports.PaymentStatus = exports.PaymentMethod = void 0;
 const typeorm_1 = require("typeorm");
 const base_entity_1 = require("../../common/base.entity");
 const customer_entity_1 = require("./customer.entity");
@@ -17,10 +17,19 @@ const sale_item_entity_1 = require("./sale-item.entity");
 var PaymentMethod;
 (function (PaymentMethod) {
     PaymentMethod["CASH"] = "cash";
-    PaymentMethod["CARD"] = "card";
+    PaymentMethod["DEBIT_CARD"] = "debit_card";
+    PaymentMethod["CREDIT_CARD"] = "credit_card";
     PaymentMethod["TRANSFER"] = "transfer";
+    PaymentMethod["QR_MERCADOPAGO"] = "qr_mercadopago";
+    PaymentMethod["LINK_MERCADOPAGO"] = "link_mercadopago";
     PaymentMethod["CREDIT_CLIENT"] = "credit_client";
 })(PaymentMethod || (exports.PaymentMethod = PaymentMethod = {}));
+var PaymentStatus;
+(function (PaymentStatus) {
+    PaymentStatus["PENDING"] = "pending";
+    PaymentStatus["CONFIRMED"] = "confirmed";
+    PaymentStatus["FAILED"] = "failed";
+})(PaymentStatus || (exports.PaymentStatus = PaymentStatus = {}));
 var SaleStatus;
 (function (SaleStatus) {
     SaleStatus["COMPLETED"] = "completed";
@@ -51,9 +60,57 @@ __decorate([
     __metadata("design:type", String)
 ], Sale.prototype, "payment_method", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.CONFIRMED }),
+    __metadata("design:type", String)
+], Sale.prototype, "payment_status", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'enum', enum: SaleStatus, default: SaleStatus.COMPLETED }),
     __metadata("design:type", String)
 ], Sale.prototype, "status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 100, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "mp_payment_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "mp_payment_status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 200, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "payer_name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 200, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "payer_email", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 100, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "transfer_voucher", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 100, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "transfer_origin", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 4, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "card_last_digits", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "card_brand", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "authorization_code", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "payment_notes", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "payment_verified_at", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, (customer) => customer.sales, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'customer_id' }),

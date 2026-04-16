@@ -1,4 +1,4 @@
-import { PaymentMethod } from '../entities/sale.entity';
+import { PaymentMethod, PaymentStatus } from '../entities/sale.entity';
 export declare class CreateCustomerDto {
     name: string;
     email?: string;
@@ -19,9 +19,30 @@ export declare class CreateSaleItemDto {
     quantity: number;
     unit_price: number;
 }
+export declare class PaymentDetailsDto {
+    mp_payment_id?: string;
+    mp_payment_status?: string;
+    payer_name?: string;
+    payer_email?: string;
+    transfer_voucher?: string;
+    transfer_origin?: string;
+    card_last_digits?: string;
+    card_brand?: string;
+    authorization_code?: string;
+    payment_notes?: string;
+}
 export declare class CreateSaleDto {
     branch_id: string;
     customer_id?: string;
     payment_method: PaymentMethod;
+    payment_status?: PaymentStatus;
     items: CreateSaleItemDto[];
+    payment_details?: PaymentDetailsDto;
+}
+export declare class ListSalesQueryDto {
+    page?: number;
+    limit?: number;
+    payment_status?: PaymentStatus;
+    start_date?: string;
+    end_date?: string;
 }

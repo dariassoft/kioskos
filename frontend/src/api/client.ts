@@ -41,7 +41,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expirado o inválido → logout automático
       useAuthStore.getState().logout()
-      window.location.href = '/auth/login'
+      window.location.href = '/login'
     }
     return Promise.reject(error)
   },

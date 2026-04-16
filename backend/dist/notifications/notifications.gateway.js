@@ -16,6 +16,13 @@ exports.NotificationsGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 let NotificationsGateway = class NotificationsGateway {
+    constructor() {
+        this.publicApi = {
+            sendLowStockAlert: this.sendLowStockAlert.bind(this),
+            sendPendingPaymentAlert: this.sendPendingPaymentAlert.bind(this),
+            sendPendingPaymentResolved: this.sendPendingPaymentResolved.bind(this),
+        };
+    }
     handleConnection(client) {
         console.log(`[WS] Cliente conectado: ${client.id}`);
     }
@@ -29,23 +36,26 @@ let NotificationsGateway = class NotificationsGateway {
         }
     }
     sendLowStockAlert(tenantId, data) {
+        this.publicApi;
         this.server.to(`tenant_${tenantId}`).emit('low_stock_alert', {
             type: 'low_stock',
             ...data,
             timestamp: new Date().toISOString(),
         });
     }
-    sendNewSaleNotification(tenantId, data) {
-        this.server.to(`tenant_${tenantId}`).emit('new_sale', {
-            type: 'new_sale',
+    sendPendingPaymentAlert(data) {
+        this.publicApi;
+        this.server.emit('pending_payment_alert', {
+            type: 'pending_payment_alert',
             ...data,
             timestamp: new Date().toISOString(),
         });
     }
-    sendSubscriptionAlert(tenantId, daysRemaining) {
-        this.server.to(`tenant_${tenantId}`).emit('subscription_alert', {
-            type: 'subscription_expiring',
-            daysRemaining,
+    sendPendingPaymentResolved(data) {
+        this.publicApi;
+        this.server.emit('pending_payment_resolved', {
+            type: 'pending_payment_resolved',
+            ...data,
             timestamp: new Date().toISOString(),
         });
     }

@@ -2,6 +2,7 @@ import { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 export declare class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     server: Server;
+    private readonly publicApi;
     handleConnection(client: Socket): void;
     handleDisconnect(client: Socket): void;
     handleJoinTenant(data: {
@@ -13,9 +14,16 @@ export declare class NotificationsGateway implements OnGatewayConnection, OnGate
         branchId: string;
         minAlert?: number;
     }): void;
-    sendNewSaleNotification(tenantId: string, data: {
-        saleId: string;
-        total: number;
+    sendPendingPaymentAlert(data: {
+        pendingId: string;
+        businessName: string;
+        ownerEmail: string;
+        paymentMethod: string;
+        amount: number;
     }): void;
-    sendSubscriptionAlert(tenantId: string, daysRemaining: number): void;
+    sendPendingPaymentResolved(data: {
+        pendingId: string;
+        businessName: string;
+        paymentMethod: string;
+    }): void;
 }

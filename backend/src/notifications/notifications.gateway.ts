@@ -33,6 +33,12 @@ export class NotificationsGateway
   @WebSocketServer()
   server: Server;
 
+  private readonly publicApi = {
+    sendLowStockAlert: this.sendLowStockAlert.bind(this),
+    sendPendingPaymentAlert: this.sendPendingPaymentAlert.bind(this),
+    sendPendingPaymentResolved: this.sendPendingPaymentResolved.bind(this),
+  };
+
   handleConnection(client: Socket) {
     console.log(`[WS] Cliente conectado: ${client.id}`);
   }
@@ -67,6 +73,7 @@ export class NotificationsGateway
     tenantId: string,
     data: { productName: string; currentStock: number; branchId: string; minAlert?: number },
   ) {
+    this.publicApi;
     this.server.to(`tenant_${tenantId}`).emit('low_stock_alert', {
       type: 'low_stock',
       ...data,
@@ -75,24 +82,36 @@ export class NotificationsGateway
   }
 
   /**
-   * Notificación de nueva venta
+   * Alerta global para SuperAdmin cuando aparece un pago pendiente.
    */
-  sendNewSaleNotification(tenantId: string, data: { saleId: string; total: number }) {
-    this.server.to(`tenant_${tenantId}`).emit('new_sale', {
-      type: 'new_sale',
+  sendPendingPaymentAlert(data: {
+    pendingId: string;
+    businessName: string;
+    ownerEmail: string;
+    paymentMethod: string;
+    amount: number;
+  }) {
+    this.publicApi;
+    this.server.emit('pending_payment_alert', {
+      type: 'pending_payment_alert',
       ...data,
       timestamp: new Date().toISOString(),
-    });
+    } as never);
   }
 
   /**
-   * Alerta de suscripción por vencer
+   * Alerta global para SuperAdmin cuando un pago pendiente fue resuelto.
    */
-  sendSubscriptionAlert(tenantId: string, daysRemaining: number) {
-    this.server.to(`tenant_${tenantId}`).emit('subscription_alert', {
-      type: 'subscription_expiring',
-      daysRemaining,
+  sendPendingPaymentResolved(data: {
+    pendingId: string;
+    businessName: string;
+    paymentMethod: string;
+  }) {
+    this.publicApi;
+    this.server.emit('pending_payment_resolved', {
+      type: 'pending_payment_resolved',
+      ...data,
       timestamp: new Date().toISOString(),
-    });
+    } as never);
   }
 }

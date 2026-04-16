@@ -66,9 +66,9 @@ ON DUPLICATE KEY UPDATE id=id;
 -- 9. Planes de suscripcion
 INSERT INTO plans (id, name, description, price_monthly, max_branches, max_users, features, is_active)
 VALUES
-  ('plan-emprendedor-001', 'Emprendedor', 'Plan basico para arrancar', 0.00, 1, 1, '{"accounting":false,"multisite":false,"reports_history":false,"pdf_export":false,"email_alerts":false}', 1),
-  ('plan-negocio-001', 'Negocio', 'Para comercios en crecimiento', 4999.00, 1, 3, '{"accounting":true,"multisite":false,"reports_history":true,"pdf_export":true,"email_alerts":false}', 1),
-  ('plan-profesional-001', 'Profesional', 'Para cadenas y profesionales', 9999.00, 5, 99, '{"accounting":true,"multisite":true,"reports_history":true,"pdf_export":true,"email_alerts":true}', 1)
+  ('plan-emprendedor-001', 'Emprendedor', 'Plan basico para arrancar', 0.00, 1, 1, '{"accounting":false,"multisite":false,"reports_history":false,"pdf_export":false,"email_alerts":false,"electronic_invoicing":false}', 1),
+  ('plan-negocio-001', 'Negocio', 'Para comercios en crecimiento', 4999.00, 1, 3, '{"accounting":true,"multisite":false,"reports_history":true,"pdf_export":true,"email_alerts":false,"electronic_invoicing":true}', 1),
+  ('plan-profesional-001', 'Profesional', 'Para cadenas y profesionales', 9999.00, 5, 99, '{"accounting":true,"multisite":true,"reports_history":true,"pdf_export":true,"email_alerts":true,"electronic_invoicing":true}', 1)
 ON DUPLICATE KEY UPDATE id=id;
 
 -- 10. Suscripcion del Demo al plan Negocio

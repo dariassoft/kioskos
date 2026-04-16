@@ -10,6 +10,7 @@ exports.AccountingModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const accounting_ledger_entity_1 = require("./entities/accounting-ledger.entity");
+const sale_entity_1 = require("../sales/entities/sale.entity");
 const accounting_service_1 = require("./accounting.service");
 const accounting_controller_1 = require("./accounting.controller");
 const accounting_listener_1 = require("./accounting.listener");
@@ -18,7 +19,7 @@ let AccountingModule = class AccountingModule {
 exports.AccountingModule = AccountingModule;
 exports.AccountingModule = AccountingModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([accounting_ledger_entity_1.AccountingLedger])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([accounting_ledger_entity_1.AccountingLedger, sale_entity_1.Sale])],
         controllers: [accounting_controller_1.AccountingController],
         providers: [accounting_service_1.AccountingService, accounting_listener_1.AccountingListener],
     })

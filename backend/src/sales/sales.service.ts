@@ -5,13 +5,14 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { Sale, PaymentMethod, SaleStatus } from './entities/sale.entity';
+import { Sale, PaymentMethod, PaymentStatus, SaleStatus } from './entities/sale.entity';
 import { SaleItem } from './entities/sale-item.entity';
 import { CashRegister } from './entities/cash-register.entity';
 import { Customer } from './entities/customer.entity';
+import { Branch } from '@inventory/entities/branch.entity';
 
 import {
   CreateSaleDto,
@@ -19,10 +20,11 @@ import {
   CloseCashRegisterDto,
   CreateCustomerDto,
   UpdateCustomerDto,
+  ListSalesQueryDto,
 } from './dto/sales.dto';
 
-import { InventoryService } from '../inventory/inventory.service';
-import { SaleCompletedEvent } from './events/sale-completed.event';
+import { InventoryService } from '@inventory/inventory.service';
+import { SaleCompletedEvent } from '@sales/events/sale-completed.event';
 
 @Injectable()
 export class SalesService {
@@ -35,6 +37,8 @@ export class SalesService {
     private readonly cashRegisterRepo: Repository<CashRegister>,
     @InjectRepository(Customer)
     private readonly customerRepo: Repository<Customer>,
+    @InjectRepository(Branch)
+    private readonly branchRepo: Repository<Branch>,
     private readonly inventoryService: InventoryService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -44,6 +48,8 @@ export class SalesService {
   // ==========================================
 
   async openCashRegister(dto: OpenCashRegisterDto, tenantId: string, userId: string): Promise<CashRegister> {
+    await this.assertBranchExists(dto.branch_id, tenantId);
+
     const existingOpen = await this.cashRegisterRepo.findOne({
       where: {
         branch_id: dto.branch_id,
@@ -74,6 +80,8 @@ export class SalesService {
     tenantId: string,
     userId: string,
   ): Promise<CashRegister> {
+    await this.assertBranchExists(branchId, tenantId);
+
     const activeRegister = await this.cashRegisterRepo.findOne({
       where: {
         branch_id: branchId,
@@ -95,6 +103,7 @@ export class SalesService {
   }
 
   async getActiveRegister(tenantId: string, branchId: string, userId: string): Promise<CashRegister | null> {
+    if (!branchId) return null;
     return this.cashRegisterRepo.findOne({
       where: {
         branch_id: branchId,
@@ -105,11 +114,37 @@ export class SalesService {
     });
   }
 
+  /**
+   * Marca una venta como verificada (para transferencias pendientes).
+   * Solo el admin/manager puede verificar pagos.
+   */
+  async verifySale(saleId: string, tenantId: string): Promise<Sale> {
+    const sale = await this.saleRepo.findOne({
+      where: { id: saleId, tenant_id: tenantId },
+    });
+
+    if (!sale) {
+      throw new NotFoundException('Venta no encontrada');
+    }
+
+    if (sale.payment_verified_at) {
+      throw new BadRequestException('Esta venta ya fue verificada');
+    }
+
+    sale.payment_status = PaymentStatus.CONFIRMED;
+    sale.payment_verified_at = new Date();
+    sale.status = SaleStatus.COMPLETED;
+
+    return this.saleRepo.save(sale);
+  }
+
   // ==========================================
   // VENTAS (POS)
   // ==========================================
 
   async createSale(dto: CreateSaleDto, tenantId: string, userId: string): Promise<Sale> {
+    await this.assertBranchExists(dto.branch_id, tenantId);
+
     // 1. Validar que la caja esté abierta
     const activeRegister = await this.getActiveRegister(tenantId, dto.branch_id, userId);
     if (!activeRegister) {
@@ -128,6 +163,8 @@ export class SalesService {
 
     // 3. Crear venta y calcular el total
     const total = dto.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unit_price)), 0);
+
+    const paymentStatus = this.resolvePaymentStatus(dto.payment_method, dto.payment_status, dto.payment_details?.mp_payment_status);
 
     // 4. Si es crédito, validar límite de cliente y acumular deuda
     if (dto.payment_method === PaymentMethod.CREDIT_CLIENT && customer) {
@@ -152,8 +189,21 @@ export class SalesService {
       user_id: userId,
       customer_id: dto.customer_id,
       payment_method: dto.payment_method,
+      payment_status: paymentStatus,
       total: total,
       status: SaleStatus.COMPLETED,
+      // Agregar detalles de pago si están presentes
+      mp_payment_id: dto.payment_details?.mp_payment_id || null,
+      mp_payment_status: dto.payment_details?.mp_payment_status || null,
+      payer_name: dto.payment_details?.payer_name || null,
+      payer_email: dto.payment_details?.payer_email || null,
+      transfer_voucher: dto.payment_details?.transfer_voucher || null,
+      transfer_origin: dto.payment_details?.transfer_origin || null,
+      card_last_digits: dto.payment_details?.card_last_digits || null,
+      card_brand: dto.payment_details?.card_brand || null,
+      authorization_code: dto.payment_details?.authorization_code || null,
+      payment_notes: dto.payment_details?.payment_notes || null,
+      payment_verified_at: null,
     });
 
     const savedSale = await this.saleRepo.save(sale);
@@ -186,7 +236,40 @@ export class SalesService {
       new SaleCompletedEvent(tenantId, savedSale.id, total, dto.payment_method, dto.branch_id, userId),
     );
 
+    if (paymentStatus === PaymentStatus.CONFIRMED) {
+      await this.verifySale(savedSale.id, tenantId);
+    }
+
     return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] }) as Promise<Sale>;
+  }
+
+  async listSales(
+    tenantId: string,
+    query: ListSalesQueryDto,
+  ): Promise<{ data: Sale[]; total: number; page: number; limit: number }> {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const qb = this.saleRepo
+      .createQueryBuilder('sale')
+      .leftJoinAndSelect('sale.items', 'items')
+      .leftJoinAndSelect('sale.customer', 'customer')
+      .where('sale.tenant_id = :tenantId', { tenantId });
+
+    if (query.payment_status) {
+      qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });
+    }
+
+    if (query.start_date && query.end_date) {
+      qb.andWhere('DATE(sale.created_at) BETWEEN :startDate AND :endDate', {
+        startDate: query.start_date,
+        endDate: query.end_date,
+      });
+    }
+
+    qb.orderBy('sale.created_at', 'DESC').skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, page, limit };
   }
 
   // ==========================================
@@ -221,11 +304,54 @@ export class SalesService {
   async payDebt(id: string, amount: number, tenantId: string): Promise<Customer> {
     const customer = await this.findOneCustomer(id, tenantId);
     if (amount <= 0) throw new BadRequestException('El monto debe ser mayor a 0');
-    
+
     let newDebt = Number(customer.current_debt) - amount;
     if (newDebt < 0) newDebt = 0; // Prevenir deuda negativa para simplificar por ahora
 
     await this.customerRepo.update({ id, tenant_id: tenantId }, { current_debt: newDebt });
     return this.findOneCustomer(id, tenantId);
   }
+
+  // ==========================================
+  // HELPERS PRIVADOS
+  // ==========================================
+
+  private async assertBranchExists(branchId: string, tenantId: string): Promise<Branch> {
+    const branch = await this.branchRepo.findOne({ where: { id: branchId, tenant_id: tenantId } });
+    if (!branch) {
+      throw new BadRequestException('La sucursal seleccionada no existe o no pertenece a tu negocio');
+    }
+    return branch;
+  }
+
+  /**
+   * Determina si un método de pago debe auto-verificarse inmediatamente.
+   * Efectivo, débito, crédito y fiado se verifican al momento.
+   * Transferencias/QR/links de MercadoPago requieren verificación manual.
+   */
+  private shouldAutoVerify(paymentMethod: PaymentMethod): boolean {
+    const autoVerifyMethods = [
+      PaymentMethod.CASH,
+      PaymentMethod.CREDIT_CLIENT,
+      PaymentMethod.DEBIT_CARD,
+      PaymentMethod.CREDIT_CARD,
+    ];
+    return autoVerifyMethods.includes(paymentMethod);
+  }
+
+  private resolvePaymentStatus(
+    paymentMethod: PaymentMethod,
+    explicitStatus?: PaymentStatus,
+    mpStatus?: string,
+  ): PaymentStatus {
+    if (explicitStatus) return explicitStatus;
+    if (mpStatus) {
+      const normalized = mpStatus.toLowerCase();
+      if (normalized === 'approved') return PaymentStatus.CONFIRMED;
+      if (normalized === 'rejected' || normalized === 'cancelled') return PaymentStatus.FAILED;
+      return PaymentStatus.PENDING;
+    }
+    return this.shouldAutoVerify(paymentMethod) ? PaymentStatus.CONFIRMED : PaymentStatus.PENDING;
+  }
+
 }

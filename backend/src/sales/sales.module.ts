@@ -5,6 +5,7 @@ import { Sale } from './entities/sale.entity';
 import { SaleItem } from './entities/sale-item.entity';
 import { CashRegister } from './entities/cash-register.entity';
 import { Customer } from './entities/customer.entity';
+import { Branch } from '../inventory/entities/branch.entity';
 
 import { SalesService } from './sales.service';
 import { SalesController } from './sales.controller';
@@ -13,7 +14,7 @@ import { InventoryModule } from '../inventory/inventory.module'; // Importante p
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Sale, SaleItem, CashRegister, Customer]),
+    TypeOrmModule.forFeature([Sale, SaleItem, CashRegister, Customer, Branch]),
     InventoryModule, // Inyectamos InventoryService desde su módulo
   ],
   controllers: [SalesController],

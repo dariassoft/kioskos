@@ -12,17 +12,28 @@ const typeorm_1 = require("@nestjs/typeorm");
 const plan_entity_1 = require("./entities/plan.entity");
 const subscription_entity_1 = require("./entities/subscription.entity");
 const billing_history_entity_1 = require("./entities/billing-history.entity");
+const pending_subscription_entity_1 = require("./entities/pending-subscription.entity");
 const billing_service_1 = require("./billing.service");
 const billing_controller_1 = require("./billing.controller");
+const checkout_service_1 = require("./checkout.service");
+const checkout_controller_1 = require("./checkout.controller");
+const tenant_entity_1 = require("../tenants/entities/tenant.entity");
+const user_entity_1 = require("../tenants/entities/user.entity");
+const notifications_module_1 = require("../notifications/notifications.module");
 let BillingModule = class BillingModule {
 };
 exports.BillingModule = BillingModule;
 exports.BillingModule = BillingModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([plan_entity_1.Plan, subscription_entity_1.Subscription, billing_history_entity_1.BillingHistory])],
-        controllers: [billing_controller_1.BillingController],
-        providers: [billing_service_1.BillingService],
-        exports: [billing_service_1.BillingService],
+        imports: [
+            notifications_module_1.NotificationsModule,
+            typeorm_1.TypeOrmModule.forFeature([
+                plan_entity_1.Plan, subscription_entity_1.Subscription, billing_history_entity_1.BillingHistory, pending_subscription_entity_1.PendingSubscription, tenant_entity_1.Tenant, user_entity_1.User,
+            ]),
+        ],
+        controllers: [billing_controller_1.BillingController, checkout_controller_1.CheckoutController],
+        providers: [billing_service_1.BillingService, checkout_service_1.CheckoutService],
+        exports: [billing_service_1.BillingService, checkout_service_1.CheckoutService],
     })
 ], BillingModule);
 //# sourceMappingURL=billing.module.js.map

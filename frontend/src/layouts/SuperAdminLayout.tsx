@@ -1,19 +1,50 @@
+import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@store/auth.store'
-import { LayoutDashboard, Users, CreditCard, LogOut, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Users, CreditCard, LogOut, ShieldCheck, RefreshCw, Layers, Clock3, Bell, BellOff, PlayCircle } from 'lucide-react'
+import checkoutApi from '@api/checkout.api'
+import { SuperAdminPendingRealtimeBridge, SUPERADMIN_PENDING_SOUND_STORAGE_KEY, playSoftNotificationSound } from '@hooks/useSuperAdminPendingRealtime'
 
 const superAdminNav = [
   { to: '/superadmin', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/superadmin/tenants', icon: Users, label: 'Negocios' },
+  { to: '/superadmin/subscriptions', icon: RefreshCw, label: 'Suscripciones' },
   { to: '/superadmin/billing', icon: CreditCard, label: 'Facturación' },
+  { to: '/superadmin/pending-payments', icon: Clock3, label: 'Pagos pendientes' },
+  { to: '/superadmin/plans', icon: Layers, label: 'Planes' },
 ]
 
 export default function SuperAdminLayout() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const stored = window.localStorage.getItem(SUPERADMIN_PENDING_SOUND_STORAGE_KEY)
+    return stored === null ? true : stored !== '0'
+  })
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ['checkout', 'manual-pending'],
+    queryFn: async () => (await checkoutApi.getManualPendingList()).length,
+    staleTime: 1000 * 30,
+  })
+
+  useEffect(() => {
+    window.localStorage.setItem(SUPERADMIN_PENDING_SOUND_STORAGE_KEY, soundEnabled ? '1' : '0')
+  }, [soundEnabled])
+
+  const handleToggleSound = () => {
+    setSoundEnabled((value) => {
+      const nextValue = !value
+      if (nextValue) {
+        playSoftNotificationSound()
+      }
+      return nextValue
+    })
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      <SuperAdminPendingRealtimeBridge />
       {/* Sidebar SuperAdmin — color diferenciado (slate oscuro) */}
       <aside className="w-60 flex flex-col bg-slate-900 border-r border-slate-700">
         <div className="p-5 border-b border-slate-700">
@@ -43,6 +74,11 @@ export default function SuperAdminLayout() {
             >
               <Icon className="w-4 h-4" />
               {label}
+              {to === '/superadmin/pending-payments' && pendingCount > 0 && (
+                <span className="ml-auto min-w-6 h-6 px-2 inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[11px] font-bold animate-pulse shadow-[0_0_0_0_rgba(245,158,11,0.45)]">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -65,6 +101,29 @@ export default function SuperAdminLayout() {
               <LogOut className="w-4 h-4" />
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={handleToggleSound}
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-pressed={soundEnabled}
+          >
+            {soundEnabled ? <Bell className="w-3.5 h-3.5 text-emerald-400" /> : <BellOff className="w-3.5 h-3.5 text-slate-400" />}
+            Sonido de alertas {soundEnabled ? 'activado' : 'desactivado'}
+          </button>
+
+          <button
+            type="button"
+            onClick={playSoftNotificationSound}
+            disabled={!soundEnabled}
+            className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 text-slate-300 hover:text-white hover:bg-slate-800"
+          >
+            <PlayCircle className="w-3.5 h-3.5" />
+            Probar sonido
+          </button>
+          <p className="mt-1.5 px-1 text-[11px] leading-4 text-slate-500">
+            Reproduce una alerta breve para verificar que el audio esté funcionando.
+          </p>
         </div>
       </aside>
 

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { BookOpen, Calendar, ArrowUpRight, ArrowDownRight, RefreshCcw, Download } from 'lucide-react';
+import { BookOpen, Calendar, ArrowUpRight, ArrowDownRight, RefreshCcw, Download, ShieldCheck } from 'lucide-react';
 import { useLedger } from '@hooks/useAccounting';
-import jsPDF from 'jspdf';
+import { useSalesList, useVerifySalePayment } from '@hooks/useSales';
+import { jsPDF as JsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function AccountingPage() {
@@ -9,6 +10,14 @@ export default function AccountingPage() {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]); // Hoy
 
   const { data: ledger = [], isLoading, refetch } = useLedger(startDate, endDate);
+  const { data: pendingSales = { data: [], total: 0, page: 1, limit: 20 }, isLoading: loadingPending, refetch: refetchPending } = useSalesList({
+    start_date: startDate,
+    end_date: endDate,
+    payment_status: 'pending',
+    page: 1,
+    limit: 20,
+  });
+  const verifyPayment = useVerifySalePayment();
 
   // Calcular totales
   const totalDebit = ledger.reduce((acc: number, entry: any) => acc + Number(entry.debit), 0);
@@ -16,14 +25,14 @@ export default function AccountingPage() {
   const balance = totalDebit - totalCredit; // Si es positivo, activo neto aumenta
 
   const handleExportPDF = () => {
-    const doc = new jsPDF();
+    const pdfDoc = new JsPDF();
 
-    doc.setFontSize(16);
-    doc.text('Libro Diario - Kioskos & Despenzas', 14, 20);
+    pdfDoc.setFontSize(16);
+    pdfDoc.text('Libro Diario - Kioskos & Despenzas', 14, 20);
 
-    doc.setFontSize(10);
-    doc.text(`Periodo: ${startDate} al ${endDate}`, 14, 28);
-    doc.text(`Balance Total: $${Math.abs(balance).toLocaleString('es-AR')} ${balance >= 0 ? '(Favor)' : '(Contra)'}`, 14, 34);
+    pdfDoc.setFontSize(10);
+    pdfDoc.text(`Periodo: ${startDate} al ${endDate}`, 14, 28);
+    pdfDoc.text(`Balance Total: $${Math.abs(balance).toLocaleString('es-AR')} ${balance >= 0 ? '(Favor)' : '(Contra)'}`, 14, 34);
 
     const tableColumn = ["Fecha", "Descripción", "Cuenta", "Debe", "Haber"];
     const tableRows = ledger.map((entry: any) => [
@@ -34,7 +43,7 @@ export default function AccountingPage() {
       Number(entry.credit) > 0 ? `$${Number(entry.credit).toLocaleString('es-AR')}` : '-'
     ]);
 
-    autoTable(doc, {
+    autoTable(pdfDoc, {
       head: [tableColumn],
       body: tableRows,
       startY: 40,
@@ -42,7 +51,12 @@ export default function AccountingPage() {
       headStyles: { fillColor: [79, 70, 229] },
     });
 
-    doc.save(`Libro_Diario_${startDate}_${endDate}.pdf`);
+    pdfDoc.save(`Libro_Diario_${startDate}_${endDate}.pdf`);
+  };
+
+  const handleConfirmPayment = async (saleId: string) => {
+    await verifyPayment.mutateAsync(saleId);
+    await Promise.all([refetch(), refetchPending()]);
   };
 
   return (
@@ -174,6 +188,72 @@ export default function AccountingPage() {
                       </td>
                       <td className="px-6 py-4 text-right font-bold text-muted-foreground">
                         {Number(entry.credit) > 0 ? `$${Number(entry.credit).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '-'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Pagos pendientes */}
+        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden animate-fade-in relative">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Pagos pendientes de acreditación</h2>
+              <p className="text-sm text-muted-foreground">Transferencias, QR o links que aún no fueron confirmados</p>
+            </div>
+            <button
+              onClick={() => refetchPending()}
+              className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-xl transition-colors text-sm font-medium"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Actualizar
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground font-bold">
+                <tr>
+                  <th className="px-6 py-4">Fecha</th>
+                  <th className="px-6 py-4">Método</th>
+                  <th className="px-6 py-4">Cliente / Pagador</th>
+                  <th className="px-6 py-4 text-right">Importe</th>
+                  <th className="px-6 py-4 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingPending ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">Cargando pagos pendientes...</td>
+                  </tr>
+                ) : pendingSales.data.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                      <ShieldCheck className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                      <p className="text-base font-medium">No hay pagos pendientes en este periodo</p>
+                    </td>
+                  </tr>
+                ) : (
+                  pendingSales.data.map((sale: any) => (
+                    <tr key={sale.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">{new Date(sale.created_at).toLocaleString('es-AR')}</td>
+                      <td className="px-6 py-4">{sale.payment_method.replace('_', ' ')}</td>
+                      <td className="px-6 py-4">
+                        <p className="font-medium text-foreground">{sale.customer?.name || sale.payer_name || 'Sin identificar'}</p>
+                        <p className="text-xs text-muted-foreground">{sale.mp_payment_id || sale.transfer_voucher || sale.transfer_origin || 'Sin referencia'}</p>
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-foreground">${Number(sale.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleConfirmPayment(sale.id)}
+                          disabled={verifyPayment.isPending}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold disabled:opacity-50"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                          Confirmar
+                        </button>
                       </td>
                     </tr>
                   ))

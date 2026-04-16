@@ -21,18 +21,21 @@ const sale_entity_1 = require("./entities/sale.entity");
 const sale_item_entity_1 = require("./entities/sale-item.entity");
 const cash_register_entity_1 = require("./entities/cash-register.entity");
 const customer_entity_1 = require("./entities/customer.entity");
+const branch_entity_1 = require("../inventory/entities/branch.entity");
 const inventory_service_1 = require("../inventory/inventory.service");
 const sale_completed_event_1 = require("./events/sale-completed.event");
 let SalesService = class SalesService {
-    constructor(saleRepo, saleItemRepo, cashRegisterRepo, customerRepo, inventoryService, eventEmitter) {
+    constructor(saleRepo, saleItemRepo, cashRegisterRepo, customerRepo, branchRepo, inventoryService, eventEmitter) {
         this.saleRepo = saleRepo;
         this.saleItemRepo = saleItemRepo;
         this.cashRegisterRepo = cashRegisterRepo;
         this.customerRepo = customerRepo;
+        this.branchRepo = branchRepo;
         this.inventoryService = inventoryService;
         this.eventEmitter = eventEmitter;
     }
     async openCashRegister(dto, tenantId, userId) {
+        await this.assertBranchExists(dto.branch_id, tenantId);
         const existingOpen = await this.cashRegisterRepo.findOne({
             where: {
                 branch_id: dto.branch_id,
@@ -54,6 +57,7 @@ let SalesService = class SalesService {
         return this.cashRegisterRepo.save(register);
     }
     async closeCashRegister(branchId, dto, tenantId, userId) {
+        await this.assertBranchExists(branchId, tenantId);
         const activeRegister = await this.cashRegisterRepo.findOne({
             where: {
                 branch_id: branchId,
@@ -71,6 +75,8 @@ let SalesService = class SalesService {
         return this.cashRegisterRepo.save(activeRegister);
     }
     async getActiveRegister(tenantId, branchId, userId) {
+        if (!branchId)
+            return null;
         return this.cashRegisterRepo.findOne({
             where: {
                 branch_id: branchId,
@@ -80,7 +86,23 @@ let SalesService = class SalesService {
             },
         });
     }
+    async verifySale(saleId, tenantId) {
+        const sale = await this.saleRepo.findOne({
+            where: { id: saleId, tenant_id: tenantId },
+        });
+        if (!sale) {
+            throw new common_1.NotFoundException('Venta no encontrada');
+        }
+        if (sale.payment_verified_at) {
+            throw new common_1.BadRequestException('Esta venta ya fue verificada');
+        }
+        sale.payment_status = sale_entity_1.PaymentStatus.CONFIRMED;
+        sale.payment_verified_at = new Date();
+        sale.status = sale_entity_1.SaleStatus.COMPLETED;
+        return this.saleRepo.save(sale);
+    }
     async createSale(dto, tenantId, userId) {
+        await this.assertBranchExists(dto.branch_id, tenantId);
         const activeRegister = await this.getActiveRegister(tenantId, dto.branch_id, userId);
         if (!activeRegister) {
             throw new common_1.BadRequestException('Debes abrir la caja antes de registrar una venta');
@@ -93,6 +115,7 @@ let SalesService = class SalesService {
             customer = await this.findOneCustomer(dto.customer_id, tenantId);
         }
         const total = dto.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unit_price)), 0);
+        const paymentStatus = this.resolvePaymentStatus(dto.payment_method, dto.payment_status, dto.payment_details?.mp_payment_status);
         if (dto.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT && customer) {
             const newDebt = Number(customer.current_debt) + total;
             if (customer.credit_limit > 0 && newDebt > customer.credit_limit) {
@@ -111,8 +134,20 @@ let SalesService = class SalesService {
             user_id: userId,
             customer_id: dto.customer_id,
             payment_method: dto.payment_method,
+            payment_status: paymentStatus,
             total: total,
             status: sale_entity_1.SaleStatus.COMPLETED,
+            mp_payment_id: dto.payment_details?.mp_payment_id || null,
+            mp_payment_status: dto.payment_details?.mp_payment_status || null,
+            payer_name: dto.payment_details?.payer_name || null,
+            payer_email: dto.payment_details?.payer_email || null,
+            transfer_voucher: dto.payment_details?.transfer_voucher || null,
+            transfer_origin: dto.payment_details?.transfer_origin || null,
+            card_last_digits: dto.payment_details?.card_last_digits || null,
+            card_brand: dto.payment_details?.card_brand || null,
+            authorization_code: dto.payment_details?.authorization_code || null,
+            payment_notes: dto.payment_details?.payment_notes || null,
+            payment_verified_at: null,
         });
         const savedSale = await this.saleRepo.save(sale);
         const saleItems = dto.items.map((item) => this.saleItemRepo.create({
@@ -127,7 +162,31 @@ let SalesService = class SalesService {
             await this.inventoryService.reduceStock(item.product_id, dto.branch_id, item.quantity, tenantId);
         }
         this.eventEmitter.emit('sale.completed', new sale_completed_event_1.SaleCompletedEvent(tenantId, savedSale.id, total, dto.payment_method, dto.branch_id, userId));
+        if (paymentStatus === sale_entity_1.PaymentStatus.CONFIRMED) {
+            await this.verifySale(savedSale.id, tenantId);
+        }
         return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] });
+    }
+    async listSales(tenantId, query) {
+        const page = Number(query.page) || 1;
+        const limit = Number(query.limit) || 20;
+        const qb = this.saleRepo
+            .createQueryBuilder('sale')
+            .leftJoinAndSelect('sale.items', 'items')
+            .leftJoinAndSelect('sale.customer', 'customer')
+            .where('sale.tenant_id = :tenantId', { tenantId });
+        if (query.payment_status) {
+            qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });
+        }
+        if (query.start_date && query.end_date) {
+            qb.andWhere('DATE(sale.created_at) BETWEEN :startDate AND :endDate', {
+                startDate: query.start_date,
+                endDate: query.end_date,
+            });
+        }
+        qb.orderBy('sale.created_at', 'DESC').skip((page - 1) * limit).take(limit);
+        const [data, total] = await qb.getManyAndCount();
+        return { data, total, page, limit };
     }
     async findAllCustomers(tenantId) {
         return this.customerRepo.find({
@@ -160,6 +219,35 @@ let SalesService = class SalesService {
         await this.customerRepo.update({ id, tenant_id: tenantId }, { current_debt: newDebt });
         return this.findOneCustomer(id, tenantId);
     }
+    async assertBranchExists(branchId, tenantId) {
+        const branch = await this.branchRepo.findOne({ where: { id: branchId, tenant_id: tenantId } });
+        if (!branch) {
+            throw new common_1.BadRequestException('La sucursal seleccionada no existe o no pertenece a tu negocio');
+        }
+        return branch;
+    }
+    shouldAutoVerify(paymentMethod) {
+        const autoVerifyMethods = [
+            sale_entity_1.PaymentMethod.CASH,
+            sale_entity_1.PaymentMethod.CREDIT_CLIENT,
+            sale_entity_1.PaymentMethod.DEBIT_CARD,
+            sale_entity_1.PaymentMethod.CREDIT_CARD,
+        ];
+        return autoVerifyMethods.includes(paymentMethod);
+    }
+    resolvePaymentStatus(paymentMethod, explicitStatus, mpStatus) {
+        if (explicitStatus)
+            return explicitStatus;
+        if (mpStatus) {
+            const normalized = mpStatus.toLowerCase();
+            if (normalized === 'approved')
+                return sale_entity_1.PaymentStatus.CONFIRMED;
+            if (normalized === 'rejected' || normalized === 'cancelled')
+                return sale_entity_1.PaymentStatus.FAILED;
+            return sale_entity_1.PaymentStatus.PENDING;
+        }
+        return this.shouldAutoVerify(paymentMethod) ? sale_entity_1.PaymentStatus.CONFIRMED : sale_entity_1.PaymentStatus.PENDING;
+    }
 };
 exports.SalesService = SalesService;
 exports.SalesService = SalesService = __decorate([
@@ -168,7 +256,9 @@ exports.SalesService = SalesService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(sale_item_entity_1.SaleItem)),
     __param(2, (0, typeorm_1.InjectRepository)(cash_register_entity_1.CashRegister)),
     __param(3, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
+    __param(4, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

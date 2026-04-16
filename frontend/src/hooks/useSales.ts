@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { salesApi } from '@api/sales.api'
-import type { Customer, CreateSaleDto } from '@api/sales.types'
+import salesApi from '@api/sales.api'
+import type { Customer, CreateSaleDto, ListSalesQuery } from '@api/sales.types'
 import toast from 'react-hot-toast'
 
 // ==========================================
@@ -28,7 +28,7 @@ export const useOpenRegister = () => {
   })
 }
 
-export const useCloseRegister = () => {
+export function useCloseRegister() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ branchId, balance }: { branchId: string; balance: number }) =>
@@ -41,6 +41,7 @@ export const useCloseRegister = () => {
       toast.error(err.response?.data?.message || 'Error al cerrar caja'),
   })
 }
+
 
 // ==========================================
 // VENTAS (POS)
@@ -58,6 +59,25 @@ export const useCreateSale = () => {
       toast.error(err.response?.data?.message || 'Error al procesar la venta'),
   })
 }
+
+export const useVerifySalePayment = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (saleId: string) => salesApi.verifySalePayment(saleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sales'] })
+      toast.success('Pago confirmado')
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al confirmar el pago'),
+  })
+}
+
+export const useSalesList = (query: ListSalesQuery) =>
+  useQuery({
+    queryKey: ['sales', query],
+    queryFn: () => salesApi.listSales(query),
+  })
 
 // ==========================================
 // CLIENTES (Customers / Fiados)

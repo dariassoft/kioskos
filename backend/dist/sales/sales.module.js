@@ -13,6 +13,7 @@ const sale_entity_1 = require("./entities/sale.entity");
 const sale_item_entity_1 = require("./entities/sale-item.entity");
 const cash_register_entity_1 = require("./entities/cash-register.entity");
 const customer_entity_1 = require("./entities/customer.entity");
+const branch_entity_1 = require("../inventory/entities/branch.entity");
 const sales_service_1 = require("./sales.service");
 const sales_controller_1 = require("./sales.controller");
 const inventory_module_1 = require("../inventory/inventory.module");
@@ -22,7 +23,7 @@ exports.SalesModule = SalesModule;
 exports.SalesModule = SalesModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([sale_entity_1.Sale, sale_item_entity_1.SaleItem, cash_register_entity_1.CashRegister, customer_entity_1.Customer]),
+            typeorm_1.TypeOrmModule.forFeature([sale_entity_1.Sale, sale_item_entity_1.SaleItem, cash_register_entity_1.CashRegister, customer_entity_1.Customer, branch_entity_1.Branch]),
             inventory_module_1.InventoryModule,
         ],
         controllers: [sales_controller_1.SalesController],

@@ -13,6 +13,7 @@ import {
   Store,
   Loader2,
   CheckCircle2,
+  type LucideIcon,
 } from 'lucide-react'
 import {
   useActiveRegister,
@@ -21,11 +22,12 @@ import {
   useCustomers,
 } from '@hooks/useSales'
 import { useCategories } from '@hooks/useInventory'
+import { useBranches } from '@hooks/useSettings'
 import { inventoryApi } from '@api/inventory.api'
 import { useCartStore } from '@store/cart.store'
 import { useBranchStore } from '@store/branch.store'
 import type { Product } from '@api/inventory.types'
-import type { PaymentMethod } from '@api/sales.types'
+import type { PaymentMethod, PaymentStatus, CreateSaleDto } from '@api/sales.types'
 import type { Customer } from '@api/sales.types'
 
 function OpenRegisterModal({ branchId }: { branchId: string }) {
@@ -94,32 +96,69 @@ function PaymentModal({
   const createSale = useCreateSale()
   const { activeBranch } = useBranchStore()
 
+  const [mpPaymentId, setMpPaymentId] = useState('')
+  const [mpPaymentStatus, setMpPaymentStatus] = useState<'approved' | 'pending' | 'rejected'>('approved')
+  const [payerName, setPayerName] = useState('')
+  const [payerEmail, setPayerEmail] = useState('')
+  const [transferOrigin, setTransferOrigin] = useState('')
+  const [transferVoucher, setTransferVoucher] = useState('')
+  const [cardLastDigits, setCardLastDigits] = useState('')
+  const [cardBrand, setCardBrand] = useState('')
+  const [authorizationCode, setAuthorizationCode] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
+
   const handleConfirm = () => {
     if (!activeBranch) return
-    createSale.mutate(
-      {
-        branch_id: activeBranch.id,
-        customer_id: cart.customerId || undefined,
-        payment_method: cart.paymentMethod,
-        items: cart.items.map((i) => ({
-          product_id: i.productId,
-          quantity: i.quantity,
-          unit_price: i.unitPrice,
-        })),
+
+    const paymentStatus: PaymentStatus =
+      cart.paymentMethod === 'cash' ||
+      cart.paymentMethod === 'debit_card' ||
+      cart.paymentMethod === 'credit_card' ||
+      cart.paymentMethod === 'credit_client'
+        ? 'confirmed'
+        : mpPaymentStatus === 'approved'
+          ? 'confirmed'
+          : 'pending'
+
+    const payload: CreateSaleDto = {
+      branch_id: activeBranch.id,
+      customer_id: cart.customerId || undefined,
+      payment_method: cart.paymentMethod,
+      payment_status: paymentStatus,
+      payment_details: {
+        mp_payment_id: mpPaymentId || undefined,
+        mp_payment_status: cart.paymentMethod === 'qr_mercadopago' || cart.paymentMethod === 'link_mercadopago' ? mpPaymentStatus : undefined,
+        payer_name: payerName || undefined,
+        payer_email: payerEmail || undefined,
+        transfer_origin: transferOrigin || undefined,
+        transfer_voucher: transferVoucher || undefined,
+        card_last_digits: cardLastDigits || undefined,
+        card_brand: cardBrand || undefined,
+        authorization_code: authorizationCode || undefined,
+        payment_notes: paymentNotes || undefined,
       },
-      {
-        onSuccess: () => {
-          cart.clearCart()
-          onClose()
-        },
-      }
-    )
+      items: cart.items.map((i) => ({
+        product_id: i.productId,
+        quantity: i.quantity,
+        unit_price: i.unitPrice,
+      })),
+    }
+
+    createSale.mutate(payload, {
+      onSuccess: () => {
+        cart.clearCart()
+        onClose()
+      },
+    })
   }
 
-  const methods: { id: PaymentMethod; label: string; icon: any }[] = [
+  const methods: { id: PaymentMethod; label: string; icon: LucideIcon }[] = [
     { id: 'cash', label: 'Efectivo', icon: Banknote },
-    { id: 'card', label: 'Tarjeta', icon: CreditCard },
+    { id: 'debit_card', label: 'Tarjeta Débito', icon: CreditCard },
+    { id: 'credit_card', label: 'Tarjeta Crédito', icon: CreditCard },
     { id: 'transfer', label: 'Transferencia', icon: Smartphone },
+    { id: 'qr_mercadopago', label: 'QR MercadoPago', icon: Smartphone },
+    { id: 'link_mercadopago', label: 'Link MercadoPago', icon: Smartphone },
     { id: 'credit_client', label: 'Fiado (Cliente)', icon: User },
   ]
 
@@ -133,8 +172,8 @@ function PaymentModal({
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="text-center mb-6">
+        <div className="p-6 space-y-4 overflow-y-auto max-h-[80vh]">
+          <div className="text-center mb-2">
             <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider mb-1">Total a cobrar</p>
             <p className="text-4xl font-extrabold text-primary">
               ${total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
@@ -142,7 +181,7 @@ function PaymentModal({
           </div>
 
           <label className="block text-sm font-medium text-foreground mb-3">Método de pago</label>
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-2 gap-3">
             {methods.map((m) => {
               const Icon = m.icon
               const isSelected = cart.paymentMethod === m.id
@@ -156,15 +195,17 @@ function PaymentModal({
                       : 'border-border bg-background text-muted-foreground hover:border-primary/50'
                   }`}
                 >
-                  <Icon className="w-6 h-6 mb-2" />
-                  <span className="text-sm font-medium">{m.label}</span>
+                  <div className="w-6 h-6 mb-2 flex items-center justify-center">
+                    <Icon />
+                  </div>
+                  <span className="text-xs font-medium text-center">{m.label}</span>
                 </button>
               )
             })}
           </div>
 
           {cart.paymentMethod === 'credit_client' && (
-            <div className="mb-6 animate-fade-in">
+            <div>
               <label className="block text-sm font-medium text-foreground mb-2">Seleccionar Cliente</label>
               <select
                 value={cart.customerId || ''}
@@ -179,6 +220,71 @@ function PaymentModal({
               </select>
             </div>
           )}
+
+          {(cart.paymentMethod === 'transfer' || cart.paymentMethod === 'qr_mercadopago' || cart.paymentMethod === 'link_mercadopago') && (
+            <div className="space-y-3 p-4 rounded-xl border border-border bg-muted/20">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nombre del pagador</label>
+                <input className="input-field" value={payerName} onChange={(e) => setPayerName(e.target.value)} placeholder="Juan Pérez / Cliente" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email del pagador</label>
+                <input className="input-field" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="cliente@email.com" />
+              </div>
+              {cart.paymentMethod === 'transfer' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Billetera / Banco origen</label>
+                    <input className="input-field" value={transferOrigin} onChange={(e) => setTransferOrigin(e.target.value)} placeholder="Mercado Pago / Ualá / Banco Nación" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nro. comprobante / referencia</label>
+                    <input className="input-field" value={transferVoucher} onChange={(e) => setTransferVoucher(e.target.value)} placeholder="CBU / CVU / Ref transferencia" />
+                  </div>
+                </>
+              )}
+              {(cart.paymentMethod === 'qr_mercadopago' || cart.paymentMethod === 'link_mercadopago') && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">ID de pago / referencia MP</label>
+                    <input className="input-field" value={mpPaymentId} onChange={(e) => setMpPaymentId(e.target.value)} placeholder="1234567890" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Estado del pago</label>
+                    <select className="input-field" value={mpPaymentStatus} onChange={(e) => setMpPaymentStatus(e.target.value as 'approved' | 'pending' | 'rejected')}>
+                      <option value="approved">Aprobado</option>
+                      <option value="pending">Pendiente</option>
+                      <option value="rejected">Rechazado</option>
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {(cart.paymentMethod === 'debit_card' || cart.paymentMethod === 'credit_card') && (
+            <div className="space-y-3 p-4 rounded-xl border border-border bg-muted/20">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Marca</label>
+                  <input className="input-field" value={cardBrand} onChange={(e) => setCardBrand(e.target.value)} placeholder="Visa / Mastercard" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Últimos 4 dígitos</label>
+                  <input className="input-field" value={cardLastDigits} onChange={(e) => setCardLastDigits(e.target.value)} maxLength={4} placeholder="1234" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Código de autorización</label>
+                <input className="input-field" value={authorizationCode} onChange={(e) => setAuthorizationCode(e.target.value)} placeholder="AUTH123" />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Notas del pago</label>
+            <textarea className="input-field" rows={3} value={paymentNotes} onChange={(e) => setPaymentNotes(e.target.value)} placeholder="Datos adicionales, observaciones o reclamos" />
+          </div>
 
           <button
             onClick={handleConfirm}
@@ -204,6 +310,9 @@ export default function PosPage() {
 
   const { activeBranch } = useBranchStore()
   const cart = useCartStore()
+
+  // Garantiza que las sucursales estén cargadas (auto-selecciona la principal)
+  const { isLoading: loadingBranches } = useBranches()
 
   // 1. Verificar registro abierto
   const { data: activeRegister, isLoading: loadingRegister } = useActiveRegister(activeBranch?.id || '')
@@ -244,13 +353,26 @@ export default function PosPage() {
       quantity: 1,
       unitPrice,
     })
-    
+
     // Auto-limpiar la búsqueda para fluidez
     setSearchQuery('')
   }
 
+  // Mientras se cargan las sucursales mostrar spinner en lugar del mensaje de error
+  if (loadingBranches && !activeBranch) {
+    return <div className="h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+  }
+
   if (!activeBranch) {
-    return <div className="h-full flex items-center justify-center p-8 text-center text-muted-foreground">Configura una sucursal activa para usar el POS.</div>
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground gap-4">
+        <Store className="w-12 h-12 opacity-30" />
+        <div>
+          <p className="font-semibold text-foreground">Sin sucursal activa</p>
+          <p className="text-sm mt-1">Ve a <strong>Configuración → Sucursales</strong> para crear y activar una sucursal.</p>
+        </div>
+      </div>
+    )
   }
 
   if (loadingRegister) {
@@ -281,7 +403,7 @@ export default function PosPage() {
               <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-primary" />
             )}
             {searchQuery && !isSearching && (
-              <button 
+              <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-1 bg-muted hover:bg-muted-foreground/20 rounded-full text-muted-foreground transition-colors"
                 tabIndex={-1}
@@ -334,7 +456,7 @@ export default function PosPage() {
                   <button
                     key={product.id}
                     onClick={() => handleAddToCart(product)}
-                    className="flex flex-col text-left bg-card border border-border hover:border-primary/50 hover:shadow-md 
+                    className="flex flex-col text-left bg-card border border-border hover:border-primary/50 hover:shadow-md
                                rounded-2xl p-4 transition-all active:scale-95 group focus:outline-none focus:ring-2 focus:ring-primary h-full"
                   >
                     <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 flex-shrink-0">
@@ -354,7 +476,7 @@ export default function PosPage() {
                 )
               })}
             </div>
-            
+
             {!searchQuery && (
               <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground mt-20 opacity-40">
                 <ShoppingCart className="w-16 h-16 mb-4" />
@@ -393,21 +515,21 @@ export default function PosPage() {
                     ${item.unitPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })} un.
                   </p>
                 </div>
-                
+
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <p className="font-bold text-foreground">
                     ${item.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </p>
-                  
+
                   <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 border border-border opacity-60 group-hover:opacity-100 transition-opacity">
-                    <button 
+                    <button
                       onClick={() => cart.updateQuantity(item.productId, item.quantity - 1)}
                       className="p-1 hover:bg-background rounded-md transition-colors"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <span className="text-xs font-semibold w-6 text-center select-none">{item.quantity}</span>
-                    <button 
+                    <button
                       onClick={() => cart.updateQuantity(item.productId, item.quantity + 1)}
                       className="p-1 hover:bg-background rounded-md transition-colors"
                     >
@@ -433,7 +555,7 @@ export default function PosPage() {
             <button
               onClick={() => cart.clearCart()}
               disabled={cart.items.length === 0}
-              className="px-4 py-3 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive/20 
+              className="px-4 py-3 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive/20
                          disabled:opacity-40 transition-colors flex items-center justify-center shrink-0 border border-destructive/20"
               title="Vaciar carrito"
             >

@@ -22,12 +22,14 @@ const accounting_module_1 = require("./accounting/accounting.module");
 const purchases_module_1 = require("./purchases/purchases.module");
 const reports_module_1 = require("./reports/reports.module");
 const notifications_module_1 = require("./notifications/notifications.module");
+const settings_module_1 = require("./settings/settings.module");
+const electronic_invoicing_module_1 = require("./electronic-invoicing/electronic-invoicing.module");
 const tenant_middleware_1 = require("./tenants/tenant.middleware");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
             .apply(tenant_middleware_1.TenantMiddleware)
-            .exclude('api/v1/auth/(.*)')
+            .exclude('api/v1/auth/(.*)', 'api/v1/checkout/plans', 'api/v1/checkout/start', 'api/v1/checkout/status/(.*)', 'api/v1/checkout/confirm-transfer', 'api/v1/checkout/webhook/(.*)', 'api/v1/checkout/sandbox-info')
             .forRoutes('*');
     }
 };
@@ -55,6 +57,8 @@ exports.AppModule = AppModule = __decorate([
             purchases_module_1.PurchasesModule,
             reports_module_1.ReportsModule,
             notifications_module_1.NotificationsModule,
+            settings_module_1.SettingsModule,
+            electronic_invoicing_module_1.ElectronicInvoicingModule,
         ],
     })
 ], AppModule);

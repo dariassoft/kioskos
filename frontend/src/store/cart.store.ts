@@ -8,7 +8,14 @@ export interface CartItem {
   subtotal: number
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'credit_client'
+export type PaymentMethod =
+  | 'cash'
+  | 'debit_card'
+  | 'credit_card'
+  | 'transfer'
+  | 'qr_mercadopago'
+  | 'link_mercadopago'
+  | 'credit_client'
 
 interface CartState {
   items: CartItem[]
