@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   # ==========================================
@@ -110,8 +110,10 @@ services:
       - db
 
 networks:
-  kioskos_network:
+  internal_network:
     driver: bridge
+  dokploy-network:
+    external: true
 
 volumes:
   mysql_data:
