@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@store/auth.store'
+import { useEffect } from 'react'
+import { usePwaStore } from '@store/pwa.store'
 
 // Layouts
 import AdminLayout from '@layouts/AdminLayout'
@@ -62,6 +64,39 @@ function PrivateRoute({ children, roles }: { children: React.ReactNode; roles?: 
 }
 
 export default function App() {
+  const { setDeferredPrompt, setIsInstalled } = usePwaStore()
+
+  useEffect(() => {
+    // Detectar si ya está instalada
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    // @ts-ignore (Safari support)
+    const isStandaloneSafari = window.navigator.standalone === true
+    
+    if (isStandalone || isStandaloneSafari) {
+      setIsInstalled(true)
+    }
+
+    const handler = (e: any) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      console.log('✅ PWA: beforeinstallprompt capturado globalmente')
+    }
+
+    const appInstalledHandler = () => {
+      setDeferredPrompt(null)
+      setIsInstalled(true)
+      console.log('✅ PWA: App instalada exitosamente')
+    }
+
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', appInstalledHandler)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+      window.removeEventListener('appinstalled', appInstalledHandler)
+    }
+  }, [setDeferredPrompt, setIsInstalled])
+
   return (
     <BrowserRouter>
       <Routes>
