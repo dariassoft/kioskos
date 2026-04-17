@@ -345,8 +345,6 @@ function PaymentModal({
                     <label className="block text-sm font-medium mb-1">Billetera / Banco origen</label>
                     <input className="input-field" value={transferOrigin} onChange={(e) => setTransferOrigin(e.target.value)} placeholder="Mercado Pago / Ualá / Banco Nación" />
                   </div>
-                    <input className="input-field" value={transferVoucher} onChange={(e) => setTransferVoucher(e.target.value)} placeholder="CBU / CVU / Ref transferencia" />
-                  </div>
                 </>
               )}
               {(cart.paymentMethod === 'qr_mercadopago' || cart.paymentMethod === 'link_mercadopago') && (
