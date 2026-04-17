@@ -52,6 +52,7 @@ export interface Product {
   brand_id?: string
   brand?: Brand
   supplier_id?: string
+  inventory?: Inventory // Stock filtrado por sucursal si se solicita
   created_at: string
 }
 

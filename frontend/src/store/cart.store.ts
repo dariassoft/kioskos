@@ -6,6 +6,7 @@ export interface CartItem {
   quantity: number
   unitPrice: number
   subtotal: number
+  stockLimit?: number
 }
 
 export type PaymentMethod =
@@ -47,57 +48,80 @@ export const useCartStore = create<CartState>()((set, get) => ({
   customerId: null,
   discount: 0,
 
-  get total() {
-    return get().items.reduce((sum, item) => sum + item.subtotal, 0) - get().discount
-  },
-  get itemCount() {
-    return get().items.reduce((sum, item) => sum + item.quantity, 0)
-  },
+  total: 0,
+  itemCount: 0,
 
   addItem: (newItem) =>
     set((state) => {
       const existing = state.items.find((i) => i.productId === newItem.productId)
+      let nextItems = []
+      
+      const limit = newItem.stockLimit ?? Infinity
+      
       if (existing) {
-        return {
-          items: state.items.map((i) =>
-            i.productId === newItem.productId
-              ? {
-                  ...i,
-                  quantity: i.quantity + newItem.quantity,
-                  subtotal: (i.quantity + newItem.quantity) * i.unitPrice,
-                }
-              : i,
-          ),
-        }
-      }
-      return {
-        items: [
+        const potentialQuantity = existing.quantity + newItem.quantity
+        const safeQuantity = Math.min(potentialQuantity, limit)
+        
+        nextItems = state.items.map((i) =>
+          i.productId === newItem.productId
+            ? {
+                ...i,
+                quantity: safeQuantity,
+                subtotal: safeQuantity * i.unitPrice,
+              }
+            : i,
+        )
+      } else {
+        const safeQuantity = Math.min(newItem.quantity, limit)
+        nextItems = [
           ...state.items,
-          { ...newItem, subtotal: newItem.quantity * newItem.unitPrice },
-        ],
+          { ...newItem, quantity: safeQuantity, subtotal: safeQuantity * newItem.unitPrice },
+        ]
       }
+
+      const itemCount = nextItems.reduce((sum, item) => sum + item.quantity, 0)
+      const total = nextItems.reduce((sum, item) => sum + item.subtotal, 0) - state.discount
+
+      return { items: nextItems, itemCount, total }
     }),
 
   updateQuantity: (productId, quantity) =>
-    set((state) => ({
-      items:
+    set((state) => {
+      const item = state.items.find(i => i.productId === productId)
+      const limit = item?.stockLimit ?? Infinity
+      const safeQuantity = Math.min(quantity, limit)
+
+      const nextItems =
         quantity <= 0
           ? state.items.filter((i) => i.productId !== productId)
           : state.items.map((i) =>
               i.productId === productId
-                ? { ...i, quantity, subtotal: quantity * i.unitPrice }
+                ? { ...i, quantity: safeQuantity, subtotal: safeQuantity * i.unitPrice }
                 : i,
-            ),
-    })),
+            )
+      
+      const itemCount = nextItems.reduce((sum, item) => sum + item.quantity, 0)
+      const total = nextItems.reduce((sum, item) => sum + item.subtotal, 0) - state.discount
+
+      return { items: nextItems, itemCount, total }
+    }),
 
   removeItem: (productId) =>
-    set((state) => ({
-      items: state.items.filter((i) => i.productId !== productId),
-    })),
+    set((state) => {
+      const nextItems = state.items.filter((i) => i.productId !== productId)
+      const itemCount = nextItems.reduce((sum, item) => sum + item.quantity, 0)
+      const total = nextItems.reduce((sum, item) => sum + item.subtotal, 0) - state.discount
+
+      return { items: nextItems, itemCount, total }
+    }),
 
   setPaymentMethod: (method) => set({ paymentMethod: method }),
   setCustomer: (customerId) => set({ customerId }),
-  setDiscount: (discount) => set({ discount }),
+  setDiscount: (discount) => 
+    set((state) => ({ 
+      discount,
+      total: state.items.reduce((sum, item) => sum + item.subtotal, 0) - discount
+    })),
   clearCart: () =>
-    set({ items: [], paymentMethod: 'cash', customerId: null, discount: 0 }),
+    set({ items: [], paymentMethod: 'cash', customerId: null, discount: 0, total: 0, itemCount: 0 }),
 }))

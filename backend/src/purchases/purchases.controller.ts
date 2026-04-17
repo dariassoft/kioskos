@@ -51,6 +51,16 @@ export class PurchasesController {
     return this.purchasesService.updateSupplier(id, dto, tenantId);
   }
 
+  @Delete('suppliers/:id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Eliminar un proveedor' })
+  removeSupplier(
+    @Param('id') id: string,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.purchasesService.removeSupplier(id, tenantId);
+  }
+
   // ==========================================
   // ÓRDENES DE COMPRA
   // ==========================================

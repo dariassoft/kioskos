@@ -25,10 +25,11 @@ import {
   useCustomers,
 } from '@hooks/useSales'
 import { useCategories } from '@hooks/useInventory'
-import { useBranches } from '@hooks/useSettings'
+import { useBranches } from '@hooks/useInventory' // Cambiado para consistencia con StockPage
 import { inventoryApi } from '@api/inventory.api'
 import { useCartStore } from '@store/cart.store'
 import { useBranchStore } from '@store/branch.store'
+import toast from 'react-hot-toast'
 import type { Product } from '@api/inventory.types'
 import type { PaymentMethod, PaymentStatus, CreateSaleDto } from '@api/sales.types'
 import type { Customer } from '@api/sales.types'
@@ -37,6 +38,7 @@ function OpenRegisterModal({ branchId }: { branchId: string }) {
   const [balance, setBalance] = useState('')
   const openRegister = useOpenRegister()
 
+  const { activeBranch } = useBranchStore()
   const handleOpen = (e: React.FormEvent) => {
     e.preventDefault()
     if (!balance || isNaN(Number(balance))) return
@@ -51,7 +53,11 @@ function OpenRegisterModal({ branchId }: { branchId: string }) {
             <Store className="w-8 h-8 text-primary" />
           </div>
           <h2 className="text-xl font-bold text-foreground">Abrir Turno de Caja</h2>
-          <p className="text-sm text-muted-foreground mt-2">
+          <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
+            <Store className="w-3.5 h-3.5" />
+            {activeBranch?.name || 'Sucursal desconocida'}
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
             Ingresa el monto de apertura (cambio inicial) para comenzar a registrar ventas
           </p>
 
@@ -340,13 +346,13 @@ export default function PosPage() {
     }
     const timer = setTimeout(() => {
       setIsSearching(true)
-      inventoryApi.quickSearch(searchQuery).then((res) => {
+      inventoryApi.quickSearch(searchQuery, activeBranch?.id).then((res) => {
         setProductsCache(res)
         setIsSearching(false)
       })
     }, 300)
     return () => clearTimeout(timer)
-  }, [searchQuery])
+  }, [searchQuery, activeBranch?.id])
 
   // Lógica de agregar al carrito
   const handleAddToCart = (product: Product) => {
@@ -358,8 +364,16 @@ export default function PosPage() {
     const unitPrice = priceEntry ? Number(priceEntry.price) : 0
 
     if (unitPrice === 0) {
-      alert(`El producto "${product.name}" no tiene un precio configurado.`)
+      toast.error(`El producto "${product.name}" no tiene un precio configurado.`)
       return
+    }
+
+    // Obtener stock disponible de la relación 'inventory' mapeada por branchId
+    const stockAvailable = product.inventory ? Number(product.inventory.stock_quantity) : 0;
+
+    if (stockAvailable <= 0) {
+      toast.error(`Sin stock disponible en esta sucursal.`)
+      return;
     }
 
     cart.addItem({
@@ -367,9 +381,10 @@ export default function PosPage() {
       name: product.name,
       quantity: 1,
       unitPrice,
+      stockLimit: stockAvailable
     })
 
-    // Auto-limpiar la búsqueda para fluidez
+    toast.success(`Agregado: ${product.name}`, { position: 'bottom-center' })
     setSearchQuery('')
   }
 
@@ -403,29 +418,47 @@ export default function PosPage() {
       {/* LADO IZQUIERDO: PRODUCTOS Y BÚSQUEDA */}
       <div className="flex-1 flex flex-col min-w-0 md:border-r border-border h-full overflow-hidden">
         {/* Topbar interno */}
-        <div className="bg-card p-4 border-b border-border shadow-sm z-10">
-          <div className="relative max-w-2xl mx-auto">
-            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${searchQuery ? 'text-primary' : 'text-muted-foreground'}`} />
-            <input
-              autoFocus
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por código de barras o nombre..."
-              className="w-full pl-12 pr-4 py-4 bg-background border border-border rounded-xl text-lg
-                         shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
-            />
-            {isSearching && (
-              <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-primary" />
-            )}
-            {searchQuery && !isSearching && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 bg-muted hover:bg-muted-foreground/20 rounded-full text-muted-foreground transition-colors"
-                tabIndex={-1}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+        <div className="bg-card p-4 border-b border-border shadow-sm z-10 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-4xl mx-auto">
+            {/* Indicador/Selector de Sucursal */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <Store className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest leading-none mb-1">Sucursal Activa</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-foreground text-sm">{activeBranch.name}</span>
+                  <select 
+                    value={activeBranch.id}
+                    onChange={(e) => {
+                      const selected = useBranchStore.getState().branches.find(b => b.id === e.target.value);
+                      if (selected) useBranchStore.getState().setActiveBranch(selected);
+                    }}
+                    className="bg-transparent text-[10px] h-6 px-1 border border-border rounded hover:border-primary transition-colors cursor-pointer"
+                  >
+                    {useBranchStore.getState().branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative flex-1 w-full max-w-md">
+              <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${searchQuery ? 'text-primary' : 'text-muted-foreground'}`} />
+              <input
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por código de barras o nombre..."
+                className="w-full pl-12 pr-4 py-3 bg-background border border-border rounded-xl text-md
+                           shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+              />
+              {isSearching && (
+                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-primary" />
+              )}
+            </div>
           </div>
 
           {/* Categorías (Quick filters) */}
@@ -519,7 +552,17 @@ export default function PosPage() {
                         </div>
                       </div>
                       <div className="p-3 flex-1 flex flex-col">
-                        <p className="font-bold text-foreground text-xs md:text-sm line-clamp-2 leading-tight mb-1">{product.name}</p>
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <p className="font-bold text-foreground text-xs md:text-sm line-clamp-2 leading-tight uppercase flex-1">{product.name}</p>
+                          {(() => {
+                            const stock = product.inventory ? Number(product.inventory.stock_quantity) : 0;
+                            return (
+                              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded leading-none whitespace-nowrap ${stock > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'}`}>
+                                {stock > 0 ? `STOCK: ${stock}` : 'SIN STOCK'}
+                              </span>
+                            );
+                          })()}
+                        </div>
                         <p className="text-[10px] text-muted-foreground truncate mb-2">{product.barcode || product.internal_code || 'Sin código'}</p>
                         <div className="mt-auto pt-2 border-t border-border flex items-baseline gap-1">
                           <span className="text-primary font-black text-base md:text-lg">${price.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
@@ -563,11 +606,21 @@ export default function PosPage() {
                            )}
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-1">
+                      <div className="text-right flex flex-col items-end gap-1 shrink-0">
                         <span className="text-primary font-black text-lg">${price.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
-                        <div className="flex items-center gap-1 text-[10px] text-primary font-bold">
-                           <Plus className="w-3 h-3" /> AGREGAR
-                        </div>
+                        {(() => {
+                          const stock = product.inventory ? Number(product.inventory.stock_quantity) : 0;
+                          return (
+                             <div className="flex flex-col items-end">
+                                <span className={`text-[9px] font-bold ${stock > 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                                   ST: {stock} {product.unit?.abbreviation || 'un'}
+                                </span>
+                                <div className="flex items-center gap-1 text-[10px] text-primary font-bold">
+                                   <Plus className="w-3 h-3" /> AGREGAR
+                                </div>
+                             </div>
+                          );
+                        })()}
                       </div>
                     </button>
                   )
@@ -628,8 +681,13 @@ export default function PosPage() {
                     </button>
                     <span className="text-xs font-semibold w-6 text-center select-none">{item.quantity}</span>
                     <button
-                      onClick={() => cart.updateQuantity(item.productId, item.quantity + 1)}
-                      className="p-1 hover:bg-background rounded-md transition-colors"
+                      onClick={() => {
+                        if (item.quantity + 1 > (item.stockLimit ?? Infinity)) {
+                          toast.error('Límite de stock alcanzado', { id: `limit-${item.productId}` });
+                        }
+                        cart.updateQuantity(item.productId, item.quantity + 1);
+                      }}
+                      className={`p-1 rounded-md transition-colors ${item.quantity >= (item.stockLimit ?? Infinity) ? 'text-muted-foreground bg-muted cursor-not-allowed' : 'hover:bg-background'}`}
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -712,7 +770,17 @@ export default function PosPage() {
                     <div className="flex items-center gap-2 bg-muted rounded-xl p-1 px-2">
                        <button onClick={() => cart.updateQuantity(item.productId, item.quantity - 1)} className="p-2"><Minus className="w-4 h-4" /></button>
                        <span className="font-bold w-6 text-center">{item.quantity}</span>
-                       <button onClick={() => cart.updateQuantity(item.productId, item.quantity + 1)} className="p-2"><Plus className="w-4 h-4" /></button>
+                        <button 
+                          onClick={() => {
+                            if (item.quantity + 1 > (item.stockLimit ?? Infinity)) {
+                              toast.error('Límite de stock alcanzado', { id: `limit-mb-${item.productId}` });
+                            }
+                            cart.updateQuantity(item.productId, item.quantity + 1);
+                          }}
+                          className={`p-2 ${item.quantity >= (item.stockLimit ?? Infinity) ? 'text-muted-foreground' : ''}`}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
                     </div>
                   </div>
                 ))

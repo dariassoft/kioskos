@@ -52,8 +52,8 @@ export const inventoryApi = {
     return res.data
   },
 
-  quickSearch: async (q: string): Promise<Product[]> => {
-    const res = await apiClient.get('/inventory/products/search', { params: { q } })
+  quickSearch: async (q: string, branch_id?: string): Promise<Product[]> => {
+    const res = await apiClient.get('/inventory/products/search', { params: { q, branch_id } })
     return Array.isArray(res.data) ? res.data : []
   },
 

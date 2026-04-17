@@ -153,6 +153,13 @@ export class InventoryService {
 
   async setProductPrice(productId: string, dto: SetPriceDto, tenantId: string): Promise<ProductPrice> {
     await this.findOneProduct(productId, tenantId);
+    
+    // Validar propiedad de la lista de precios
+    const priceList = await this.priceListRepo.findOne({
+      where: { id: dto.price_list_id, tenant_id: tenantId }
+    });
+    if (!priceList) throw new NotFoundException('Lista de precios no encontrada');
+
     const existing = await this.productPriceRepo.findOne({
       where: { product_id: productId, price_list_id: dto.price_list_id },
     });
@@ -242,6 +249,10 @@ export class InventoryService {
   }
 
   async addStock(dto: UpdateStockDto, productId: string, tenantId: string): Promise<Inventory> {
+    // Validar propiedad del producto y sucursal
+    await this.findOneProduct(productId, tenantId);
+    await this.findOneBranch(dto.branch_id, tenantId);
+
     let inv = await this.inventoryRepo.findOne({
       where: { product_id: productId, branch_id: dto.branch_id, tenant_id: tenantId },
     });
@@ -363,9 +374,13 @@ export class InventoryService {
 
   async updateBranch(id: string, dto: Partial<CreateBranchDto>, tenantId: string): Promise<Branch> {
     await this.branchRepo.update({ id, tenant_id: tenantId }, dto as any);
-    const updated = await this.branchRepo.findOne({ where: { id, tenant_id: tenantId } });
-    if (!updated) throw new NotFoundException(`Sucursal ${id} no encontrada`);
-    return updated;
+    return this.findOneBranch(id, tenantId);
+  }
+
+  async findOneBranch(id: string, tenantId: string): Promise<Branch> {
+    const branch = await this.branchRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!branch) throw new NotFoundException(`Sucursal ${id} no encontrada`);
+    return branch;
   }
 
   // ==========================================
@@ -424,8 +439,8 @@ export class InventoryService {
   // BÚSQUEDA RÁPIDA (POS)
   // ==========================================
 
-  async quickSearch(query: string, tenantId: string) {
-    return this.productRepo
+  async quickSearch(query: string, tenantId: string, branchId?: string) {
+    const qb = this.productRepo
       .createQueryBuilder('p')
       .leftJoinAndSelect('p.prices', 'prices')
       .leftJoinAndSelect('prices.price_list', 'pl', 'pl.is_default = :def', { def: true })
@@ -435,8 +450,12 @@ export class InventoryService {
       .andWhere(
         '(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)',
         { q: `%${query}%`, exact: query },
-      )
-      .limit(20)
-      .getMany();
+      );
+
+    if (branchId) {
+      qb.leftJoinAndMapOne('p.inventory', Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId', { branchId });
+    }
+
+    return qb.limit(20).getMany();
   }
 }

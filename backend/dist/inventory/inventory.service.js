@@ -111,6 +111,11 @@ let InventoryService = class InventoryService {
     }
     async setProductPrice(productId, dto, tenantId) {
         await this.findOneProduct(productId, tenantId);
+        const priceList = await this.priceListRepo.findOne({
+            where: { id: dto.price_list_id, tenant_id: tenantId }
+        });
+        if (!priceList)
+            throw new common_1.NotFoundException('Lista de precios no encontrada');
         const existing = await this.productPriceRepo.findOne({
             where: { product_id: productId, price_list_id: dto.price_list_id },
         });
@@ -182,6 +187,8 @@ let InventoryService = class InventoryService {
             .getMany();
     }
     async addStock(dto, productId, tenantId) {
+        await this.findOneProduct(productId, tenantId);
+        await this.findOneBranch(dto.branch_id, tenantId);
         let inv = await this.inventoryRepo.findOne({
             where: { product_id: productId, branch_id: dto.branch_id, tenant_id: tenantId },
         });
@@ -265,10 +272,13 @@ let InventoryService = class InventoryService {
     }
     async updateBranch(id, dto, tenantId) {
         await this.branchRepo.update({ id, tenant_id: tenantId }, dto);
-        const updated = await this.branchRepo.findOne({ where: { id, tenant_id: tenantId } });
-        if (!updated)
+        return this.findOneBranch(id, tenantId);
+    }
+    async findOneBranch(id, tenantId) {
+        const branch = await this.branchRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!branch)
             throw new common_1.NotFoundException(`Sucursal ${id} no encontrada`);
-        return updated;
+        return branch;
     }
     async findAllCategories(tenantId) {
         return this.categoryRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
@@ -298,17 +308,19 @@ let InventoryService = class InventoryService {
         const pl = this.priceListRepo.create({ name, is_default: isDefault, tenant_id: tenantId });
         return this.priceListRepo.save(pl);
     }
-    async quickSearch(query, tenantId) {
-        return this.productRepo
+    async quickSearch(query, tenantId, branchId) {
+        const qb = this.productRepo
             .createQueryBuilder('p')
             .leftJoinAndSelect('p.prices', 'prices')
             .leftJoinAndSelect('prices.price_list', 'pl', 'pl.is_default = :def', { def: true })
             .leftJoinAndSelect('p.unit', 'unit')
             .where('p.tenant_id = :tenantId', { tenantId })
             .andWhere('p.is_active = :active', { active: true })
-            .andWhere('(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)', { q: `%${query}%`, exact: query })
-            .limit(20)
-            .getMany();
+            .andWhere('(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)', { q: `%${query}%`, exact: query });
+        if (branchId) {
+            qb.leftJoinAndMapOne('p.inventory', inventory_entity_1.Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId', { branchId });
+        }
+        return qb.limit(20).getMany();
     }
 };
 exports.InventoryService = InventoryService;

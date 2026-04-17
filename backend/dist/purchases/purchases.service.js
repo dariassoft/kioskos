@@ -51,6 +51,10 @@ let PurchasesService = class PurchasesService {
         await this.supplierRepo.update({ id, tenant_id: tenantId }, dto);
         return this.findOneSupplier(id, tenantId);
     }
+    async removeSupplier(id, tenantId) {
+        const supplier = await this.findOneSupplier(id, tenantId);
+        await this.supplierRepo.remove(supplier);
+    }
     async findAllOrders(tenantId) {
         return this.orderRepo.find({
             where: { tenant_id: tenantId },
@@ -68,6 +72,11 @@ let PurchasesService = class PurchasesService {
         return order;
     }
     async createOrder(dto, tenantId) {
+        await this.findOneSupplier(dto.supplier_id, tenantId);
+        await this.inventoryService.findOneBranch(dto.branch_id, tenantId);
+        for (const item of dto.items) {
+            await this.inventoryService.findOneProduct(item.product_id, tenantId);
+        }
         const total = dto.items.reduce((acc, item) => acc + Number(item.quantity) * Number(item.unit_cost), 0);
         const order = this.orderRepo.create({
             tenant_id: tenantId,

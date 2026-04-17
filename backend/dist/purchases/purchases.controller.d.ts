@@ -6,6 +6,7 @@ export declare class PurchasesController {
     findAllSuppliers(tenantId: string): Promise<import("./entities/supplier.entity").Supplier[]>;
     createSupplier(dto: CreateSupplierDto, tenantId: string): Promise<import("./entities/supplier.entity").Supplier>;
     updateSupplier(id: string, dto: UpdateSupplierDto, tenantId: string): Promise<import("./entities/supplier.entity").Supplier>;
+    removeSupplier(id: string, tenantId: string): Promise<void>;
     findAllOrders(tenantId: string): Promise<import("./entities/purchase-order.entity").PurchaseOrder[]>;
     createOrder(dto: CreatePurchaseOrderDto, tenantId: string): Promise<import("./entities/purchase-order.entity").PurchaseOrder>;
     receiveOrder(id: string, tenantId: string): Promise<import("./entities/purchase-order.entity").PurchaseOrder>;

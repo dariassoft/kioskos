@@ -143,25 +143,32 @@ export class SalesService {
   // ==========================================
 
   async createSale(dto: CreateSaleDto, tenantId: string, userId: string): Promise<Sale> {
+    // 1. Validar propiedad de la sucursal
     await this.assertBranchExists(dto.branch_id, tenantId);
 
-    // 1. Validar que la caja esté abierta
+    // 2. Validar propiedad de cada producto antes de procesar la venta
+    for (const item of dto.items) {
+      await this.inventoryService.findOneProduct(item.product_id, tenantId);
+    }
+
+    // 3. Validar que la caja esté abierta
     const activeRegister = await this.getActiveRegister(tenantId, dto.branch_id, userId);
     if (!activeRegister) {
       throw new BadRequestException('Debes abrir la caja antes de registrar una venta');
     }
 
     let customer: Customer | null = null;
-
-    // 2. Procesar pago condicionado a Fiado
-    if (dto.payment_method === PaymentMethod.CREDIT_CLIENT) {
-      if (!dto.customer_id) {
-        throw new BadRequestException('Debes seleccionar un cliente para venderle al fiado');
-      }
-      customer = await this.findOneCustomer(dto.customer_id, tenantId);
+    if (dto.customer_id) {
+       customer = await this.findOneCustomer(dto.customer_id, tenantId);
     }
 
-    // 3. Crear venta y calcular el total
+    // 4. Procesar pago condicionado a Fiado
+    if (dto.payment_method === PaymentMethod.CREDIT_CLIENT) {
+      if (!customer) {
+        throw new BadRequestException('Debes seleccionar un cliente válido para venderle al fiado');
+      }
+    }
+
     const total = dto.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unit_price)), 0);
 
     const paymentStatus = this.resolvePaymentStatus(dto.payment_method, dto.payment_status, dto.payment_details?.mp_payment_status);

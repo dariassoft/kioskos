@@ -12,4 +12,5 @@ export const purchasesApi = {
   createOrder: (data: CreatePurchaseOrderDto) => apiClient.post<PurchaseOrder>('/purchases/orders', data).then((res: any) => res.data),
   receiveOrder: (id: string) => apiClient.post<PurchaseOrder>(`/purchases/orders/${id}/receive`).then((res: any) => res.data),
   cancelOrder: (id: string) => apiClient.post<PurchaseOrder>(`/purchases/orders/${id}/cancel`).then((res: any) => res.data),
+  deleteSupplier: (id: string) => apiClient.delete(`/purchases/suppliers/${id}`).then((res: any) => res.data),
 };

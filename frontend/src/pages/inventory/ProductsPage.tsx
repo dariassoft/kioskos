@@ -15,6 +15,7 @@ import {
 } from '@hooks/useInventory'
 import { useSuppliers, useCreateSupplier } from '@hooks/usePurchases'
 import type { Product } from '@api/inventory.types'
+import toast from 'react-hot-toast'
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido').max(200),
@@ -63,24 +64,29 @@ function ProductModal({
     formState: { errors },
   } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
-    defaultValues: product
-      ? {
-          name: product.name,
-          description: product.description,
-          barcode: product.barcode,
-          internal_code: product.internal_code,
-          category_id: product.category_id,
-          unit_id: product.unit_id,
-          cost_price: product.cost_price,
-          min_stock_alert: product.min_stock_alert,
-          image_url: product.image_url ?? '',
-          brand_id: product.brand_id ?? '',
-          supplier_id: product.supplier_id ?? '',
-        }
-      : {
-          image_url: '',
-          min_stock_alert: 5,
-        },
+    defaultValues: (() => {
+      if (!product) return { image_url: '', min_stock_alert: 5 }
+      
+      const defaultPrice = product.prices?.find(p => p.price_list?.is_default) || product.prices?.[0]
+      
+      return {
+        name: product.name,
+        description: product.description,
+        barcode: product.barcode,
+        internal_code: product.internal_code,
+        category_id: product.category_id,
+        unit_id: product.unit_id,
+        cost_price: product.cost_price,
+        min_stock_alert: product.min_stock_alert,
+        image_url: product.image_url ?? '',
+        brand_id: product.brand_id ?? '',
+        supplier_id: product.supplier_id ?? '',
+        sale_price: defaultPrice ? Number(defaultPrice.price) : 0,
+        sale_margin: product.cost_price > 0 && defaultPrice 
+          ? Number((((Number(defaultPrice.price) - product.cost_price) / product.cost_price) * 100).toFixed(2))
+          : 35
+      }
+    })(),
   })
 
   // Estado UI
@@ -178,7 +184,7 @@ function ProductModal({
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-5 overflow-y-auto no-scrollbar">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-5 space-y-5">
           {/* Imagen */}
           <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-border rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors relative group">
             {previewUrl ? (
@@ -202,189 +208,194 @@ function ProductModal({
             <p className="mt-2 text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Imagen del producto</p>
           </div>
 
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Nombre <span className="text-destructive">*</span></label>
-            <input
-              {...register('name')}
-              className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/30"
-              placeholder="Ej: Leche La Serenísima 1L"
-            />
-            {errors.name && <p className="text-destructive text-xs mt-1">{errors.name.message}</p>}
-          </div>
-
-          {/* MARCA Y PROVEEDOR - REDISEÑADO PARA EVITAR SCROLL */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                   <Award className="w-3 h-3" /> Marca
-                </label>
-                <button type="button" onClick={() => setShowQuickBrand(!showQuickBrand)} className="text-[10px] text-primary hover:underline font-bold uppercase tracking-tighter">
-                  {showQuickBrand ? 'Cerrar' : '+ Nueva'}
-                </button>
-              </div>
-              {showQuickBrand ? (
-                <div className="flex gap-1 animate-scale-in">
-                  <input
-                    value={newBrandName}
-                    onChange={(e) => setNewBrandName(e.target.value)}
-                    className="flex-1 min-w-0 px-2.5 py-2 bg-background border border-primary/50 rounded-xl text-xs focus:ring-2 focus:ring-primary/20"
-                    placeholder="Nombre..."
-                    autoFocus
-                  />
-                  <button type="button" onClick={handleQuickBrand} className="px-3 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">OK</button>
-                </div>
-              ) : (
-                <select
-                  {...register('brand_id')}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm truncate"
-                >
-                  <option value="">Sin marca</option>
-                  {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              )}
-            </div>
-
-            <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest inline-flex items-center gap-1">
-                  Proveedor
-                </label>
-                <button type="button" onClick={() => setShowQuickSupplier(!showQuickSupplier)} className="text-[10px] text-primary hover:underline font-bold uppercase tracking-tighter">
-                  {showQuickSupplier ? 'Cerrar' : '+ Nuevo'}
-                </button>
-              </div>
-              {showQuickSupplier ? (
-                <div className="flex gap-1 animate-scale-in">
-                  <input
-                    value={newSupplierName}
-                    onChange={(e) => setNewSupplierName(e.target.value)}
-                    className="flex-1 min-w-0 px-2.5 py-2 bg-background border border-primary/50 rounded-xl text-xs focus:ring-2 focus:ring-primary/20"
-                    placeholder="Nombre..."
-                    autoFocus
-                  />
-                  <button type="button" onClick={handleQuickSupplier} className="px-3 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">OK</button>
-                </div>
-              ) : (
-                <select
-                  {...register('supplier_id')}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm truncate"
-                >
-                  <option value="">Sin proveedor</option>
-                  {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              )}
-            </div>
-          </div>
-
-          {/* CÓDIGOS - RESTAURADOS Y MEJORADOS */}
-          <div className="grid grid-cols-2 gap-4">
+          <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Nombre */}
             <div>
-              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Código EAN (Barras)</label>
-              <input 
-                {...register('barcode')} 
-                className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm font-mono" 
-                placeholder="779..." 
+              <label className="block text-sm font-medium text-foreground mb-1.5">Nombre <span className="text-destructive">*</span></label>
+              <input
+                {...register('name')}
+                className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/30"
+                placeholder="Ej: Leche La Serenísima 1L"
               />
+              {errors.name && <p className="text-destructive text-xs mt-1">{errors.name.message}</p>}
             </div>
-            <div>
-              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Código Interno</label>
-              <input 
-                {...register('internal_code')} 
-                className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm font-mono" 
-                placeholder="PROD-001" 
-              />
-            </div>
-          </div>
 
-          {/* Categoría y Unidad */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Categoría</label>
-              <select {...register('category_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
-                <option value="">Sin categoría</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Unidad</label>
-              <select {...register('unit_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
-                {units.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>)}
-              </select>
-            </div>
-          </div>
+            {/* MARCA Y PROVEEDOR */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                     <Award className="w-3 h-3" /> Marca
+                  </label>
+                  <button type="button" onClick={() => setShowQuickBrand(!showQuickBrand)} className="text-[10px] text-primary hover:underline font-bold uppercase tracking-tighter">
+                    {showQuickBrand ? 'Cerrar' : '+ Nueva'}
+                  </button>
+                </div>
+                {showQuickBrand ? (
+                  <div className="flex gap-1 animate-scale-in">
+                    <input
+                      value={newBrandName}
+                      onChange={(e) => setNewBrandName(e.target.value)}
+                      className="flex-1 min-w-0 px-2.5 py-2 bg-background border border-primary/50 rounded-xl text-xs focus:ring-2 focus:ring-primary/20"
+                      placeholder="Nombre..."
+                      autoFocus
+                    />
+                    <button type="button" onClick={handleQuickBrand} className="px-3 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">OK</button>
+                  </div>
+                ) : (
+                  <select
+                    {...register('brand_id')}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm truncate"
+                  >
+                    <option value="">Sin marca</option>
+                    {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                )}
+              </div>
 
-          {/* PRECIOS */}
-          <div className="p-5 bg-muted/20 border border-border rounded-2xl space-y-4 shadow-inner">
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest inline-flex items-center gap-1">
+                    Proveedor
+                  </label>
+                  <button type="button" onClick={() => setShowQuickSupplier(!showQuickSupplier)} className="text-[10px] text-primary hover:underline font-bold uppercase tracking-tighter">
+                    {showQuickSupplier ? 'Cerrar' : '+ Nuevo'}
+                  </button>
+                </div>
+                {showQuickSupplier ? (
+                  <div className="flex gap-1 animate-scale-in">
+                    <input
+                      value={newSupplierName}
+                      onChange={(e) => setNewSupplierName(e.target.value)}
+                      className="flex-1 min-w-0 px-2.5 py-2 bg-background border border-primary/50 rounded-xl text-xs focus:ring-2 focus:ring-primary/20"
+                      placeholder="Nombre..."
+                      autoFocus
+                    />
+                    <button type="button" onClick={handleQuickSupplier} className="px-3 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">OK</button>
+                  </div>
+                ) : (
+                  <select
+                    {...register('supplier_id')}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm truncate"
+                  >
+                    <option value="">Sin proveedor</option>
+                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* CÓDIGOS */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Costo Unitario ($)</label>
-                <input
-                  {...register('cost_price')}
-                  type="number" step="0.01"
-                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-base font-bold text-foreground focus:ring-2 focus:ring-primary/20"
-                  placeholder="0.00"
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Código EAN (Barras)</label>
+                <input 
+                  {...register('barcode')} 
+                  className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm font-mono" 
+                  placeholder="779..." 
                 />
               </div>
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Venta</label>
-                  <div className="flex bg-background border border-border rounded-lg p-0.5 scale-90">
-                    <button type="button" onClick={() => setPriceType('value')} className={`px-2 py-0.5 text-[10px] font-bold rounded ${priceType === 'value' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground'}`}>$</button>
-                    <button type="button" onClick={() => setPriceType('percent')} className={`px-2 py-0.5 text-[10px] font-bold rounded ${priceType === 'percent' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground'}`}>%</button>
-                  </div>
-                </div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Código Interno</label>
+                <input 
+                  {...register('internal_code')} 
+                  className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm font-mono" 
+                  placeholder="PROD-001" 
+                />
+              </div>
+            </div>
 
-                {priceType === 'value' ? (
+            {/* Categoría y Unidad */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Categoría</label>
+                <select {...register('category_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
+                  <option value="">Sin categoría</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Unidad</label>
+                <select {...register('unit_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
+                  {units.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* PRECIOS */}
+            <div className="p-5 bg-muted/20 border border-border rounded-2xl space-y-4 shadow-inner">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Costo Unitario ($)</label>
                   <input
-                    {...register('sale_price')}
+                    {...register('cost_price')}
                     type="number" step="0.01"
-                    className="w-full px-4 py-2.5 bg-background border-2 border-primary/30 text-primary rounded-xl text-base font-bold focus:ring-4 focus:ring-primary/10"
+                    className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-base font-bold text-foreground focus:ring-2 focus:ring-primary/20"
                     placeholder="0.00"
                   />
-                ) : (
-                  <div className="relative">
-                    <input
-                      {...register('sale_margin')}
-                      type="number" step="0.25"
-                      className="w-full pr-10 pl-4 py-2.5 bg-background border-2 border-primary/30 text-primary rounded-xl text-base font-bold focus:ring-4 focus:ring-primary/10"
-                      placeholder="35"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-primary/50">%</span>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Venta</label>
+                    <div className="flex bg-background border border-border rounded-lg p-0.5 scale-90">
+                      <button type="button" onClick={() => setPriceType('value')} className={`px-2 py-0.5 text-[10px] font-bold rounded ${priceType === 'value' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground'}`}>$</button>
+                      <button type="button" onClick={() => setPriceType('percent')} className={`px-2 py-0.5 text-[10px] font-bold rounded ${priceType === 'percent' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground'}`}>%</button>
+                    </div>
                   </div>
-                )}
+
+                  {priceType === 'value' ? (
+                    <input
+                      {...register('sale_price')}
+                      type="number" step="0.01"
+                      className="w-full px-4 py-2.5 bg-background border-2 border-primary/30 text-primary rounded-xl text-base font-bold focus:ring-4 focus:ring-primary/10"
+                      placeholder="0.00"
+                    />
+                  ) : (
+                    <div className="relative">
+                      <input
+                        {...register('sale_margin')}
+                        type="number" step="0.25"
+                        className="w-full pr-10 pl-4 py-2.5 bg-background border-2 border-primary/30 text-primary rounded-xl text-base font-bold focus:ring-4 focus:ring-primary/10"
+                        placeholder="35"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-primary/50">%</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <div className="text-[11px] font-medium leading-tight">
+                  {priceType === 'value' && watchedCost > 0 && watchedSale > 0 && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground uppercase tracking-tighter">Utilidad:</span> 
+                      <span className="text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">${(watchedSale - watchedCost).toFixed(2)} ({(((watchedSale - watchedCost) / watchedCost) * 100).toFixed(1)}%)</span>
+                    </span>
+                  )}
+                  {priceType === 'percent' && watchedCost > 0 && watchedMargin > 0 && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground uppercase tracking-tighter">Sugerido:</span> 
+                      <span className="text-primary font-bold bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">${(watchedCost * (1 + watchedMargin / 100)).toFixed(2)}</span>
+                    </span>
+                  )}
+                </div>
+                <button type="button" onClick={handleSuggestMargin} className="text-[10px] font-black uppercase text-primary hover:text-primary/80 transition-colors drop-shadow-sm">Aplicar +35%</button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <div className="text-[11px] font-medium leading-tight">
-                {priceType === 'value' && watchedCost > 0 && watchedSale > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-muted-foreground uppercase tracking-tighter">Utilidad:</span> 
-                    <span className="text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">${(watchedSale - watchedCost).toFixed(2)} ({(((watchedSale - watchedCost) / watchedCost) * 100).toFixed(1)}%)</span>
-                  </span>
-                )}
-                {priceType === 'percent' && watchedCost > 0 && watchedMargin > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-muted-foreground uppercase tracking-tighter">Sugerido:</span> 
-                    <span className="text-primary font-bold bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">${(watchedCost * (1 + watchedMargin / 100)).toFixed(2)}</span>
-                  </span>
-                )}
-              </div>
-              <button type="button" onClick={handleSuggestMargin} className="text-[10px] font-black uppercase text-primary hover:text-primary/80 transition-colors drop-shadow-sm">Aplicar +35%</button>
+            <div>
+               <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Alerta Stock Mínimo</label>
+               <input {...register('min_stock_alert')} type="number" className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm font-bold" />
             </div>
-          </div>
+          </form>
+        </div>
 
-          <div>
-             <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Alerta Stock Mínimo</label>
-             <input {...register('min_stock_alert')} type="number" className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm font-bold" />
-          </div>
-
-          {/* Footer Actions */}
-          <div className="flex gap-3 pt-6 border-t border-border mt-2">
+        {/* Footer Actions — Sticky */}
+        <div className="p-5 border-t border-border bg-card/50 backdrop-blur-md rounded-b-2xl flex-shrink-0">
+          <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3 px-4 border border-border rounded-2xl text-sm font-bold hover:bg-accent transition-all">Cancelar</button>
             <button
+              form="product-form"
               type="submit"
               disabled={isPending || uploadImage.isPending}
               className="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-2xl text-sm font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 transition-all flex items-center justify-center gap-2"
@@ -393,7 +404,7 @@ function ProductModal({
               {product ? 'Guardar Cambios' : 'Crear Producto'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )
@@ -423,6 +434,43 @@ export default function ProductsPage() {
   const handleCloseModal = () => {
     setShowModal(false)
     setEditingProduct(undefined)
+  }
+
+  const handleDeleteConfirmation = (product: Product) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3 p-1">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center text-destructive">
+            <Trash2 className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">¿Eliminar producto?</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">{product.name}</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex-1 px-3 py-1.5 bg-muted text-muted-foreground rounded-lg text-xs font-bold hover:bg-muted/80 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => {
+              deleteProduct.mutate(product.id)
+              toast.dismiss(t.id)
+            }}
+            className="flex-1 px-3 py-1.5 bg-destructive text-white rounded-lg text-xs font-bold hover:bg-destructive/90 transition-colors shadow-sm"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 5000,
+      position: 'bottom-center',
+      className: 'bg-card border border-border rounded-2xl shadow-2xl p-0 overflow-hidden min-w-[280px]',
+    })
   }
 
   return (
@@ -489,9 +537,7 @@ export default function ProductsPage() {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`¿Desactivar "${product.name}"?`)) deleteProduct.mutate(product.id)
-                      }}
+                      onClick={() => handleDeleteConfirmation(product)}
                       className="p-2 bg-white/90 backdrop-blur-sm text-destructive rounded-full shadow-lg hover:bg-destructive hover:text-white transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

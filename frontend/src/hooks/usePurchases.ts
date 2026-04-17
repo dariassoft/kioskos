@@ -22,6 +22,32 @@ export const useCreateSupplier = () => {
   });
 };
 
+export const useUpdateSupplier = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateSupplierDto> }) => 
+      purchasesApi.updateSupplier(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast.success('Proveedor actualizado');
+    },
+    onError: () => toast.error('Error al actualizar el proveedor'),
+  });
+};
+
+export const useDeleteSupplier = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => purchasesApi.deleteSupplier(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      toast.success('Proveedor eliminado');
+    },
+    onError: (error: any) => 
+      toast.error(error?.response?.data?.message || 'Error al eliminar el proveedor'),
+  });
+};
+
 export const useOrders = () => {
   return useQuery({
     queryKey: ['purchase-orders'],

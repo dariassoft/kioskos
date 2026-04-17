@@ -10,7 +10,7 @@ export declare class InventoryController {
         limit: number;
         pages: number;
     }>;
-    quickSearch(tenantId: string, q: string): Promise<import("./entities/product.entity").Product[]>;
+    quickSearch(tenantId: string, q: string, branchId?: string): Promise<import("./entities/product.entity").Product[]>;
     findOne(id: string, tenantId: string): Promise<import("./entities/product.entity").Product>;
     createProduct(dto: CreateProductDto, tenantId: string): Promise<import("./entities/product.entity").Product>;
     updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<import("./entities/product.entity").Product>;

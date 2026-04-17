@@ -103,16 +103,21 @@ let SalesService = class SalesService {
     }
     async createSale(dto, tenantId, userId) {
         await this.assertBranchExists(dto.branch_id, tenantId);
+        for (const item of dto.items) {
+            await this.inventoryService.findOneProduct(item.product_id, tenantId);
+        }
         const activeRegister = await this.getActiveRegister(tenantId, dto.branch_id, userId);
         if (!activeRegister) {
             throw new common_1.BadRequestException('Debes abrir la caja antes de registrar una venta');
         }
         let customer = null;
-        if (dto.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT) {
-            if (!dto.customer_id) {
-                throw new common_1.BadRequestException('Debes seleccionar un cliente para venderle al fiado');
-            }
+        if (dto.customer_id) {
             customer = await this.findOneCustomer(dto.customer_id, tenantId);
+        }
+        if (dto.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT) {
+            if (!customer) {
+                throw new common_1.BadRequestException('Debes seleccionar un cliente válido para venderle al fiado');
+            }
         }
         const total = dto.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unit_price)), 0);
         const paymentStatus = this.resolvePaymentStatus(dto.payment_method, dto.payment_status, dto.payment_details?.mp_payment_status);

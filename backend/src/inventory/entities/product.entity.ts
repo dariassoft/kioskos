@@ -68,4 +68,7 @@ export class Product extends BaseKioskosEntity {
 
   @OneToMany(() => ProductPrice, (pp) => pp.product, { eager: true })
   prices: ProductPrice[];
+
+  @OneToMany(() => Inventory, (inv) => inv.product)
+  inventory_records: Inventory[];
 }

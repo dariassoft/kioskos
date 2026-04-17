@@ -37,10 +37,13 @@ export class InventoryController {
 
   @Get('products/search')
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
-  @ApiOperation({ summary: 'Búsqueda rápida de productos (para POS)' })
-  @ApiQuery({ name: 'q', description: 'Nombre, código de barras o código interno' })
-  quickSearch(@GetTenantId() tenantId: string, @Query('q') q: string) {
-    return this.inventoryService.quickSearch(q || '', tenantId);
+  @ApiQuery({ name: 'branch_id', required: false, description: 'ID de la sucursal para obtener stock actual en los resultados' })
+  quickSearch(
+    @GetTenantId() tenantId: string, 
+    @Query('q') q: string,
+    @Query('branch_id') branchId?: string,
+  ) {
+    return this.inventoryService.quickSearch(q || '', tenantId, branchId);
   }
 
   @Get('products/:id')

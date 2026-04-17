@@ -29,8 +29,8 @@ let InventoryController = class InventoryController {
     findAllProducts(tenantId, query) {
         return this.inventoryService.findAllProducts(tenantId, query);
     }
-    quickSearch(tenantId, q) {
-        return this.inventoryService.quickSearch(q || '', tenantId);
+    quickSearch(tenantId, q, branchId) {
+        return this.inventoryService.quickSearch(q || '', tenantId, branchId);
     }
     findOne(id, tenantId) {
         return this.inventoryService.findOneProduct(id, tenantId);
@@ -117,12 +117,12 @@ __decorate([
 __decorate([
     (0, common_1.Get)('products/search'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),
-    (0, swagger_1.ApiOperation)({ summary: 'Búsqueda rápida de productos (para POS)' }),
-    (0, swagger_1.ApiQuery)({ name: 'q', description: 'Nombre, código de barras o código interno' }),
+    (0, swagger_1.ApiQuery)({ name: 'branch_id', required: false, description: 'ID de la sucursal para obtener stock actual en los resultados' }),
     __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
     __param(1, (0, common_1.Query)('q')),
+    __param(2, (0, common_1.Query)('branch_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "quickSearch", null);
 __decorate([

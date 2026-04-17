@@ -34,6 +34,9 @@ let PurchasesController = class PurchasesController {
     updateSupplier(id, dto, tenantId) {
         return this.purchasesService.updateSupplier(id, dto, tenantId);
     }
+    removeSupplier(id, tenantId) {
+        return this.purchasesService.removeSupplier(id, tenantId);
+    }
     findAllOrders(tenantId) {
         return this.purchasesService.findAllOrders(tenantId);
     }
@@ -78,6 +81,16 @@ __decorate([
     __metadata("design:paramtypes", [String, purchases_dto_1.UpdateSupplierDto, String]),
     __metadata("design:returntype", void 0)
 ], PurchasesController.prototype, "updateSupplier", null);
+__decorate([
+    (0, common_1.Delete)('suppliers/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN),
+    (0, swagger_1.ApiOperation)({ summary: 'Eliminar un proveedor' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], PurchasesController.prototype, "removeSupplier", null);
 __decorate([
     (0, common_1.Get)('orders'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),

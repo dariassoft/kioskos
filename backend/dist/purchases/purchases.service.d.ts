@@ -16,6 +16,7 @@ export declare class PurchasesService {
     findOneSupplier(id: string, tenantId: string): Promise<Supplier>;
     createSupplier(dto: CreateSupplierDto, tenantId: string): Promise<Supplier>;
     updateSupplier(id: string, dto: UpdateSupplierDto, tenantId: string): Promise<Supplier>;
+    removeSupplier(id: string, tenantId: string): Promise<void>;
     findAllOrders(tenantId: string): Promise<PurchaseOrder[]>;
     findOneOrder(id: string, tenantId: string): Promise<PurchaseOrder>;
     createOrder(dto: CreatePurchaseOrderDto, tenantId: string): Promise<PurchaseOrder>;

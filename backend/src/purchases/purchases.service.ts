@@ -56,6 +56,11 @@ export class PurchasesService {
     return this.findOneSupplier(id, tenantId);
   }
 
+  async removeSupplier(id: string, tenantId: string): Promise<void> {
+    const supplier = await this.findOneSupplier(id, tenantId);
+    await this.supplierRepo.remove(supplier);
+  }
+
   // ==========================================
   // ORDENES DE COMPRA
   // ==========================================
@@ -78,6 +83,15 @@ export class PurchasesService {
   }
 
   async createOrder(dto: CreatePurchaseOrderDto, tenantId: string): Promise<PurchaseOrder> {
+    // 1. Validar propiedad del proveedor y sucursal
+    await this.findOneSupplier(dto.supplier_id, tenantId);
+    await this.inventoryService.findOneBranch(dto.branch_id, tenantId);
+
+    // 2. Validar propiedad de cada producto antes de crear los ítems
+    for (const item of dto.items) {
+      await this.inventoryService.findOneProduct(item.product_id, tenantId);
+    }
+
     const total = dto.items.reduce((acc, item) => acc + Number(item.quantity) * Number(item.unit_cost), 0);
 
     const order = this.orderRepo.create({
