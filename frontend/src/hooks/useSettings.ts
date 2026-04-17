@@ -121,6 +121,12 @@ export function useSaveMercadopagoConfig() {
   })
 }
 
+export function useMercadopagoAuthUrl() {
+  return useMutation({
+    mutationFn: settingsMercadopagoApi.getAuthUrl,
+  })
+}
+
 // ==========================================
 // PERFIL DEL NEGOCIO
 // ==========================================

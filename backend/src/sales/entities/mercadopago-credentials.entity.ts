@@ -18,6 +18,18 @@ export class MercadopagoCredentials extends BaseKioskosEntity {
   @Column({ type: 'varchar', length: 500, nullable: true })
   access_token: string | null;
 
+  /** Refresh Token para renovar el Access Token (⚠️ SENSIBLE) */
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  refresh_token: string | null;
+
+  /** ID de usuario de MercadoPago vinculado */
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  mp_user_id: string | null;
+
+  /** Fecha de expiración del access_token */
+  @Column({ type: 'timestamp', nullable: true })
+  token_expires_at: Date | null;
+
   /** ID de la tienda/POS en MercadoPago */
   @Column({ type: 'varchar', length: 100, nullable: true })
   store_id: string | null;

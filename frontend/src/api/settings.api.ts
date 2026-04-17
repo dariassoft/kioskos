@@ -48,4 +48,6 @@ export const settingsMercadopagoApi = {
     apiClient.get(`${BASE}/mercadopago`).then((r) => r.data),
   save: (dto: SaveMercadopagoCredentialsDto): Promise<MercadopagoCredentials> =>
     apiClient.post(`${BASE}/mercadopago`, dto).then((r) => r.data),
+  getAuthUrl: (): Promise<{ url: string }> =>
+    apiClient.get(`${BASE}/mercadopago/auth-url`).then((r) => r.data),
 }

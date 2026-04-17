@@ -47,6 +47,10 @@ const settingsTools = [
     color: 'bg-slate-700' 
   },
   { 
+    id: 'mercadopago',
+    to: '/settings/mercadopago', 
+    label: 'MercadoPago', 
+    description: 'Cobros automáticos por QR, link de pago y Point',
     icon: CreditCard, 
     color: 'bg-sky-500' 
   },
