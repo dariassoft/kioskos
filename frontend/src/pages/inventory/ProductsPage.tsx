@@ -248,7 +248,7 @@ function ProductModal({
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm truncate"
                   >
                     <option value="">Sin marca</option>
-                    {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    {brands.map((b: Brand) => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 )}
               </div>
@@ -279,7 +279,7 @@ function ProductModal({
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm truncate"
                   >
                     <option value="">Sin proveedor</option>
-                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {suppliers.map((s: Supplier) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 )}
               </div>
@@ -311,13 +311,13 @@ function ProductModal({
                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Categoría</label>
                 <select {...register('category_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
                   <option value="">Sin categoría</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {categories.map((c: Category) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Unidad</label>
                 <select {...register('unit_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
-                  {units.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>)}
+                  {units.map((u: Unit) => <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>)}
                 </select>
               </div>
             </div>
@@ -424,7 +424,6 @@ export default function ProductsPage() {
 
   const products = data?.data ?? []
   const totalPages = data?.pages ?? 1
-  const total = data?.total ?? 0
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product)

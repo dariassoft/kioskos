@@ -42,7 +42,7 @@ interface CartState {
  * Store del carrito del POS.
  * No se persiste — el carrito se limpia al cerrar o completar la venta.
  */
-export const useCartStore = create<CartState>()((set, get) => ({
+export const useCartStore = create<CartState>()((set, _get) => ({
   items: [],
   paymentMethod: 'cash',
   customerId: null,

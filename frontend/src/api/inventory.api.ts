@@ -2,6 +2,7 @@ import apiClient from '@api/client'
 import type {
   Product, Branch, Category, Unit, PriceList,
   Inventory, ProductQuery, PaginatedProducts,
+  BulkUpdatePriceDto, Brand, CreateBrandDto,
 } from './inventory.types'
 
 // ==========================================

@@ -1,16 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi } from '@api/inventory.api'
-import type { ProductQuery } from '@api/inventory.types'
+import type { ProductQuery, Brand, CreateBrandDto } from '@api/inventory.types'
 import toast from 'react-hot-toast'
 
 // ==========================================
 // QUERIES
 // ==========================================
 
-export const useProducts = (params?: ProductQuery) =>
+export const useProducts = (params?: ProductQuery, options?: any) =>
   useQuery({
     queryKey: ['products', params],
     queryFn: () => inventoryApi.getProducts(params),
+    ...options,
   })
 
 export const useProduct = (id: string) =>

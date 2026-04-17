@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { 
   TrendingUp, TrendingDown, DollarSign, Percent, 
-  AlertCircle, CheckCircle2, Loader2, Package, Tag, User, Landmark, Award
+  AlertCircle, CheckCircle2, Loader2, Tag, User, Landmark, Award
 } from 'lucide-react'
 import { useCategories, useBrands, useBulkUpdatePrices } from '@hooks/useInventory'
 import { useSuppliers } from '@hooks/usePurchases'
 import { PriceAdjustmentType } from '@api/inventory.types'
+import type { Category, Brand } from '@api/inventory.types'
+import type { Supplier } from '@api/purchases.types'
 
 export default function MassivePricingPage() {
   const { data: categories = [] } = useCategories()
@@ -84,7 +86,7 @@ export default function MassivePricingPage() {
                 className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 appearance-none font-medium"
               >
                 <option value="">Todas las categorías</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {categories.map((c: Category) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
@@ -98,7 +100,7 @@ export default function MassivePricingPage() {
                 className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 appearance-none font-medium"
               >
                 <option value="">Todas las marcas</option>
-                {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                {brands.map((b: Brand) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
 
@@ -112,7 +114,7 @@ export default function MassivePricingPage() {
                 className="w-full px-4 py-2.5 bg-muted/30 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 appearance-none font-medium"
               >
                 <option value="">Todos los proveedores</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {suppliers.map((s: Supplier) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
           </div>
