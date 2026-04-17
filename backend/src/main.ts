@@ -17,6 +17,9 @@ async function ensureAuxiliaryTables(dataSource: DataSource) {
       \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
       \`public_key\` varchar(200) NULL,
       \`access_token\` varchar(500) NULL,
+      \`refresh_token\` varchar(500) NULL,
+      \`mp_user_id\` varchar(100) NULL,
+      \`token_expires_at\` timestamp NULL,
       \`store_id\` varchar(100) NULL,
       \`pos_id\` varchar(100) NULL,
       \`is_sandbox\` tinyint NOT NULL DEFAULT 1,
@@ -26,6 +29,20 @@ async function ensureAuxiliaryTables(dataSource: DataSource) {
       UNIQUE INDEX \`IDX_mp_credentials_tenant\` (\`tenant_id\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  // Migraciones manuales seguras para tablas existentes
+  const tables = await dataSource.query(`SHOW COLUMNS FROM \`mercadopago_credentials\``);
+  const columnNames = tables.map((c: any) => c.Field);
+
+  if (!columnNames.includes('refresh_token')) {
+    await dataSource.query('ALTER TABLE `mercadopago_credentials` ADD COLUMN `refresh_token` varchar(500) NULL');
+  }
+  if (!columnNames.includes('mp_user_id')) {
+    await dataSource.query('ALTER TABLE `mercadopago_credentials` ADD COLUMN `mp_user_id` varchar(100) NULL');
+  }
+  if (!columnNames.includes('token_expires_at')) {
+    await dataSource.query('ALTER TABLE `mercadopago_credentials` ADD COLUMN `token_expires_at` timestamp NULL');
+  }
 
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS \`afip_credentials\` (
