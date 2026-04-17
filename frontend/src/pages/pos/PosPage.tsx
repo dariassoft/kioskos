@@ -35,7 +35,7 @@ import { useCartStore } from '@store/cart.store'
 import { useBranchStore } from '@store/branch.store' 
 import toast from 'react-hot-toast'
 import type { Product, Category } from '@api/inventory.types'
-import type { PaymentMethod, PaymentStatus, SaleStatus, CreateSaleDto, Customer } from '@api/sales.types'
+import type { PaymentMethod, PaymentStatus, CreateSaleDto, Customer } from '@api/sales.types'
 
 function OpenRegisterModal({ branchId }: { branchId: string }) {
   const [balance, setBalance] = useState('')

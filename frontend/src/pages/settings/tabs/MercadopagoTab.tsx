@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useSearchParams } from 'react-router-dom'
 import { 
   Loader2, CreditCard, ShieldCheck, Wifi, AlertTriangle, 
-  ChevronDown, ChevronUp, Link2, ExternalLink, CheckCircle2, XCircle
+  ChevronDown, ChevronUp, Link2, ExternalLink, CheckCircle2
 } from 'lucide-react'
 import {
   useMercadopagoConfig,

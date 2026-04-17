@@ -1,5 +1,5 @@
 import apiClient from '@api/client'
-import type { Customer, CashRegister, Sale, CreateSaleDto, ListSalesQuery, SalesListResponse } from './sales.types'
+import type { Customer, CashRegister, Sale, CreateSaleDto, ListSalesQuery, SalesListResponse, PaymentAccount, CreatePaymentAccountDto } from './sales.types'
 
 export default {
   // ==========================================

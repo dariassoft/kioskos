@@ -9,7 +9,6 @@ import {
   useUpdatePaymentAccount, 
   useDeletePaymentAccount 
 } from '@hooks/useSales'
-import toast from 'react-hot-toast'
 
 export default function PaymentAccountsTab() {
   const { data: accounts, isLoading } = usePaymentAccounts()
