@@ -11,6 +11,7 @@ import {
   useDeleteProduct, useCategories, useUnits,
   useUploadProductImage,
 } from '@hooks/useInventory'
+import { useSuppliers, useCreateSupplier } from '@hooks/usePurchases'
 import type { Product } from '@api/inventory.types'
 
 const productSchema = z.object({
@@ -23,7 +24,12 @@ const productSchema = z.object({
   cost_price: z.coerce.number().min(0).optional(),
   min_stock_alert: z.coerce.number().min(0).optional(),
   image_url: z.string().optional(),
+  brand: z.string().optional(),
+  supplier_id: z.string().optional(),
+  sale_price: z.coerce.number().min(0).optional(),
+  sale_margin: z.coerce.number().optional(),
 })
+
 type ProductForm = z.infer<typeof productSchema>
 
 // ==========================================
@@ -38,12 +44,18 @@ function ProductModal({
 }) {
   const { data: categories = [] } = useCategories()
   const { data: units = [] } = useUnits()
+  const { data: suppliers = [] } = useSuppliers()
+  
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
+  const createSupplier = useCreateSupplier()
+  const uploadImage = useUploadProductImage()
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
@@ -58,6 +70,8 @@ function ProductModal({
           cost_price: product.cost_price,
           min_stock_alert: product.min_stock_alert,
           image_url: product.image_url ?? '',
+          brand: product.brand ?? '',
+          supplier_id: product.supplier_id ?? '',
         }
       : {
           image_url: '',
@@ -65,9 +79,16 @@ function ProductModal({
         },
   })
 
+  // Estado UI
+  const [priceType, setPriceType] = useState<'value' | 'percent'>('value')
+  const [showQuickSupplier, setShowQuickSupplier] = useState(false)
+  const [newSupplierName, setNewSupplierName] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image_url ?? null)
-  const uploadImage = useUploadProductImage()
+
+  const watchedCost = watch('cost_price') || 0
+  const watchedSale = watch('sale_price') || 0
+  const watchedMargin = watch('sale_margin') || 0
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -75,6 +96,29 @@ function ProductModal({
       setSelectedFile(file)
       setPreviewUrl(URL.createObjectURL(file))
     }
+  }
+
+  const handleQuickSupplier = async () => {
+    if (!newSupplierName.trim()) return
+    try {
+      const res = await createSupplier.mutateAsync({ name: newSupplierName })
+      if (res?.id) {
+        setValue('supplier_id', res.id)
+        setShowQuickSupplier(false)
+        setNewSupplierName('')
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleSuggestMargin = () => {
+    setValue('sale_margin', 35)
+    if (watchedCost > 0) {
+      const suggestedPrice = Number(watchedCost) * 1.35
+      setValue('sale_price', Number(suggestedPrice.toFixed(2)))
+    }
+    setPriceType('percent')
   }
 
   const onSubmit = async (data: ProductForm) => {
@@ -96,9 +140,9 @@ function ProductModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl animate-fade-in">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border">
+        <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
               <Package className="w-4.5 h-4.5 text-primary" />
@@ -112,9 +156,9 @@ function ProductModal({
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-          {/* Imagen del producto */}
+        {/* Form Content */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4 overflow-y-auto">
+          {/* Imagen */}
           <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-border rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors relative group">
             {previewUrl ? (
               <img
@@ -132,151 +176,155 @@ function ProductModal({
               <span className="text-white text-xs font-medium bg-primary px-3 py-1.5 rounded-full shadow-lg">
                 {previewUrl ? 'Cambiar foto' : 'Subir foto'}
               </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
+              <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
             <p className="mt-2 text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Imagen del producto</p>
           </div>
 
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
-              Nombre <span className="text-destructive">*</span>
-            </label>
-            <input
-              {...register('name')}
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                         focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="Ej: Leche La Serenísima 1L"
-            />
-            {errors.name && <p className="text-destructive text-xs mt-1">{errors.name.message}</p>}
+          {/* Nombre y Marca */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Nombre <span className="text-destructive">*</span></label>
+              <input
+                {...register('name')}
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30"
+                placeholder="Ej: Leche La Serenísima 1L"
+              />
+              {errors.name && <p className="text-destructive text-xs mt-1">{errors.name.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Marca</label>
+                <input
+                  {...register('brand')}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                  placeholder="Ej: Coca-Cola"
+                />
+              </div>
+              <div className="relative">
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex justify-between">
+                  Proveedor
+                  <button type="button" onClick={() => setShowQuickSupplier(!showQuickSupplier)} className="text-primary hover:underline">+ Nuevo</button>
+                </label>
+                {showQuickSupplier ? (
+                  <div className="flex gap-1 animate-fade-in">
+                    <input
+                      value={newSupplierName}
+                      onChange={(e) => setNewSupplierName(e.target.value)}
+                      className="flex-1 px-2 py-1 bg-background border border-primary rounded-lg text-xs"
+                      placeholder="Nombre..."
+                      autoFocus
+                    />
+                    <button type="button" onClick={handleQuickSupplier} className="px-2 bg-primary text-white rounded-lg text-xs">OK</button>
+                  </div>
+                ) : (
+                  <select
+                    {...register('supplier_id')}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                  >
+                    <option value="">Sin proveedor</option>
+                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Código de barras + Código interno */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Códigos y Categoría */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Código de barras (EAN)
-              </label>
-              <input
-                {...register('barcode')}
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                placeholder="7790040913498"
-              />
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Código EAN</label>
+              <input {...register('barcode')} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm" placeholder="779..." />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Código interno
-              </label>
-              <input
-                {...register('internal_code')}
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                placeholder="PRD-001"
-              />
-            </div>
-          </div>
-
-          {/* Categoría + Unidad */}
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">Categoría</label>
-              <select
-                {...register('category_id')}
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              >
+              <select {...register('category_id')} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm">
                 <option value="">Sin categoría</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
+          </div>
+
+          {/* PRECIOS */}
+          <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-4 shadow-inner">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Costo Unitario ($)</label>
+                <input
+                  {...register('cost_price')}
+                  type="number" step="0.01"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm font-bold"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Venta</label>
+                  <div className="flex bg-background border border-border rounded-md p-0.5 scale-90">
+                    <button type="button" onClick={() => setPriceType('value')} className={`px-1.5 py-0.5 text-[10px] rounded ${priceType === 'value' ? 'bg-primary text-white' : 'text-muted-foreground'}`}>$</button>
+                    <button type="button" onClick={() => setPriceType('percent')} className={`px-1.5 py-0.5 text-[10px] rounded ${priceType === 'percent' ? 'bg-primary text-white' : 'text-muted-foreground'}`}>%</button>
+                  </div>
+                </div>
+
+                {priceType === 'value' ? (
+                  <input
+                    {...register('sale_price')}
+                    type="number" step="0.01"
+                    className="w-full px-3 py-2 bg-background border border-primary/50 text-indigo-600 rounded-lg text-sm font-bold"
+                    placeholder="0.00"
+                  />
+                ) : (
+                  <div className="relative">
+                    <input
+                      {...register('sale_margin')}
+                      type="number" step="0.1"
+                      className="w-full pr-8 pl-3 py-2 bg-background border border-primary/50 text-indigo-600 rounded-lg text-sm font-bold"
+                      placeholder="35"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px]">
+              <div className="text-muted-foreground font-medium">
+                {priceType === 'value' && watchedCost > 0 && watchedSale > 0 && (
+                  <span>Utilidad: <span className="text-emerald-500 font-bold">${(watchedSale - watchedCost).toFixed(2)} ({(((watchedSale - watchedCost) / watchedCost) * 100).toFixed(1)}%)</span></span>
+                )}
+                {priceType === 'percent' && watchedCost > 0 && watchedMargin > 0 && (
+                  <span>Precio sugerido: <span className="text-indigo-600 font-bold">${(watchedCost * (1 + watchedMargin / 100)).toFixed(2)}</span></span>
+                )}
+              </div>
+              <button type="button" onClick={handleSuggestMargin} className="text-primary hover:underline font-bold uppercase tracking-tighter">Aplicar +35%</button>
+            </div>
+          </div>
+
+          {/* Descripción y otros */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">Unidad</label>
-              <select
-                {...register('unit_id')}
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              >
-                <option value="">Sin unidad</option>
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>
-                ))}
+              <select {...register('unit_id')} className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm">
+                {units.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>)}
               </select>
             </div>
-          </div>
-
-          {/* Precio de costo + Stock Mínimo */}
-          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Precio de costo ($)
-              </label>
-              <input
-                {...register('cost_price')}
-                type="number"
-                step="0.01"
-                min="0"
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Stock Mínimo (Alerta)
-              </label>
-              <input
-                {...register('min_stock_alert')}
-                type="number"
-                step="1"
-                min="0"
-                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                placeholder="Ej: 5"
-              />
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Alerta Stock Mínimo</label>
+              <input {...register('min_stock_alert')} type="number" className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm" />
             </div>
           </div>
 
-          {/* Descripción */}
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Descripción (opcional)
-            </label>
-            <textarea
-              {...register('description')}
-              rows={2}
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                         focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-              placeholder="Descripción breve del producto"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 px-4 border border-border rounded-lg text-sm font-medium
-                         hover:bg-accent transition-colors"
-            >
-              Cancelar
-            </button>
+          {/* Footer Actions */}
+          <div className="flex gap-3 pt-4 border-t border-border flex-shrink-0">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 px-4 border border-border rounded-xl text-sm font-semibold hover:bg-accent transition-colors">Cancelar</button>
             <button
               type="submit"
               disabled={isPending || uploadImage.isPending}
-              className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm
-                         font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors
-                         flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 px-4 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
             >
-              {(isPending || uploadImage.isPending) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {product ? 'Guardar cambios' : 'Crear producto'}
+              {(isPending || uploadImage.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+              {product ? 'Guardar Cambios' : 'Crear Producto'}
             </button>
           </div>
         </form>
@@ -294,7 +342,7 @@ export default function ProductsPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | undefined>()
 
-  const { data, isLoading } = useProducts({ search, page, limit: 20 })
+  const { data, isLoading } = useProducts({ search, page, limit: 12 })
   const deleteProduct = useDeleteProduct()
 
   const products = data?.data ?? []
@@ -312,168 +360,165 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Inventario</h1>
+          <p className="text-sm text-muted-foreground">Gestiona tus productos, precios y marcas.</p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+           <button
+            onClick={() => { setEditingProduct(undefined); setShowModal(true) }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            Nuevo Producto
+          </button>
+        </div>
+      </div>
+
       {/* Toolbar */}
-      <div className="flex gap-3 items-center">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row gap-3 items-center bg-card p-3 rounded-2xl border border-border">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Buscar por nombre, EAN o código..."
-            className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm
-                       focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            placeholder="Buscar por nombre, EAN o marca..."
+            className="w-full pl-10 pr-4 py-2 bg-muted/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20"
           />
         </div>
-        <span className="text-sm text-muted-foreground hidden sm:block">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest px-2">
+          <Package className="w-3.5 h-3.5" />
           {total} productos
-        </span>
-        <button
-          onClick={() => { setEditingProduct(undefined); setShowModal(true) }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground
-                     rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors ml-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Nuevo producto</span>
-        </button>
+        </div>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      {/* Grid de Productos */}
+      <div className="relative min-h-[400px]">
         {isLoading ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center p-6">
-            <Package className="w-10 h-10 text-muted-foreground mb-3" />
-            <p className="font-medium text-foreground">
-              {search ? 'Sin resultados para tu búsqueda' : 'No hay productos todavía'}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {!search && 'Crea tu primer producto para empezar.'}
+          <div className="bg-card border border-border rounded-3xl p-12 text-center animate-fade-in">
+            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="w-10 h-10 text-muted-foreground/30" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">No hay productos</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
+              {search ? 'No se encontraron resultados para tu búsqueda.' : 'Empieza agregando tu primer producto al inventario.'}
             </p>
           </div>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 border-b border-border">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Producto</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide hidden md:table-cell">Categoría</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide hidden lg:table-cell">Código</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Precio</th>
-                    <th className="px-4 py-3 w-20" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {products.map((product) => {
-                    const defaultPrice = product.prices?.find((p) => p.price_list?.is_default)
-                    return (
-                      <tr key={product.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-border">
-                              {product.image_url ? (
-                                <img
-                                  src={`${import.meta.env.VITE_API_URL}${product.image_url}`}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <Package className="w-5 h-5 text-muted-foreground/50" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{product.name}</p>
-                              {product.unit && (
-                                <p className="text-xs text-muted-foreground">{product.unit.abbreviation}</p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell">
-                          {product.category ? (
-                            <span
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                              style={{
-                                background: product.category.color
-                                  ? `${product.category.color}20`
-                                  : 'var(--muted)',
-                                color: product.category.color ?? 'var(--muted-foreground)',
-                              }}
-                            >
-                              {product.category.name}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">
-                          {product.barcode || product.internal_code || '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold text-foreground">
-                          {defaultPrice
-                            ? `$${Number(defaultPrice.price).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
-                            : <span className="text-muted-foreground text-xs font-normal">Sin precio</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => handleEdit(product)}
-                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                              title="Editar"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`¿Desactivar "${product.name}"?`)) {
-                                  deleteProduct.mutate(product.id)
-                                }
-                              }}
-                              className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                              title="Desactivar"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {products.map((product) => {
+              const defaultPrice = product.prices?.find((p) => p.price_list?.is_default)
+              return (
+                <div key={product.id} className="group bg-card border border-border rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
+                  <div className="aspect-square relative overflow-hidden bg-muted">
+                    {product.image_url ? (
+                      <img
+                        src={`${import.meta.env.VITE_API_URL}${product.image_url}`}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/20 italic">
+                         <Package className="w-16 h-16 mb-2" />
+                         <span className="text-[10px] uppercase font-bold tracking-tighter">Sin imagen</span>
+                      </div>
+                    )}
+                    
+                    <div className="absolute top-3 right-3 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleEdit(product)}
+                        className="p-2 bg-white/90 backdrop-blur-sm text-foreground rounded-full shadow-lg hover:bg-primary hover:text-white transition-all"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`¿Desactivar "${product.name}"?`)) deleteProduct.mutate(product.id)
+                        }}
+                        className="p-2 bg-white/90 backdrop-blur-sm text-destructive rounded-full shadow-lg hover:bg-destructive hover:text-white transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
 
-            {/* Paginación */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-                <p className="text-xs text-muted-foreground">
-                  Página {page} de {totalPages} · {total} resultados
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="p-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="p-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                    {product.category && (
+                       <div className="absolute bottom-3 left-3">
+                         <span 
+                          className="px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm backdrop-blur-md border border-white/20"
+                          style={{ 
+                            backgroundColor: `${product.category.color}CC`,
+                            color: '#fff' 
+                          }}
+                        >
+                          {product.category.name}
+                        </span>
+                       </div>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    <div className="mb-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <h3 className="font-bold text-foreground line-clamp-1 text-sm">{product.name}</h3>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                        {product.brand || 'Marca no especificada'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Precio</span>
+                        <span className="text-lg font-black text-primary">
+                          {defaultPrice
+                            ? `$${Number(defaultPrice.price).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
+                            : <span className="text-muted-foreground text-sm font-normal">—</span>}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Cógigo</span>
+                        <p className="text-[10px] font-mono font-medium truncate max-w-[80px]">{product.barcode || product.internal_code || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
+              )
+            })}
+          </div>
         )}
       </div>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            {page} / {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo(0, 0) }}
+              disabled={page === 1}
+              className="p-2 rounded-xl border border-border hover:bg-accent disabled:opacity-30 transition-all"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo(0, 0) }}
+              disabled={page === totalPages}
+              className="p-2 rounded-xl border border-border hover:bg-accent disabled:opacity-30 transition-all"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (

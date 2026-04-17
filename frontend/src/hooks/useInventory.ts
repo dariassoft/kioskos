@@ -165,3 +165,16 @@ export const useCreateCategory = () => {
     },
   })
 }
+
+export const useBulkUpdatePrices = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: inventoryApi.bulkUpdatePrices,
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['products'] })
+      toast.success(`${res.updated} precios actualizados correctamente`)
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error en la actualización masiva'),
+  })
+}

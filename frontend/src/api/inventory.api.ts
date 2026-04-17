@@ -101,4 +101,9 @@ export const inventoryApi = {
     const res = await apiClient.get('/inventory/price-lists')
     return Array.isArray(res.data) ? res.data : []
   },
+  
+  bulkUpdatePrices: async (data: BulkUpdatePriceDto): Promise<{ updated: number }> => {
+    const res = await apiClient.post('/inventory/prices/bulk-update', data)
+    return res.data
+  },
 }

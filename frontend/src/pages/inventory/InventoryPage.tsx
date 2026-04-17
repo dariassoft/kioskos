@@ -3,11 +3,14 @@ import { Package, BarChart3, Tag } from 'lucide-react'
 import ProductsPage from './ProductsPage'
 import StockPage from './StockPage'
 import CategoriesPage from './CategoriesPage'
+import MassivePricingPage from './MassivePricingPage'
+import { Landmark } from 'lucide-react'
 
 const tabs = [
   { to: '/inventory', label: 'Productos', icon: Package, end: true },
   { to: '/inventory/stock', label: 'Stock', icon: BarChart3 },
   { to: '/inventory/categories', label: 'Categorías', icon: Tag },
+  { to: '/inventory/pricing', label: 'Gestión de Precios', icon: Landmark },
 ]
 
 export default function InventoryPage() {
@@ -47,6 +50,7 @@ export default function InventoryPage() {
         <Route index element={<ProductsPage />} />
         <Route path="stock" element={<StockPage />} />
         <Route path="categories" element={<CategoriesPage />} />
+        <Route path="pricing" element={<MassivePricingPage />} />
       </Routes>
     </div>
   )

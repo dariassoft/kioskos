@@ -13,7 +13,7 @@ import { GetTenantId } from '../common/decorators/get-tenant.decorator';
 import {
   CreateProductDto, UpdateProductDto, SetPriceDto,
   UpdateStockDto, CreateBranchDto, CreateCategoryDto,
-  CreateUnitDto, ProductQueryDto,
+  CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto,
 } from './dto/inventory.dto';
 
 @ApiTags('inventory')
@@ -101,6 +101,16 @@ export class InventoryController {
     @GetTenantId() tenantId: string,
   ) {
     return this.inventoryService.setProductPrice(productId, dto, tenantId);
+  }
+
+  @Post('prices/bulk-update')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Actualización masiva de precios' })
+  bulkUpdatePrices(
+    @Body() dto: BulkUpdatePriceDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.bulkUpdatePrices(dto, tenantId);
   }
 
   // ==========================================

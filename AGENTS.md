@@ -69,7 +69,7 @@ backend/src/
      ✅ events/stock-reduced.event.ts
      ✅ inventory.module.ts
      ✅ inventory.service.ts    (CRUD productos, stock multi-branch, precios, quickSearch)
-     ✅ inventory.controller.ts (todos los endpoints RESTful)
+     ✅ inventory.controller.ts (todos los endpoints RESTful + bulk-update)
      ✅ inventory.listener.ts   (escucha 'stock.reduced' → WebSocket alert)
   ✅ notifications/gateway.ts  (WebSocket rooms por tenant)
   ✅ sales/     
@@ -104,7 +104,8 @@ frontend/src/
   ✅ pages/DashboardPage.tsx
   ✅ pages/inventory/
      ✅ InventoryPage.tsx   (layout con tabs)
-     ✅ ProductsPage.tsx    (tabla paginated + modal crear/editar)
+     ✅ ProductsPage.tsx    (grid visual premium + modal avanzado + supplier inline)
+     ✅ MassivePricingPage.tsx (NUEVO: Actualización masiva por brand/category/supplier)
      ✅ StockPage.tsx       (selector sucursal + alertas + modal agregar stock)
      ✅ CategoriesPage.tsx  (grid visual con colores)
   ✅ pages/pos/PosPage.tsx  (Terminal completo con búsqueda, carrito, cobro)
@@ -143,13 +144,15 @@ frontend/src/
 6. **Feature por plan:** El módulo `electronic_invoicing` se agregó al JSON `features` de los planes Negocio y Profesional. El servicio valida con `BillingService.isFeatureEnabled()` antes de cada operación.
 7. **Persistencia de respuesta AFIP completa:** El campo `afip_response` (JSON) almacena toda la respuesta de AFIP para auditoría y debugging.
 
-### 📦 Mejoras de Inventario y Experiencia Móvil (Abril 2026)
+### 📦 Mejoras de Inventario y Gestión de Precios (Abril 2026)
 
-1. **Gestión Proactiva de Stock**: Se añadió `min_stock_alert` a nivel de producto. El sistema emite alertas visuales (Notification Center) y sonoras cuando las existencias caen por debajo de este umbral.
-2. **Asistente de Reposición Inteligente**: Nuevo motor de sugerencia de compras que filtra automáticamente productos críticos para generar Órdenes de Compra sin errores.
-3. **Mermas y Auditoría**: Implementado `adjustStock` para registrar bajas por robo, rotura o vencimiento con trazabilidad completa.
-4. **Automatización Contable Configurable**: El administrador puede decidir desde *Ajustes de Negocio* si los movimientos de stock generan automáticamente asientos de pérdida en el Libro Diario.
-5. **Mobile-First UX (Cero Scroll Horizontal)**: Se aplicaron restricciones estrictas de overflow y rediseño de componentes críticos (Header, Modales, POS) para garantizar una navegación fluida en dispositivos móviles, eliminando desplazamientos laterales.
+1. **Gestión Proactiva de Stock**: Se añadió `min_stock_alert` a nivel de producto con alertas visuales y sonoras.
+2. **Precios de Venta Inteligentes**: El sistema ahora diferencia entre Precio de Costo y Precio de Venta. Al crear un producto, se puede definir el margen (%) o valor fijo, con sugerencias automáticas (+35% sugerido).
+3. **Actualización Masiva de Precios**: Nueva herramienta de BI que permite ajustar precios en bloque filtrando por Categoría, Marca o Proveedor.
+4. **Proveedores Dinámicos**: Integración con el módulo de compras que permite crear proveedores "sobre la marcha" desde el modal de productos.
+5. **Diseño Premium Grid**: El catálogo de productos se rediseñó como una grilla de cards visuales optimizada para dispositivos móviles (Zero Horizontal Scroll).
+6. **Automatización Contable Configurable**: El administrador puede decidir desde *Ajustes de Negocio* si los movimientos de stock generan automáticamente asientos de pérdida en el Libro Diario.
+7. **Mobile-First UX (Cero Scroll Horizontal)**: Se aplicaron restricciones estrictas de overflow y rediseño de componentes críticos (Header, Modales, POS) para garantizar una navegación fluida en dispositivos móviles, eliminando desplazamientos laterales.
 
 ---
 

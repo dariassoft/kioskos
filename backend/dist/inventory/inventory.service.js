@@ -25,6 +25,7 @@ const category_entity_1 = require("./entities/category.entity");
 const price_list_entity_1 = require("./entities/price-list.entity");
 const product_price_entity_1 = require("./entities/product-price.entity");
 const stock_reduced_event_1 = require("./events/stock-reduced.event");
+const inventory_dto_1 = require("./dto/inventory.dto");
 let InventoryService = class InventoryService {
     constructor(productRepo, inventoryRepo, branchRepo, unitRepo, categoryRepo, priceListRepo, productPriceRepo, eventEmitter) {
         this.productRepo = productRepo;
@@ -69,6 +70,7 @@ let InventoryService = class InventoryService {
         return product;
     }
     async createProduct(dto, tenantId) {
+        const { sale_price, sale_margin, ...productData } = dto;
         if (dto.barcode) {
             const existing = await this.productRepo.findOne({
                 where: { barcode: dto.barcode, tenant_id: tenantId },
@@ -77,11 +79,24 @@ let InventoryService = class InventoryService {
                 throw new common_1.ConflictException(`Ya existe un producto con el código de barras: ${dto.barcode}`);
             }
         }
-        const product = this.productRepo.create({ ...dto, tenant_id: tenantId });
+        const product = this.productRepo.create({ ...productData, tenant_id: tenantId });
         const saved = await this.productRepo.save(product);
-        if (dto.min_stock_alert !== undefined) {
+        let finalPrice = Number(sale_price || 0);
+        if (!finalPrice && sale_margin && dto.cost_price) {
+            finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
         }
-        return saved;
+        if (finalPrice > 0) {
+            const defaultList = await this.priceListRepo.findOne({
+                where: { tenant_id: tenantId, is_default: true }
+            });
+            if (defaultList) {
+                await this.setProductPrice(saved.id, {
+                    price_list_id: defaultList.id,
+                    price: finalPrice
+                }, tenantId);
+            }
+        }
+        return this.findOneProduct(saved.id, tenantId);
     }
     async updateProduct(id, dto, tenantId) {
         await this.findOneProduct(id, tenantId);
@@ -103,6 +118,49 @@ let InventoryService = class InventoryService {
         }
         const pp = this.productPriceRepo.create({ ...dto, product_id: productId });
         return this.productPriceRepo.save(pp);
+    }
+    async bulkUpdatePrices(dto, tenantId) {
+        const { category_id, supplier_id, brand, adjustment_type, value, price_list_id } = dto;
+        let targetListId = price_list_id;
+        if (!targetListId) {
+            const defaultList = await this.priceListRepo.findOne({ where: { tenant_id: tenantId, is_default: true } });
+            if (!defaultList)
+                throw new common_1.NotFoundException('No se encontró una lista de precios por defecto');
+            targetListId = defaultList.id;
+        }
+        const qb = this.productRepo.createQueryBuilder('p')
+            .select('p.id')
+            .where('p.tenant_id = :tenantId', { tenantId })
+            .andWhere('p.is_active = :active', { active: true });
+        if (category_id)
+            qb.andWhere('p.category_id = :category_id', { category_id });
+        if (supplier_id)
+            qb.andWhere('p.supplier_id = :supplier_id', { supplier_id });
+        if (brand)
+            qb.andWhere('p.brand = :brand', { brand });
+        const products = await qb.getMany();
+        if (products.length === 0)
+            return { updated: 0 };
+        const productIds = products.map(p => p.id);
+        let count = 0;
+        for (const pid of productIds) {
+            let priceEntry = await this.productPriceRepo.findOne({
+                where: { product_id: pid, price_list_id: targetListId }
+            });
+            if (!priceEntry) {
+                continue;
+            }
+            let newPrice = Number(priceEntry.price);
+            if (adjustment_type === inventory_dto_1.PriceAdjustmentType.PERCENTAGE) {
+                newPrice = newPrice * (1 + (value / 100));
+            }
+            else {
+                newPrice = newPrice + value;
+            }
+            await this.productPriceRepo.update(priceEntry.id, { price: Math.max(0, newPrice) });
+            count++;
+        }
+        return { updated: count };
     }
     async getInventoryByBranch(tenantId, branchId) {
         return this.inventoryRepo.find({

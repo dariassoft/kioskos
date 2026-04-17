@@ -1,5 +1,5 @@
 import { InventoryService } from './inventory.service';
-import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto } from './dto/inventory.dto';
+import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto } from './dto/inventory.dto';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
@@ -17,6 +17,9 @@ export declare class InventoryController {
     deleteProduct(id: string, tenantId: string): Promise<void>;
     uploadProductImage(id: string, tenantId: string, file: Express.Multer.File): Promise<import("./entities/product.entity").Product>;
     setPrice(productId: string, dto: SetPriceDto, tenantId: string): Promise<import("./entities/product-price.entity").ProductPrice>;
+    bulkUpdatePrices(dto: BulkUpdatePriceDto, tenantId: string): Promise<{
+        updated: number;
+    }>;
     getStock(tenantId: string, branchId: string): Promise<import("./entities/inventory.entity").Inventory[]>;
     getLowStock(tenantId: string): Promise<import("./entities/inventory.entity").Inventory[]>;
     getReplenishment(tenantId: string, branchId?: string): Promise<import("./entities/inventory.entity").Inventory[]>;

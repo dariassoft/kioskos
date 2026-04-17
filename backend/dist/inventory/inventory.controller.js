@@ -51,6 +51,9 @@ let InventoryController = class InventoryController {
     setPrice(productId, dto, tenantId) {
         return this.inventoryService.setProductPrice(productId, dto, tenantId);
     }
+    bulkUpdatePrices(dto, tenantId) {
+        return this.inventoryService.bulkUpdatePrices(dto, tenantId);
+    }
     getStock(tenantId, branchId) {
         return this.inventoryService.getInventoryByBranch(tenantId, branchId);
     }
@@ -181,6 +184,16 @@ __decorate([
     __metadata("design:paramtypes", [String, inventory_dto_1.SetPriceDto, String]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "setPrice", null);
+__decorate([
+    (0, common_1.Post)('prices/bulk-update'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Actualización masiva de precios' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inventory_dto_1.BulkUpdatePriceDto, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "bulkUpdatePrices", null);
 __decorate([
     (0, common_1.Get)('stock'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),

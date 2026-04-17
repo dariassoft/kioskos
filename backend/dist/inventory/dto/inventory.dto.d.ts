@@ -8,6 +8,10 @@ export declare class CreateProductDto {
     cost_price?: number;
     min_stock_alert?: number;
     image_url?: string;
+    brand?: string;
+    supplier_id?: string;
+    sale_price?: number;
+    sale_margin?: number;
 }
 export declare class UpdateProductDto {
     name?: string;
@@ -20,6 +24,8 @@ export declare class UpdateProductDto {
     image_url?: string;
     min_stock_alert?: number;
     is_active?: boolean;
+    brand?: string;
+    supplier_id?: string;
 }
 export declare class SetPriceDto {
     price_list_id: string;
@@ -50,4 +56,16 @@ export declare class ProductQueryDto {
     category_id?: string;
     page?: number;
     limit?: number;
+}
+export declare enum PriceAdjustmentType {
+    PERCENTAGE = "percentage",
+    FIXED = "fixed"
+}
+export declare class BulkUpdatePriceDto {
+    category_id?: string;
+    supplier_id?: string;
+    brand?: string;
+    adjustment_type: PriceAdjustmentType;
+    value: number;
+    price_list_id?: string;
 }

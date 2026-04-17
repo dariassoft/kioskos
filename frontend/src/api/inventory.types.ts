@@ -49,6 +49,8 @@ export interface Product {
   prices: ProductPrice[]
   min_stock_alert: number
   image_url: string | null
+  brand?: string
+  supplier_id?: string
   created_at: string
 }
 
@@ -86,4 +88,18 @@ export interface PaginatedProducts {
   page: number
   limit: number
   pages: number
+}
+
+export enum PriceAdjustmentType {
+  PERCENTAGE = 'percentage',
+  FIXED = 'fixed',
+}
+
+export interface BulkUpdatePriceDto {
+  category_id?: string
+  supplier_id?: string
+  brand?: string
+  adjustment_type: PriceAdjustmentType
+  value: number
+  price_list_id?: string
 }

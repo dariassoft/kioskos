@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProductQueryDto = exports.CreateUnitDto = exports.CreateCategoryDto = exports.CreateBranchDto = exports.UpdateStockDto = exports.SetPriceDto = exports.UpdateProductDto = exports.CreateProductDto = void 0;
+exports.BulkUpdatePriceDto = exports.PriceAdjustmentType = exports.ProductQueryDto = exports.CreateUnitDto = exports.CreateCategoryDto = exports.CreateBranchDto = exports.UpdateStockDto = exports.SetPriceDto = exports.UpdateProductDto = exports.CreateProductDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -77,6 +77,33 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "image_url", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Marca del producto' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "brand", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'ID del proveedor' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "supplier_id", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 1200.0, description: 'Precio de venta inicial' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateProductDto.prototype, "sale_price", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 30, description: 'Margen de ganancia esperado (%)' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateProductDto.prototype, "sale_margin", void 0);
 class UpdateProductDto {
 }
 exports.UpdateProductDto = UpdateProductDto;
@@ -144,6 +171,18 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateProductDto.prototype, "is_active", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductDto.prototype, "brand", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductDto.prototype, "supplier_id", void 0);
 class SetPriceDto {
 }
 exports.SetPriceDto = SetPriceDto;
@@ -277,4 +316,47 @@ __decorate([
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], ProductQueryDto.prototype, "limit", void 0);
+var PriceAdjustmentType;
+(function (PriceAdjustmentType) {
+    PriceAdjustmentType["PERCENTAGE"] = "percentage";
+    PriceAdjustmentType["FIXED"] = "fixed";
+})(PriceAdjustmentType || (exports.PriceAdjustmentType = PriceAdjustmentType = {}));
+class BulkUpdatePriceDto {
+}
+exports.BulkUpdatePriceDto = BulkUpdatePriceDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filtrar por categoría' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], BulkUpdatePriceDto.prototype, "category_id", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filtrar por proveedor' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], BulkUpdatePriceDto.prototype, "supplier_id", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filtrar por marca' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], BulkUpdatePriceDto.prototype, "brand", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: PriceAdjustmentType, example: 'percentage' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BulkUpdatePriceDto.prototype, "adjustment_type", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 10, description: 'Valor del ajuste (puede ser negativo)' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], BulkUpdatePriceDto.prototype, "value", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'ID de la lista de precios a afectar (por defecto la principal)' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], BulkUpdatePriceDto.prototype, "price_list_id", void 0);
 //# sourceMappingURL=inventory.dto.js.map

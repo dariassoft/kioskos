@@ -57,6 +57,29 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   image_url?: string;
+
+  @ApiPropertyOptional({ description: 'Marca del producto' })
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @ApiPropertyOptional({ description: 'ID del proveedor' })
+  @IsString()
+  @IsOptional()
+  supplier_id?: string;
+
+  @ApiPropertyOptional({ example: 1200.0, description: 'Precio de venta inicial' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  sale_price?: number;
+
+  @ApiPropertyOptional({ example: 30, description: 'Margen de ganancia esperado (%)' })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  sale_margin?: number;
 }
 
 export class UpdateProductDto {
@@ -113,6 +136,16 @@ export class UpdateProductDto {
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  supplier_id?: string;
 }
 
 export class SetPriceDto {
@@ -218,4 +251,40 @@ export class ProductQueryDto {
   @IsOptional()
   @Type(() => Number)
   limit?: number = 25;
+}
+
+export enum PriceAdjustmentType {
+  PERCENTAGE = 'percentage',
+  FIXED = 'fixed',
+}
+
+export class BulkUpdatePriceDto {
+  @ApiPropertyOptional({ description: 'Filtrar por categoría' })
+  @IsString()
+  @IsOptional()
+  category_id?: string;
+
+  @ApiPropertyOptional({ description: 'Filtrar por proveedor' })
+  @IsString()
+  @IsOptional()
+  supplier_id?: string;
+
+  @ApiPropertyOptional({ description: 'Filtrar por marca' })
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @ApiProperty({ enum: PriceAdjustmentType, example: 'percentage' })
+  @IsString()
+  adjustment_type: PriceAdjustmentType;
+
+  @ApiProperty({ example: 10, description: 'Valor del ajuste (puede ser negativo)' })
+  @IsNumber()
+  @Type(() => Number)
+  value: number;
+
+  @ApiPropertyOptional({ description: 'ID de la lista de precios a afectar (por defecto la principal)' })
+  @IsString()
+  @IsOptional()
+  price_list_id?: string;
 }
