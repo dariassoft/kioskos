@@ -84,6 +84,12 @@ let InventoryController = class InventoryController {
     createCategory(dto, tenantId) {
         return this.inventoryService.createCategory(dto, tenantId);
     }
+    findAllBrands(tenantId) {
+        return this.inventoryService.findAllBrands(tenantId);
+    }
+    createBrand(dto, tenantId) {
+        return this.inventoryService.createBrand(dto, tenantId);
+    }
     findUnits(tenantId) {
         return this.inventoryService.findAllUnits(tenantId);
     }
@@ -295,6 +301,24 @@ __decorate([
     __metadata("design:paramtypes", [inventory_dto_1.CreateCategoryDto, String]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "createCategory", null);
+__decorate([
+    (0, common_1.Get)('brands'),
+    (0, swagger_1.ApiOperation)({ summary: 'Listado de marcas' }),
+    __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "findAllBrands", null);
+__decorate([
+    (0, common_1.Post)('brands'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Crear nueva marca' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [inventory_dto_1.CreateBrandDto, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "createBrand", null);
 __decorate([
     (0, common_1.Get)('units'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),

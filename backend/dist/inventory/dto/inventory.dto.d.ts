@@ -8,7 +8,7 @@ export declare class CreateProductDto {
     cost_price?: number;
     min_stock_alert?: number;
     image_url?: string;
-    brand?: string;
+    brand_id?: string;
     supplier_id?: string;
     sale_price?: number;
     sale_margin?: number;
@@ -24,12 +24,15 @@ export declare class UpdateProductDto {
     image_url?: string;
     min_stock_alert?: number;
     is_active?: boolean;
-    brand?: string;
+    brand_id?: string;
     supplier_id?: string;
 }
 export declare class SetPriceDto {
     price_list_id: string;
     price: number;
+}
+export declare class CreateBrandDto {
+    name: string;
 }
 export declare class UpdateStockDto {
     branch_id: string;
@@ -64,7 +67,7 @@ export declare enum PriceAdjustmentType {
 export declare class BulkUpdatePriceDto {
     category_id?: string;
     supplier_id?: string;
-    brand?: string;
+    brand_id?: string;
     adjustment_type: PriceAdjustmentType;
     value: number;
     price_list_id?: string;

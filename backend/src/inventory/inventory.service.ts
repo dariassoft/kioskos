@@ -15,6 +15,7 @@ import { Unit } from './entities/unit.entity';
 import { Category } from './entities/category.entity';
 import { PriceList } from './entities/price-list.entity';
 import { ProductPrice } from './entities/product-price.entity';
+import { Brand } from './entities/brand.entity';
 import { StockReducedEvent } from './events/stock-reduced.event';
 
 import {
@@ -28,6 +29,7 @@ import {
   ProductQueryDto,
   BulkUpdatePriceDto,
   PriceAdjustmentType,
+  CreateBrandDto,
 } from './dto/inventory.dto';
 
 @Injectable()
@@ -43,6 +45,8 @@ export class InventoryService {
     private readonly unitRepo: Repository<Unit>,
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
+    @InjectRepository(Brand)
+    private readonly brandRepo: Repository<Brand>,
     @InjectRepository(PriceList)
     private readonly priceListRepo: Repository<PriceList>,
     @InjectRepository(ProductPrice)
@@ -161,7 +165,7 @@ export class InventoryService {
   }
 
   async bulkUpdatePrices(dto: BulkUpdatePriceDto, tenantId: string) {
-    const { category_id, supplier_id, brand, adjustment_type, value, price_list_id } = dto;
+    const { category_id, supplier_id, brand_id, adjustment_type, value, price_list_id } = dto;
 
     // 1. Obtener la lista de precios a afectar
     let targetListId = price_list_id;
@@ -179,7 +183,7 @@ export class InventoryService {
 
     if (category_id) qb.andWhere('p.category_id = :category_id', { category_id });
     if (supplier_id) qb.andWhere('p.supplier_id = :supplier_id', { supplier_id });
-    if (brand) qb.andWhere('p.brand = :brand', { brand });
+    if (brand_id) qb.andWhere('p.brand_id = :brand_id', { brand_id });
 
     const products = await qb.getMany();
     if (products.length === 0) return { updated: 0 };
@@ -375,6 +379,19 @@ export class InventoryService {
   async createCategory(dto: CreateCategoryDto, tenantId: string): Promise<Category> {
     const cat = this.categoryRepo.create({ ...dto, tenant_id: tenantId });
     return this.categoryRepo.save(cat);
+  }
+
+  // ==========================================
+  // MARCAS
+  // ==========================================
+
+  async findAllBrands(tenantId: string): Promise<Brand[]> {
+    return this.brandRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
+  }
+
+  async createBrand(dto: CreateBrandDto, tenantId: string): Promise<Brand> {
+    const brand = this.brandRepo.create({ ...dto, tenant_id: tenantId });
+    return this.brandRepo.save(brand);
   }
 
   // ==========================================

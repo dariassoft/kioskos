@@ -24,15 +24,17 @@ const unit_entity_1 = require("./entities/unit.entity");
 const category_entity_1 = require("./entities/category.entity");
 const price_list_entity_1 = require("./entities/price-list.entity");
 const product_price_entity_1 = require("./entities/product-price.entity");
+const brand_entity_1 = require("./entities/brand.entity");
 const stock_reduced_event_1 = require("./events/stock-reduced.event");
 const inventory_dto_1 = require("./dto/inventory.dto");
 let InventoryService = class InventoryService {
-    constructor(productRepo, inventoryRepo, branchRepo, unitRepo, categoryRepo, priceListRepo, productPriceRepo, eventEmitter) {
+    constructor(productRepo, inventoryRepo, branchRepo, unitRepo, categoryRepo, brandRepo, priceListRepo, productPriceRepo, eventEmitter) {
         this.productRepo = productRepo;
         this.inventoryRepo = inventoryRepo;
         this.branchRepo = branchRepo;
         this.unitRepo = unitRepo;
         this.categoryRepo = categoryRepo;
+        this.brandRepo = brandRepo;
         this.priceListRepo = priceListRepo;
         this.productPriceRepo = productPriceRepo;
         this.eventEmitter = eventEmitter;
@@ -120,7 +122,7 @@ let InventoryService = class InventoryService {
         return this.productPriceRepo.save(pp);
     }
     async bulkUpdatePrices(dto, tenantId) {
-        const { category_id, supplier_id, brand, adjustment_type, value, price_list_id } = dto;
+        const { category_id, supplier_id, brand_id, adjustment_type, value, price_list_id } = dto;
         let targetListId = price_list_id;
         if (!targetListId) {
             const defaultList = await this.priceListRepo.findOne({ where: { tenant_id: tenantId, is_default: true } });
@@ -136,8 +138,8 @@ let InventoryService = class InventoryService {
             qb.andWhere('p.category_id = :category_id', { category_id });
         if (supplier_id)
             qb.andWhere('p.supplier_id = :supplier_id', { supplier_id });
-        if (brand)
-            qb.andWhere('p.brand = :brand', { brand });
+        if (brand_id)
+            qb.andWhere('p.brand_id = :brand_id', { brand_id });
         const products = await qb.getMany();
         if (products.length === 0)
             return { updated: 0 };
@@ -275,6 +277,13 @@ let InventoryService = class InventoryService {
         const cat = this.categoryRepo.create({ ...dto, tenant_id: tenantId });
         return this.categoryRepo.save(cat);
     }
+    async findAllBrands(tenantId) {
+        return this.brandRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
+    }
+    async createBrand(dto, tenantId) {
+        const brand = this.brandRepo.create({ ...dto, tenant_id: tenantId });
+        return this.brandRepo.save(brand);
+    }
     async findAllUnits(tenantId) {
         return this.unitRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
     }
@@ -310,9 +319,11 @@ exports.InventoryService = InventoryService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
     __param(3, (0, typeorm_1.InjectRepository)(unit_entity_1.Unit)),
     __param(4, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
-    __param(5, (0, typeorm_1.InjectRepository)(price_list_entity_1.PriceList)),
-    __param(6, (0, typeorm_1.InjectRepository)(product_price_entity_1.ProductPrice)),
+    __param(5, (0, typeorm_1.InjectRepository)(brand_entity_1.Brand)),
+    __param(6, (0, typeorm_1.InjectRepository)(price_list_entity_1.PriceList)),
+    __param(7, (0, typeorm_1.InjectRepository)(product_price_entity_1.ProductPrice)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

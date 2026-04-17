@@ -102,8 +102,19 @@ export const inventoryApi = {
     return Array.isArray(res.data) ? res.data : []
   },
   
-  bulkUpdatePrices: async (data: BulkUpdatePriceDto): Promise<{ updated: number }> => {
+  async bulkUpdatePrices(data: BulkUpdatePriceDto): Promise<{ updated: number }> {
     const res = await apiClient.post('/inventory/prices/bulk-update', data)
+    return res.data
+  },
+
+  // MARCAS
+  async getBrands(): Promise<Brand[]> {
+    const res = await apiClient.get('/inventory/brands')
+    return res.data
+  },
+
+  async createBrand(data: CreateBrandDto): Promise<Brand> {
+    const res = await apiClient.post('/inventory/brands', data)
     return res.data
   },
 }

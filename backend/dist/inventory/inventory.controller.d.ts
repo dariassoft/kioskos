@@ -1,5 +1,5 @@
 import { InventoryService } from './inventory.service';
-import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto } from './dto/inventory.dto';
+import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto, CreateBrandDto } from './dto/inventory.dto';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
@@ -35,6 +35,8 @@ export declare class InventoryController {
     updateBranch(id: string, dto: CreateBranchDto, tenantId: string): Promise<import("./entities/branch.entity").Branch>;
     findCategories(tenantId: string): Promise<import("./entities/category.entity").Category[]>;
     createCategory(dto: CreateCategoryDto, tenantId: string): Promise<import("./entities/category.entity").Category>;
+    findAllBrands(tenantId: string): Promise<import("./entities/brand.entity").Brand[]>;
+    createBrand(dto: CreateBrandDto, tenantId: string): Promise<import("./entities/brand.entity").Brand>;
     findUnits(tenantId: string): Promise<import("./entities/unit.entity").Unit[]>;
     createUnit(dto: CreateUnitDto, tenantId: string): Promise<import("./entities/unit.entity").Unit>;
     findPriceLists(tenantId: string): Promise<import("./entities/price-list.entity").PriceList[]>;

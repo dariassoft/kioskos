@@ -49,7 +49,8 @@ export interface Product {
   prices: ProductPrice[]
   min_stock_alert: number
   image_url: string | null
-  brand?: string
+  brand_id?: string
+  brand?: Brand
   supplier_id?: string
   created_at: string
 }
@@ -98,8 +99,18 @@ export enum PriceAdjustmentType {
 export interface BulkUpdatePriceDto {
   category_id?: string
   supplier_id?: string
-  brand?: string
+  brand_id?: string
   adjustment_type: PriceAdjustmentType
   value: number
   price_list_id?: string
+}
+
+export interface Brand {
+  id: string
+  name: string
+  tenant_id: string
+}
+
+export interface CreateBrandDto {
+  name: string
 }

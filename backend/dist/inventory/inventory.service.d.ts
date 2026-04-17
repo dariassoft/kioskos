@@ -7,17 +7,19 @@ import { Unit } from './entities/unit.entity';
 import { Category } from './entities/category.entity';
 import { PriceList } from './entities/price-list.entity';
 import { ProductPrice } from './entities/product-price.entity';
-import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto } from './dto/inventory.dto';
+import { Brand } from './entities/brand.entity';
+import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto, CreateBrandDto } from './dto/inventory.dto';
 export declare class InventoryService {
     private readonly productRepo;
     private readonly inventoryRepo;
     private readonly branchRepo;
     private readonly unitRepo;
     private readonly categoryRepo;
+    private readonly brandRepo;
     private readonly priceListRepo;
     private readonly productPriceRepo;
     private readonly eventEmitter;
-    constructor(productRepo: Repository<Product>, inventoryRepo: Repository<Inventory>, branchRepo: Repository<Branch>, unitRepo: Repository<Unit>, categoryRepo: Repository<Category>, priceListRepo: Repository<PriceList>, productPriceRepo: Repository<ProductPrice>, eventEmitter: EventEmitter2);
+    constructor(productRepo: Repository<Product>, inventoryRepo: Repository<Inventory>, branchRepo: Repository<Branch>, unitRepo: Repository<Unit>, categoryRepo: Repository<Category>, brandRepo: Repository<Brand>, priceListRepo: Repository<PriceList>, productPriceRepo: Repository<ProductPrice>, eventEmitter: EventEmitter2);
     findAllProducts(tenantId: string, query: ProductQueryDto): Promise<{
         data: Product[];
         total: number;
@@ -49,6 +51,8 @@ export declare class InventoryService {
     updateBranch(id: string, dto: Partial<CreateBranchDto>, tenantId: string): Promise<Branch>;
     findAllCategories(tenantId: string): Promise<Category[]>;
     createCategory(dto: CreateCategoryDto, tenantId: string): Promise<Category>;
+    findAllBrands(tenantId: string): Promise<Brand[]>;
+    createBrand(dto: CreateBrandDto, tenantId: string): Promise<Brand>;
     findAllUnits(tenantId: string): Promise<Unit[]>;
     createUnit(dto: CreateUnitDto, tenantId: string): Promise<Unit>;
     findAllPriceLists(tenantId: string): Promise<PriceList[]>;

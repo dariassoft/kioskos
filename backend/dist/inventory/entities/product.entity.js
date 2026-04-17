@@ -16,6 +16,7 @@ const unit_entity_1 = require("./unit.entity");
 const category_entity_1 = require("./category.entity");
 const product_price_entity_1 = require("./product-price.entity");
 const supplier_entity_1 = require("../../purchases/entities/supplier.entity");
+const brand_entity_1 = require("./brand.entity");
 let Product = class Product extends base_entity_1.BaseKioskosEntity {
 };
 exports.Product = Product;
@@ -52,9 +53,9 @@ __decorate([
     __metadata("design:type", Object)
 ], Product.prototype, "image_url", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 150, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
     __metadata("design:type", String)
-], Product.prototype, "brand", void 0);
+], Product.prototype, "brand_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
     __metadata("design:type", String)
@@ -77,6 +78,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'category_id' }),
     __metadata("design:type", category_entity_1.Category)
 ], Product.prototype, "category", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => brand_entity_1.Brand, { eager: true, nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'brand_id' }),
+    __metadata("design:type", brand_entity_1.Brand)
+], Product.prototype, "brand", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => supplier_entity_1.Supplier, { eager: false, nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'supplier_id' }),

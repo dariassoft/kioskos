@@ -3,6 +3,7 @@ import { Unit } from './unit.entity';
 import { Category } from './category.entity';
 import { ProductPrice } from './product-price.entity';
 import { Supplier } from '../../purchases/entities/supplier.entity';
+import { Brand } from './brand.entity';
 export declare class Product extends BaseKioskosEntity {
     name: string;
     description: string;
@@ -12,12 +13,13 @@ export declare class Product extends BaseKioskosEntity {
     category_id: string;
     cost_price: number;
     image_url: string | null;
-    brand: string;
+    brand_id: string;
     supplier_id: string;
     min_stock_alert: number;
     is_active: boolean;
     unit: Unit;
     category: Category;
+    brand: Brand;
     supplier: Supplier;
     prices: ProductPrice[];
 }

@@ -14,6 +14,7 @@ import {
   CreateProductDto, UpdateProductDto, SetPriceDto,
   UpdateStockDto, CreateBranchDto, CreateCategoryDto,
   CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto,
+  CreateBrandDto,
 } from './dto/inventory.dto';
 
 @ApiTags('inventory')
@@ -208,8 +209,21 @@ export class InventoryController {
     return this.inventoryService.createCategory(dto, tenantId);
   }
 
+  @Get('brands')
+  @ApiOperation({ summary: 'Listado de marcas' })
+  findAllBrands(@GetTenantId() tenantId: string) {
+    return this.inventoryService.findAllBrands(tenantId);
+  }
+
+  @Post('brands')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Crear nueva marca' })
+  createBrand(@Body() dto: CreateBrandDto, @GetTenantId() tenantId: string) {
+    return this.inventoryService.createBrand(dto, tenantId);
+  }
+
   // ==========================================
-  // UNIDADES
+  // UNIDADES DE MEDIDA
   // ==========================================
 
   @Get('units')

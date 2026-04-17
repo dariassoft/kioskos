@@ -178,3 +178,24 @@ export const useBulkUpdatePrices = () => {
       toast.error(err.response?.data?.message || 'Error en la actualización masiva'),
   })
 }
+
+// ==========================================
+// MARCAS
+// ==========================================
+
+export function useBrands() {
+  return useQuery({
+    queryKey: ['inventory', 'brands'],
+    queryFn: () => inventoryApi.getBrands(),
+  })
+}
+
+export function useCreateBrand() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateBrandDto) => inventoryApi.createBrand(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory', 'brands'] })
+    },
+  })
+}

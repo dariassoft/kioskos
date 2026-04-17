@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BulkUpdatePriceDto = exports.PriceAdjustmentType = exports.ProductQueryDto = exports.CreateUnitDto = exports.CreateCategoryDto = exports.CreateBranchDto = exports.UpdateStockDto = exports.SetPriceDto = exports.UpdateProductDto = exports.CreateProductDto = void 0;
+exports.BulkUpdatePriceDto = exports.PriceAdjustmentType = exports.ProductQueryDto = exports.CreateUnitDto = exports.CreateCategoryDto = exports.CreateBranchDto = exports.UpdateStockDto = exports.CreateBrandDto = exports.SetPriceDto = exports.UpdateProductDto = exports.CreateProductDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -78,11 +78,11 @@ __decorate([
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "image_url", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: 'Marca del producto' }),
+    (0, swagger_1.ApiPropertyOptional)({ description: 'ID de la marca' }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateProductDto.prototype, "brand", void 0);
+], CreateProductDto.prototype, "brand_id", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'ID del proveedor' }),
     (0, class_validator_1.IsString)(),
@@ -176,7 +176,7 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], UpdateProductDto.prototype, "brand", void 0);
+], UpdateProductDto.prototype, "brand_id", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsString)(),
@@ -192,12 +192,20 @@ __decorate([
     __metadata("design:type", String)
 ], SetPriceDto.prototype, "price_list_id", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 1500.0 }),
+    (0, swagger_1.ApiProperty)({ example: 1200.0 }),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], SetPriceDto.prototype, "price", void 0);
+class CreateBrandDto {
+}
+exports.CreateBrandDto = CreateBrandDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Coca-Cola' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateBrandDto.prototype, "name", void 0);
 class UpdateStockDto {
 }
 exports.UpdateStockDto = UpdateStockDto;
@@ -341,7 +349,7 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], BulkUpdatePriceDto.prototype, "brand", void 0);
+], BulkUpdatePriceDto.prototype, "brand_id", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ enum: PriceAdjustmentType, example: 'percentage' }),
     (0, class_validator_1.IsString)(),

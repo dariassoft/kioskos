@@ -103,11 +103,12 @@ frontend/src/
   ✅ pages/auth/LoginPage.tsx
   ✅ pages/DashboardPage.tsx
   ✅ pages/inventory/
-     ✅ InventoryPage.tsx   (layout con tabs)
-     ✅ ProductsPage.tsx    (grid visual premium + modal avanzado + supplier inline)
+     ✅ InventoryPage.tsx   (Rediseño Hub: Menu Cards/List + Nav Back)
+     ✅ ProductsPage.tsx    (Grid visual premium + modal avanzado + supplier/brand inline + internal_code restored)
      ✅ MassivePricingPage.tsx (NUEVO: Actualización masiva por brand/category/supplier)
      ✅ StockPage.tsx       (selector sucursal + alertas + modal agregar stock)
      ✅ CategoriesPage.tsx  (grid visual con colores)
+     ✅ BrandsPage.tsx      (NUEVO: Gestión formal de marcas)
   ✅ pages/pos/PosPage.tsx  (Terminal completo con búsqueda, carrito, cobro)
   ✅ pages/customers/CustomersPage.tsx (Fiados, límites de crédito, pagos)
   ✅ pages/accounting/AccountingPage.tsx (Libro Diario)
@@ -149,8 +150,9 @@ frontend/src/
 1. **Gestión Proactiva de Stock**: Se añadió `min_stock_alert` a nivel de producto con alertas visuales y sonoras.
 2. **Precios de Venta Inteligentes**: El sistema ahora diferencia entre Precio de Costo y Precio de Venta. Al crear un producto, se puede definir el margen (%) o valor fijo, con sugerencias automáticas (+35% sugerido).
 3. **Actualización Masiva de Precios**: Nueva herramienta de BI que permite ajustar precios en bloque filtrando por Categoría, Marca o Proveedor.
-4. **Proveedores Dinámicos**: Integración con el módulo de compras que permite crear proveedores "sobre la marcha" desde el modal de productos.
-5. **Diseño Premium Grid**: El catálogo de productos se rediseñó como una grilla de cards visuales optimizada para dispositivos móviles (Zero Horizontal Scroll).
+4. **Proveedores y Marcas Dinámicos**: Integración con el módulo de compras e inventario que permite crear proveedores y marcas "sobre la marcha" desde el modal de productos.
+5. **Inventario Hub (Navegación Intuitiva)**: El módulo de inventario ahora funciona como un hub con selector de vista (Cards/Lista) y navegación optimizada con botones de regreso.
+6. **Diseño Premium Grid**: El catálogo de productos se rediseñó como una grilla de cards visuales optimizada para dispositivos móviles (Zero Horizontal Scroll).
 6. **Automatización Contable Configurable**: El administrador puede decidir desde *Ajustes de Negocio* si los movimientos de stock generan automáticamente asientos de pérdida en el Libro Diario.
 7. **Mobile-First UX (Cero Scroll Horizontal)**: Se aplicaron restricciones estrictas de overflow y rediseño de componentes críticos (Header, Modales, POS) para garantizar una navegación fluida en dispositivos móviles, eliminando desplazamientos laterales.
 

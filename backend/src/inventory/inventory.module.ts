@@ -12,6 +12,7 @@ import { Unit } from './entities/unit.entity';
 import { Category } from './entities/category.entity';
 import { PriceList } from './entities/price-list.entity';
 import { ProductPrice } from './entities/product-price.entity';
+import { Brand } from './entities/brand.entity';
 
 import { InventoryService } from './inventory.service';
 import { InventoryController } from './inventory.controller';
@@ -28,6 +29,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       Category,
       PriceList,
       ProductPrice,
+      Brand,
     ]),
     NotificationsModule, // Para poder inyectar NotificationsGateway en InventoryListener
     MulterModule.register({

@@ -58,10 +58,10 @@ export class CreateProductDto {
   @IsOptional()
   image_url?: string;
 
-  @ApiPropertyOptional({ description: 'Marca del producto' })
+  @ApiPropertyOptional({ description: 'ID de la marca' })
   @IsString()
   @IsOptional()
-  brand?: string;
+  brand_id?: string;
 
   @ApiPropertyOptional({ description: 'ID del proveedor' })
   @IsString()
@@ -140,7 +140,7 @@ export class UpdateProductDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  brand?: string;
+  brand_id?: string;
 
   @ApiPropertyOptional()
   @IsString()
@@ -153,11 +153,17 @@ export class SetPriceDto {
   @IsString()
   price_list_id: string;
 
-  @ApiProperty({ example: 1500.0 })
+  @ApiProperty({ example: 1200.0 })
   @IsNumber()
-  @Min(0)
   @Type(() => Number)
   price: number;
+}
+
+export class CreateBrandDto {
+  @ApiProperty({ example: 'Coca-Cola' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 }
 
 export class UpdateStockDto {
@@ -272,7 +278,7 @@ export class BulkUpdatePriceDto {
   @ApiPropertyOptional({ description: 'Filtrar por marca' })
   @IsString()
   @IsOptional()
-  brand?: string;
+  brand_id?: string;
 
   @ApiProperty({ enum: PriceAdjustmentType, example: 'percentage' })
   @IsString()
