@@ -3,10 +3,11 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@store/auth.store'
 import { useBranchStore } from '@store/branch.store'
 import { useBranches } from '@hooks/useSettings'
+import { usePWA } from '@hooks/usePWA'
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Truck,
   BookOpen, ChevronLeft, ChevronRight,
-  LogOut, Store, Bell, Menu, UserCircle, Moon, Sun, Settings, FileText
+  LogOut, Store, Bell, Menu, UserCircle, Moon, Sun, Settings, FileText, Download
 } from 'lucide-react'
 
 const navItems = [
@@ -26,6 +27,7 @@ export default function AdminLayout() {
   const { user, logout } = useAuthStore()
   const { activeBranch } = useBranchStore()
   const navigate = useNavigate()
+  const { isInstallable, isInstalled, installApp } = usePWA()
 
   // Carga las sucursales y auto-selecciona la principal si no hay ninguna activa
   useBranches()
@@ -156,6 +158,18 @@ export default function AdminLayout() {
               {/* Badge de notificaciones */}
               <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
             </button>
+
+            {/* Botón de Instalación PWA */}
+            {isInstallable && !isInstalled && (
+              <button
+                onClick={installApp}
+                className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-all text-xs font-bold border border-primary/20 animate-pulse"
+                title="Instalar aplicación en el dispositivo"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">INSTALAR APP</span>
+              </button>
+            )}
           </div>
         </header>
 

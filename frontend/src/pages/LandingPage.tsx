@@ -4,12 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Store, Package, ShoppingCart, Users, BarChart3, BookOpen, Truck,
   CheckCircle2, ArrowRight, Star, Zap, Shield, Globe, ChevronRight,
-  QrCode, Banknote, CreditCard, Building2,
+  QrCode, Banknote, CreditCard, Building2, Download
 } from 'lucide-react'
 import checkoutApi, { type PublicPlan } from '@api/checkout.api'
+import { usePWA } from '@hooks/usePWA'
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 function Navbar() {
+  const { isInstallable, isInstalled, installApp } = usePWA()
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -28,6 +30,16 @@ function Navbar() {
           <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
             Ingresar
           </Link>
+          {isInstallable && !isInstalled && (
+            <button
+              onClick={installApp}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 text-xs font-bold rounded-lg transition-colors border border-indigo-200 animate-pulse"
+              title="Instalar aplicación"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">INSTALAR APP</span>
+            </button>
+          )}
           <a href="#planes" className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors">
             Empezar gratis <ChevronRight className="w-3.5 h-3.5" />
           </a>
