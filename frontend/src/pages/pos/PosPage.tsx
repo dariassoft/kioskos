@@ -30,7 +30,6 @@ import {
   useVerifySalePayment,
 } from '@hooks/useSales'
 import { useCategories, useBranches } from '@hooks/useInventory'
-import { Button } from '@/components/ui/button'
 import { inventoryApi } from '@api/inventory.api'
 import { useCartStore } from '@store/cart.store'
 import { useBranchStore } from '@store/branch.store' 
@@ -304,24 +303,22 @@ function PaymentModal({
                   <div>
                     <label className="block text-sm font-medium mb-2">Comprobante de transferencia</label>
                     <div className="flex gap-2">
-                      <Button
+                      <button
                         type="button"
-                        variant="outline"
-                        className="flex-1 h-16 rounded-xl border-dashed flex flex-col items-center justify-center gap-1"
+                        className="flex-1 h-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-1 hover:bg-muted/50 transition-colors"
                         onClick={() => document.getElementById('cameraInput')?.click()}
                       >
                         <Camera className="w-5 h-5 text-primary" />
                         <span className="text-[10px] font-medium uppercase tracking-wider">Cámara</span>
-                      </Button>
-                      <Button
+                      </button>
+                      <button
                         type="button"
-                        variant="outline"
-                        className="flex-1 h-16 rounded-xl border-dashed flex flex-col items-center justify-center gap-1"
+                        className="flex-1 h-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-1 hover:bg-muted/50 transition-colors"
                         onClick={() => document.getElementById('fileInput')?.click()}
                       >
                         <ImageIcon className="w-5 h-5 text-primary" />
                         <span className="text-[10px] font-medium uppercase tracking-wider">Galería</span>
-                      </Button>
+                      </button>
                       <input id="cameraInput" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
                       <input id="fileInput" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                     </div>
