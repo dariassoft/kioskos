@@ -123,6 +123,19 @@ export class SalesService {
    * Marca una venta como verificada (para transferencias pendientes).
    * Solo el admin/manager puede verificar pagos.
    */
+  async verifySale(id: string, tenantId: string): Promise<Sale> {
+    const sale = await this.saleRepo.findOne({
+      where: { id, tenant_id: tenantId },
+    });
+
+    if (!sale) throw new NotFoundException('Venta no encontrada');
+    if (sale.payment_status === PaymentStatus.CONFIRMED) {
+      throw new BadRequestException('Esta venta ya está confirmada');
+    }
+
+    sale.payment_status = PaymentStatus.CONFIRMED;
+    sale.payment_verified_at = new Date();
+
     return this.saleRepo.save(sale);
   }
 

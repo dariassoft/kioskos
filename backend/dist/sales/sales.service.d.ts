@@ -6,7 +6,8 @@ import { CashRegister } from './entities/cash-register.entity';
 import { Customer } from './entities/customer.entity';
 import { PaymentAccount } from './entities/payment-account.entity';
 import { Branch } from '@inventory/entities/branch.entity';
-import { OpenCashRegisterDto, CloseCashRegisterDto } from './dto/sales.dto';
+import { CreateSaleDto, OpenCashRegisterDto, CloseCashRegisterDto, CreateCustomerDto, UpdateCustomerDto, ListSalesQueryDto } from './dto/sales.dto';
+import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
 import { InventoryService } from '@inventory/inventory.service';
 export declare class SalesService {
     private readonly saleRepo;
@@ -21,4 +22,29 @@ export declare class SalesService {
     openCashRegister(dto: OpenCashRegisterDto, tenantId: string, userId: string): Promise<CashRegister>;
     closeCashRegister(branchId: string, dto: CloseCashRegisterDto, tenantId: string, userId: string): Promise<CashRegister>;
     getActiveRegister(tenantId: string, branchId: string, userId: string): Promise<CashRegister | null>;
+    verifySale(id: string, tenantId: string): Promise<Sale>;
+    revertSalePayment(saleId: string, tenantId: string): Promise<Sale>;
+    uploadVoucher(saleId: string, imageUrl: string, tenantId: string): Promise<Sale>;
+    createSale(dto: CreateSaleDto, tenantId: string, userId: string): Promise<Sale>;
+    listSales(tenantId: string, query: ListSalesQueryDto): Promise<{
+        data: Sale[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
+    findAllCustomers(tenantId: string): Promise<Customer[]>;
+    findOneCustomer(id: string, tenantId: string): Promise<Customer>;
+    createCustomer(dto: CreateCustomerDto, tenantId: string): Promise<Customer>;
+    updateCustomer(id: string, dto: UpdateCustomerDto, tenantId: string): Promise<Customer>;
+    payDebt(id: string, amount: number, tenantId: string): Promise<Customer>;
+    findAllPaymentAccounts(tenantId: string): Promise<PaymentAccount[]>;
+    findOnePaymentAccount(id: string, tenantId: string): Promise<PaymentAccount>;
+    createPaymentAccount(dto: CreatePaymentAccountDto, tenantId: string): Promise<PaymentAccount>;
+    updatePaymentAccount(id: string, dto: UpdatePaymentAccountDto, tenantId: string): Promise<PaymentAccount>;
+    deletePaymentAccount(id: string, tenantId: string): Promise<{
+        message: string;
+    }>;
+    private assertBranchExists;
+    private shouldAutoVerify;
+    private resolvePaymentStatus;
 }
