@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Check, Trash2, Package, Info, AlertTriangle } from 'lucide-react'
+import { Bell, Check, Trash2, Info, AlertTriangle } from 'lucide-react'
 import { useNotificationStore, Notification } from '@store/notification.store'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
