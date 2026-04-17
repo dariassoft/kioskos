@@ -16,6 +16,8 @@ import {
   LayoutGrid,
   List,
   ChevronRight,
+  Camera,
+  Image as ImageIcon,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -23,16 +25,18 @@ import {
   useOpenRegister,
   useCreateSale,
   useCustomers,
+  usePaymentAccounts,
+  useUploadVoucher,
+  useVerifySalePayment,
 } from '@hooks/useSales'
-import { useCategories } from '@hooks/useInventory'
-import { useBranches } from '@hooks/useInventory' // Cambiado para consistencia con StockPage
+import { useCategories, useBranches } from '@hooks/useInventory'
+import { Button } from '@/components/ui/button'
 import { inventoryApi } from '@api/inventory.api'
 import { useCartStore } from '@store/cart.store'
-import { useBranchStore } from '@store/branch.store'
+import { useBranchStore } from '@store/branch.store' 
 import toast from 'react-hot-toast'
 import type { Product, Category } from '@api/inventory.types'
-import type { PaymentMethod, PaymentStatus, CreateSaleDto } from '@api/sales.types'
-import type { Customer } from '@api/sales.types'
+import type { PaymentMethod, PaymentStatus, SaleStatus, CreateSaleDto, Customer } from '@api/sales.types'
 
 function OpenRegisterModal({ branchId }: { branchId: string }) {
   const [balance, setBalance] = useState('')
@@ -116,6 +120,24 @@ function PaymentModal({
   const [authorizationCode, setAuthorizationCode] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
 
+  // Nuevos estados para transferencia
+  const { data: accounts } = usePaymentAccounts()
+  const uploadVoucher = useUploadVoucher()
+  const verifyPayment = useVerifySalePayment()
+  const [selectedAccountId, setSelectedAccountId] = useState('')
+  const [voucherFile, setVoucherFile] = useState<File | null>(null)
+  const [voucherPreview, setVoucherPreview] = useState<string | null>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setVoucherFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setVoucherPreview(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleConfirm = () => {
     if (!activeBranch) return
 
@@ -154,7 +176,18 @@ function PaymentModal({
     }
 
     createSale.mutate(payload, {
-      onSuccess: () => {
+      onSuccess: async (sale) => {
+        // Si hay archivo de comprobante, lo subimos
+        if (voucherFile) {
+          await uploadVoucher.mutateAsync({ saleId: sale.id, file: voucherFile })
+        }
+        
+        // El usuario pidió que el cajero lo marque como pagado manualmente.
+        // En este flujo, al subir el comprobante y finalizar, lo confirmamos.
+        if (cart.paymentMethod === 'transfer' && voucherFile) {
+           await verifyPayment.mutateAsync(sale.id)
+        }
+
         cart.clearCart()
         onClose()
       },
@@ -243,11 +276,78 @@ function PaymentModal({
               {cart.paymentMethod === 'transfer' && (
                 <>
                   <div>
+                    <label className="block text-sm font-medium mb-1 text-primary">Cuenta de destino</label>
+                    <div className="grid grid-cols-1 gap-2">
+                       {accounts?.filter(a => a.is_active).map(acc => (
+                         <button
+                           key={acc.id}
+                           type="button"
+                           onClick={() => {
+                             setSelectedAccountId(acc.id)
+                             setTransferVoucher(`${acc.name}: ${acc.value}`)
+                           }}
+                           className={`p-3 rounded-xl border text-left transition-all ${
+                             selectedAccountId === acc.id 
+                               ? 'bg-primary/10 border-primary ring-1 ring-primary' 
+                               : 'bg-background border-border hover:border-primary/50'
+                           }`}
+                         >
+                           <p className="font-bold text-sm">{acc.name}</p>
+                           <p className="text-[10px] font-mono opacity-70">{acc.type.toUpperCase()}: {acc.value}</p>
+                         </button>
+                       ))}
+                       {(!accounts || accounts.length === 0) && (
+                         <p className="text-[10px] text-muted-foreground italic">No hay cuentas configuradas en ajustes.</p>
+                       )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Comprobante de transferencia</label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 h-16 rounded-xl border-dashed flex flex-col items-center justify-center gap-1"
+                        onClick={() => document.getElementById('cameraInput')?.click()}
+                      >
+                        <Camera className="w-5 h-5 text-primary" />
+                        <span className="text-[10px] font-medium uppercase tracking-wider">Cámara</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 h-16 rounded-xl border-dashed flex flex-col items-center justify-center gap-1"
+                        onClick={() => document.getElementById('fileInput')?.click()}
+                      >
+                        <ImageIcon className="w-5 h-5 text-primary" />
+                        <span className="text-[10px] font-medium uppercase tracking-wider">Galería</span>
+                      </Button>
+                      <input id="cameraInput" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+                      <input id="fileInput" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                    </div>
+                    {voucherPreview && (
+                      <div className="mt-2 relative group">
+                        <img src={voucherPreview} alt="Comprobante" className="w-full h-32 object-cover rounded-xl border border-border" />
+                        <button 
+                          onClick={() => { setVoucherFile(null); setVoucherPreview(null); }}
+                          className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Capturado
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Referencia adicional (opcional)</label>
+                    <input className="input-field" value={transferVoucher} onChange={(e) => setTransferVoucher(e.target.value)} placeholder="Nro de operación" />
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium mb-1">Billetera / Banco origen</label>
                     <input className="input-field" value={transferOrigin} onChange={(e) => setTransferOrigin(e.target.value)} placeholder="Mercado Pago / Ualá / Banco Nación" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Nro. comprobante / referencia</label>
                     <input className="input-field" value={transferVoucher} onChange={(e) => setTransferVoucher(e.target.value)} placeholder="CBU / CVU / Ref transferencia" />
                   </div>
                 </>

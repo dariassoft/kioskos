@@ -11,6 +11,7 @@ import UsersTab from './tabs/UsersTab'
 import BusinessTab from './tabs/BusinessTab'
 import AfipTab from './tabs/AfipTab'
 import MercadopagoTab from './tabs/MercadopagoTab'
+import PaymentAccountsTab from './tabs/PaymentAccountsTab'
 
 const settingsTools = [
   { 
@@ -46,12 +47,16 @@ const settingsTools = [
     color: 'bg-slate-700' 
   },
   { 
-    id: 'mercadopago',
-    to: '/settings/mercadopago', 
-    label: 'MercadoPago', 
-    description: 'Pagos QR, cobros online y conciliación',
     icon: CreditCard, 
     color: 'bg-sky-500' 
+  },
+  { 
+    id: 'payment-accounts',
+    to: '/settings/payment-accounts', 
+    label: 'Cuentas de Cobro', 
+    description: 'Configura Aliases y CBUs para transferencias',
+    icon: Building2, 
+    color: 'bg-emerald-500' 
   },
 ]
 
@@ -161,6 +166,7 @@ export default function SettingsPage() {
               <Route path="business" element={<BusinessTab />} />
               <Route path="afip" element={<AfipTab />} />
               <Route path="mercadopago" element={<MercadopagoTab />} />
+              <Route path="payment-accounts" element={<PaymentAccountsTab />} />
             </Routes>
           </div>
         )}

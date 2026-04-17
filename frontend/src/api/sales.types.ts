@@ -64,6 +64,7 @@ export interface Sale {
   authorization_code?: string | null
   payment_notes?: string | null
   payment_verified_at?: string | null
+  voucher_image_url?: string | null
   created_at: string
   items: SaleItem[]
   customer?: Customer
@@ -110,5 +111,21 @@ export interface SalesListResponse {
   total: number
   page: number
   limit: number
+}
+
+export interface PaymentAccount {
+  id: string
+  tenant_id: string
+  name: string
+  type: 'alias' | 'cbu' | 'other'
+  value: string
+  is_active: boolean
+}
+
+export interface CreatePaymentAccountDto {
+  name: string
+  type: 'alias' | 'cbu' | 'other'
+  value: string
+  is_active?: boolean
 }
 

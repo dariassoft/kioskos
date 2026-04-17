@@ -96,6 +96,10 @@ export class Sale extends BaseKioskosEntity {
   @Column({ type: 'timestamp', nullable: true })
   payment_verified_at: Date | null;
 
+  /** URL/Ruta de la imagen del comprobante de transferencia */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  voucher_image_url: string | null;
+
   @ManyToOne(() => Customer, (customer) => customer.sales, { nullable: true })
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;

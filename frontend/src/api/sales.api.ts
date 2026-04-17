@@ -67,6 +67,44 @@ export default {
     const res = await apiClient.post(`/sales/customers/${id}/pay`, { amount })
     return res.data
   },
+
+  revertSalePayment: async (id: string): Promise<Sale> => {
+    const res = await apiClient.patch(`/sales/${id}/revert-payment`)
+    return res.data
+  },
+
+  uploadVoucher: async (id: string, file: File): Promise<Sale> => {
+    const formData = new FormData()
+    formData.append('image', file)
+    const res = await apiClient.post(`/sales/${id}/voucher`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data
+  },
+
+  // ==========================================
+  // CUENTAS DE PAGO (Payment Accounts)
+  // ==========================================
+
+  getPaymentAccounts: async (): Promise<PaymentAccount[]> => {
+    const res = await apiClient.get('/sales/payment-accounts')
+    return res.data
+  },
+
+  createPaymentAccount: async (data: CreatePaymentAccountDto): Promise<PaymentAccount> => {
+    const res = await apiClient.post('/sales/payment-accounts', data)
+    return res.data
+  },
+
+  updatePaymentAccount: async (id: string, data: Partial<CreatePaymentAccountDto>): Promise<PaymentAccount> => {
+    const res = await apiClient.patch(`/sales/payment-accounts/${id}`, data)
+    return res.data
+  },
+
+  deletePaymentAccount: async (id: string): Promise<{ message: string }> => {
+    const res = await apiClient.delete(`/sales/payment-accounts/${id}`)
+    return res.data
+  },
 }
 
 

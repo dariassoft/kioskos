@@ -1,8 +1,9 @@
 import {
-  Controller, Get, Post, Patch,
+  Controller, Get, Post, Patch, Delete,
   Body, Param, Query, UseGuards,
-  Request,
+  Request, UseInterceptors, UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 import { SalesService } from './sales.service';
@@ -19,6 +20,8 @@ import {
   UpdateCustomerDto,
   ListSalesQueryDto,
 } from './dto/sales.dto';
+
+import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
 
 @ApiTags('sales')
 @ApiBearerAuth('JWT-auth')
@@ -93,13 +96,36 @@ export class SalesController {
   }
 
   @Patch(':id/verify-payment')
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER) // El cajero ahora puede confirmar si ve el comprobante
   @ApiOperation({ summary: 'Marcar como confirmado un pago pendiente (transferencia, QR o link)' })
   verifySalePayment(
     @Param('id') id: string,
     @GetTenantId() tenantId: string,
   ) {
     return this.salesService.verifySale(id, tenantId);
+  }
+
+  @Patch(':id/revert-payment')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Revierte un pago verificado a PENDING (administrativo)' })
+  revertSalePayment(
+    @Param('id') id: string,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.salesService.revertSalePayment(id, tenantId);
+  }
+
+  @Post(':id/voucher')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiOperation({ summary: 'Subir imagen del comprobante de transferencia' })
+  async uploadVoucher(
+    @Param('id') id: string,
+    @GetTenantId() tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const imageUrl = `/uploads/${file.filename}`;
+    return this.salesService.uploadVoucher(id, imageUrl, tenantId);
   }
 
   // ==========================================
@@ -143,5 +169,47 @@ export class SalesController {
     @GetTenantId() tenantId: string,
   ) {
     return this.salesService.payDebt(id, amount, tenantId);
+  }
+
+  // ==========================================
+  // CUENTAS DE PAGO (Payment Accounts)
+  // ==========================================
+
+  @Get('payment-accounts')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
+  @ApiOperation({ summary: 'Listar cuentas de cobro (CBU/Alias)' })
+  findAllPaymentAccounts(@GetTenantId() tenantId: string) {
+    return this.salesService.findAllPaymentAccounts(tenantId);
+  }
+
+  @Post('payment-accounts')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Crear nueva cuenta de cobro' })
+  createPaymentAccount(
+    @Body() dto: CreatePaymentAccountDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.salesService.createPaymentAccount(dto, tenantId);
+  }
+
+  @Patch('payment-accounts/:id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Actualizar cuenta de cobro' })
+  updatePaymentAccount(
+    @Param('id') id: string,
+    @Body() dto: UpdatePaymentAccountDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.salesService.updatePaymentAccount(id, dto, tenantId);
+  }
+
+  @Delete('payment-accounts/:id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Eliminar cuenta de cobro' })
+  deletePaymentAccount(
+    @Param('id') id: string,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.salesService.deletePaymentAccount(id, tenantId);
   }
 }

@@ -12,6 +12,7 @@ import { Sale, PaymentMethod, PaymentStatus, SaleStatus } from './entities/sale.
 import { SaleItem } from './entities/sale-item.entity';
 import { CashRegister } from './entities/cash-register.entity';
 import { Customer } from './entities/customer.entity';
+import { PaymentAccount } from './entities/payment-account.entity';
 import { Branch } from '@inventory/entities/branch.entity';
 
 import {
@@ -22,6 +23,8 @@ import {
   UpdateCustomerDto,
   ListSalesQueryDto,
 } from './dto/sales.dto';
+
+import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
 
 import { InventoryService } from '@inventory/inventory.service';
 import { SaleCompletedEvent } from '@sales/events/sale-completed.event';
@@ -39,6 +42,8 @@ export class SalesService {
     private readonly customerRepo: Repository<Customer>,
     @InjectRepository(Branch)
     private readonly branchRepo: Repository<Branch>,
+    @InjectRepository(PaymentAccount)
+    private readonly paymentAccountRepo: Repository<PaymentAccount>,
     private readonly inventoryService: InventoryService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -118,23 +123,39 @@ export class SalesService {
    * Marca una venta como verificada (para transferencias pendientes).
    * Solo el admin/manager puede verificar pagos.
    */
-  async verifySale(saleId: string, tenantId: string): Promise<Sale> {
+    return this.saleRepo.save(sale);
+  }
+
+  /**
+   * Revierte el pago de una venta a PENDING.
+   * Solo para administrativos/admins que no logran identificar el pago.
+   */
+  async revertSalePayment(saleId: string, tenantId: string): Promise<Sale> {
     const sale = await this.saleRepo.findOne({
       where: { id: saleId, tenant_id: tenantId },
     });
 
-    if (!sale) {
-      throw new NotFoundException('Venta no encontrada');
-    }
+    if (!sale) throw new NotFoundException('Venta no encontrada');
+    if (!sale.payment_verified_at) throw new BadRequestException('Esta venta no está verificada');
 
-    if (sale.payment_verified_at) {
-      throw new BadRequestException('Esta venta ya fue verificada');
-    }
+    sale.payment_status = PaymentStatus.PENDING;
+    sale.payment_verified_at = null;
+    // La venta sigue existiendo pero su estado de pago vuelve a pendiente
+    
+    return this.saleRepo.save(sale);
+  }
 
-    sale.payment_status = PaymentStatus.CONFIRMED;
-    sale.payment_verified_at = new Date();
-    sale.status = SaleStatus.COMPLETED;
+  /**
+   * Registra la imagen del comprobante de transferencia.
+   */
+  async uploadVoucher(saleId: string, imageUrl: string, tenantId: string): Promise<Sale> {
+    const sale = await this.saleRepo.findOne({
+      where: { id: saleId, tenant_id: tenantId },
+    });
 
+    if (!sale) throw new NotFoundException('Venta no encontrada');
+
+    sale.voucher_image_url = imageUrl;
     return this.saleRepo.save(sale);
   }
 
@@ -327,6 +348,40 @@ export class SalesService {
 
     await this.customerRepo.update({ id, tenant_id: tenantId }, { current_debt: newDebt });
     return this.findOneCustomer(id, tenantId);
+  }
+
+  // ==========================================
+  // CUENTAS DE PAGO (Payment Accounts)
+  // ==========================================
+
+  async findAllPaymentAccounts(tenantId: string): Promise<PaymentAccount[]> {
+    return this.paymentAccountRepo.find({
+      where: { tenant_id: tenantId },
+      order: { name: 'ASC' },
+    });
+  }
+
+  async findOnePaymentAccount(id: string, tenantId: string): Promise<PaymentAccount> {
+    const account = await this.paymentAccountRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!account) throw new NotFoundException('Cuenta de pago no encontrada');
+    return account;
+  }
+
+  async createPaymentAccount(dto: CreatePaymentAccountDto, tenantId: string): Promise<PaymentAccount> {
+    const account = this.paymentAccountRepo.create({ ...dto, tenant_id: tenantId });
+    return this.paymentAccountRepo.save(account);
+  }
+
+  async updatePaymentAccount(id: string, dto: UpdatePaymentAccountDto, tenantId: string): Promise<PaymentAccount> {
+    const account = await this.findOnePaymentAccount(id, tenantId);
+    Object.assign(account, dto);
+    return this.paymentAccountRepo.save(account);
+  }
+
+  async deletePaymentAccount(id: string, tenantId: string): Promise<{ message: string }> {
+    const account = await this.findOnePaymentAccount(id, tenantId);
+    await this.paymentAccountRepo.remove(account);
+    return { message: 'Cuenta eliminada correctamente' };
   }
 
   // ==========================================

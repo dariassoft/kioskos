@@ -112,6 +112,10 @@ __decorate([
     __metadata("design:type", Object)
 ], Sale.prototype, "payment_verified_at", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", Object)
+], Sale.prototype, "voucher_image_url", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, (customer) => customer.sales, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'customer_id' }),
     __metadata("design:type", customer_entity_1.Customer)

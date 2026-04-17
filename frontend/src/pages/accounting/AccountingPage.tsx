@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BookOpen, Calendar, ArrowUpRight, ArrowDownRight, RefreshCcw, Download, ShieldCheck } from 'lucide-react';
 import { useLedger } from '@hooks/useAccounting';
-import { useSalesList, useVerifySalePayment } from '@hooks/useSales';
+import { useSalesList, useVerifySalePayment, useRevertSalePayment } from '@hooks/useSales';
 import { jsPDF as JsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -18,6 +18,16 @@ export default function AccountingPage() {
     limit: 20,
   });
   const verifyPayment = useVerifySalePayment();
+  const revertPayment = useRevertSalePayment();
+
+  // Ventas confirmadas (para control/reversión)
+  const { data: verifiedSales = { data: [], total: 0, page: 1, limit: 10 }, refetch: refetchVerified } = useSalesList({
+    start_date: startDate,
+    end_date: endDate,
+    payment_status: 'confirmed',
+    page: 1,
+    limit: 10,
+  });
 
   // Calcular totales
   const totalDebit = ledger.reduce((acc: number, entry: any) => acc + Number(entry.debit), 0);
@@ -56,7 +66,14 @@ export default function AccountingPage() {
 
   const handleConfirmPayment = async (saleId: string) => {
     await verifyPayment.mutateAsync(saleId);
-    await Promise.all([refetch(), refetchPending()]);
+    await Promise.all([refetch(), refetchPending(), refetchVerified()]);
+  };
+
+  const handleRevertPayment = async (saleId: string) => {
+    if (confirm('¿Estás seguro de que deseas anular esta acreditación y volverla a pendiente?')) {
+      await revertPayment.mutateAsync(saleId);
+      await Promise.all([refetch(), refetchPending(), refetchVerified()]);
+    }
   };
 
   return (
@@ -253,6 +270,86 @@ export default function AccountingPage() {
                         >
                           <ShieldCheck className="w-4 h-4" />
                           Confirmar
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Acreditaciones Recientes */}
+        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden animate-fade-in relative">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground text-emerald-600">Acreditaciones Confirmadas</h2>
+              <p className="text-sm text-muted-foreground">Últimos cobros verificados por el personal</p>
+            </div>
+            <button
+              onClick={() => refetchVerified()}
+              className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-xl transition-colors text-sm font-medium"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Actualizar
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted/50 text-xs uppercase text-muted-foreground font-bold">
+                <tr>
+                  <th className="px-6 py-4">Fecha</th>
+                  <th className="px-6 py-4">Método / Cliente</th>
+                  <th className="px-6 py-4 text-center">Comprobante</th>
+                  <th className="px-6 py-4 text-right">Importe</th>
+                  <th className="px-6 py-4 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {verifiedSales.data.filter((s: any) => s.payment_method !== 'cash' && s.payment_method !== 'credit_client').length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground italic">No hay acreditaciones recientes para revisar.</td>
+                  </tr>
+                ) : (
+                  verifiedSales.data
+                    .filter((s: any) => s.payment_method !== 'cash' && s.payment_method !== 'credit_client')
+                    .map((sale: any) => (
+                    <tr key={sale.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-xs">
+                        {new Date(sale.created_at).toLocaleString('es-AR')}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-xs uppercase text-primary">{sale.payment_method.replace('_', ' ')}</span>
+                          <span className="font-medium">{sale.customer?.name || sale.payer_name || 'Consumidor Final'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {sale.voucher_image_url ? (
+                          <a 
+                            href={`${import.meta.env.VITE_API_URL}${sale.voucher_image_url}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded-lg text-[10px] font-bold hover:bg-emerald-500/20"
+                          >
+                            <Download className="w-3 h-3" /> Ver Captura
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic">Sin imagen</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-foreground">
+                        ${Number(sale.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleRevertPayment(sale.id)}
+                          disabled={revertPayment.isPending}
+                          className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                          title="Anular acreditación (volver a pendiente)"
+                        >
+                          <RefreshCcw className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>

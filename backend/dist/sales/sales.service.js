@@ -21,16 +21,20 @@ const sale_entity_1 = require("./entities/sale.entity");
 const sale_item_entity_1 = require("./entities/sale-item.entity");
 const cash_register_entity_1 = require("./entities/cash-register.entity");
 const customer_entity_1 = require("./entities/customer.entity");
+const payment_account_entity_1 = require("./entities/payment-account.entity");
 const branch_entity_1 = require("../inventory/entities/branch.entity");
+const sales_dto_1 = require("./dto/sales.dto");
+const payment_account_dto_1 = require("./dto/payment-account.dto");
 const inventory_service_1 = require("../inventory/inventory.service");
 const sale_completed_event_1 = require("./events/sale-completed.event");
 let SalesService = class SalesService {
-    constructor(saleRepo, saleItemRepo, cashRegisterRepo, customerRepo, branchRepo, inventoryService, eventEmitter) {
+    constructor(saleRepo, saleItemRepo, cashRegisterRepo, customerRepo, branchRepo, paymentAccountRepo, inventoryService, eventEmitter) {
         this.saleRepo = saleRepo;
         this.saleItemRepo = saleItemRepo;
         this.cashRegisterRepo = cashRegisterRepo;
         this.customerRepo = customerRepo;
         this.branchRepo = branchRepo;
+        this.paymentAccountRepo = paymentAccountRepo;
         this.inventoryService = inventoryService;
         this.eventEmitter = eventEmitter;
     }
@@ -86,179 +90,6 @@ let SalesService = class SalesService {
             },
         });
     }
-    async verifySale(saleId, tenantId) {
-        const sale = await this.saleRepo.findOne({
-            where: { id: saleId, tenant_id: tenantId },
-        });
-        if (!sale) {
-            throw new common_1.NotFoundException('Venta no encontrada');
-        }
-        if (sale.payment_verified_at) {
-            throw new common_1.BadRequestException('Esta venta ya fue verificada');
-        }
-        sale.payment_status = sale_entity_1.PaymentStatus.CONFIRMED;
-        sale.payment_verified_at = new Date();
-        sale.status = sale_entity_1.SaleStatus.COMPLETED;
-        return this.saleRepo.save(sale);
-    }
-    async createSale(dto, tenantId, userId) {
-        await this.assertBranchExists(dto.branch_id, tenantId);
-        for (const item of dto.items) {
-            await this.inventoryService.findOneProduct(item.product_id, tenantId);
-        }
-        const activeRegister = await this.getActiveRegister(tenantId, dto.branch_id, userId);
-        if (!activeRegister) {
-            throw new common_1.BadRequestException('Debes abrir la caja antes de registrar una venta');
-        }
-        let customer = null;
-        if (dto.customer_id) {
-            customer = await this.findOneCustomer(dto.customer_id, tenantId);
-        }
-        if (dto.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT) {
-            if (!customer) {
-                throw new common_1.BadRequestException('Debes seleccionar un cliente válido para venderle al fiado');
-            }
-        }
-        const total = dto.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unit_price)), 0);
-        const paymentStatus = this.resolvePaymentStatus(dto.payment_method, dto.payment_status, dto.payment_details?.mp_payment_status);
-        if (dto.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT && customer) {
-            const newDebt = Number(customer.current_debt) + total;
-            if (customer.credit_limit > 0 && newDebt > customer.credit_limit) {
-                throw new common_1.ForbiddenException(`Límite de crédito excedido. Tope: $${customer.credit_limit}, Deuda acumulada: $${newDebt}`);
-            }
-            await this.customerRepo.update(customer.id, { current_debt: newDebt });
-        }
-        if (dto.payment_method === sale_entity_1.PaymentMethod.CASH) {
-            await this.cashRegisterRepo.update(activeRegister.id, {
-                cash_sales: Number(activeRegister.cash_sales) + total,
-            });
-        }
-        const sale = this.saleRepo.create({
-            tenant_id: tenantId,
-            branch_id: dto.branch_id,
-            user_id: userId,
-            customer_id: dto.customer_id,
-            payment_method: dto.payment_method,
-            payment_status: paymentStatus,
-            total: total,
-            status: sale_entity_1.SaleStatus.COMPLETED,
-            mp_payment_id: dto.payment_details?.mp_payment_id || null,
-            mp_payment_status: dto.payment_details?.mp_payment_status || null,
-            payer_name: dto.payment_details?.payer_name || null,
-            payer_email: dto.payment_details?.payer_email || null,
-            transfer_voucher: dto.payment_details?.transfer_voucher || null,
-            transfer_origin: dto.payment_details?.transfer_origin || null,
-            card_last_digits: dto.payment_details?.card_last_digits || null,
-            card_brand: dto.payment_details?.card_brand || null,
-            authorization_code: dto.payment_details?.authorization_code || null,
-            payment_notes: dto.payment_details?.payment_notes || null,
-            payment_verified_at: null,
-        });
-        const savedSale = await this.saleRepo.save(sale);
-        const saleItems = dto.items.map((item) => this.saleItemRepo.create({
-            sale_id: savedSale.id,
-            product_id: item.product_id,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            subtotal: Number(item.quantity) * Number(item.unit_price),
-        }));
-        await this.saleItemRepo.save(saleItems);
-        for (const item of saleItems) {
-            await this.inventoryService.reduceStock(item.product_id, dto.branch_id, item.quantity, tenantId);
-        }
-        this.eventEmitter.emit('sale.completed', new sale_completed_event_1.SaleCompletedEvent(tenantId, savedSale.id, total, dto.payment_method, dto.branch_id, userId));
-        if (paymentStatus === sale_entity_1.PaymentStatus.CONFIRMED) {
-            await this.verifySale(savedSale.id, tenantId);
-        }
-        return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] });
-    }
-    async listSales(tenantId, query) {
-        const page = Number(query.page) || 1;
-        const limit = Number(query.limit) || 20;
-        const qb = this.saleRepo
-            .createQueryBuilder('sale')
-            .leftJoinAndSelect('sale.items', 'items')
-            .leftJoinAndSelect('sale.customer', 'customer')
-            .where('sale.tenant_id = :tenantId', { tenantId });
-        if (query.payment_status) {
-            qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });
-        }
-        if (query.start_date) {
-            qb.andWhere('sale.created_at >= :startDate', {
-                startDate: `${query.start_date} 00:00:00`
-            });
-        }
-        if (query.end_date) {
-            qb.andWhere('sale.created_at <= :endDate', {
-                endDate: `${query.end_date} 23:59:59`
-            });
-        }
-        qb.orderBy('sale.created_at', 'DESC')
-            .skip((page - 1) * limit)
-            .take(limit);
-        const [data, total] = await qb.getManyAndCount();
-        return { data, total, page, limit };
-    }
-    async findAllCustomers(tenantId) {
-        return this.customerRepo.find({
-            where: { tenant_id: tenantId },
-            order: { name: 'ASC' },
-        });
-    }
-    async findOneCustomer(id, tenantId) {
-        const customer = await this.customerRepo.findOne({ where: { id, tenant_id: tenantId } });
-        if (!customer)
-            throw new common_1.NotFoundException('Cliente no encontrado');
-        return customer;
-    }
-    async createCustomer(dto, tenantId) {
-        const customer = this.customerRepo.create({ ...dto, tenant_id: tenantId });
-        return this.customerRepo.save(customer);
-    }
-    async updateCustomer(id, dto, tenantId) {
-        await this.findOneCustomer(id, tenantId);
-        await this.customerRepo.update({ id, tenant_id: tenantId }, dto);
-        return this.findOneCustomer(id, tenantId);
-    }
-    async payDebt(id, amount, tenantId) {
-        const customer = await this.findOneCustomer(id, tenantId);
-        if (amount <= 0)
-            throw new common_1.BadRequestException('El monto debe ser mayor a 0');
-        let newDebt = Number(customer.current_debt) - amount;
-        if (newDebt < 0)
-            newDebt = 0;
-        await this.customerRepo.update({ id, tenant_id: tenantId }, { current_debt: newDebt });
-        return this.findOneCustomer(id, tenantId);
-    }
-    async assertBranchExists(branchId, tenantId) {
-        const branch = await this.branchRepo.findOne({ where: { id: branchId, tenant_id: tenantId } });
-        if (!branch) {
-            throw new common_1.BadRequestException('La sucursal seleccionada no existe o no pertenece a tu negocio');
-        }
-        return branch;
-    }
-    shouldAutoVerify(paymentMethod) {
-        const autoVerifyMethods = [
-            sale_entity_1.PaymentMethod.CASH,
-            sale_entity_1.PaymentMethod.CREDIT_CLIENT,
-            sale_entity_1.PaymentMethod.DEBIT_CARD,
-            sale_entity_1.PaymentMethod.CREDIT_CARD,
-        ];
-        return autoVerifyMethods.includes(paymentMethod);
-    }
-    resolvePaymentStatus(paymentMethod, explicitStatus, mpStatus) {
-        if (explicitStatus)
-            return explicitStatus;
-        if (mpStatus) {
-            const normalized = mpStatus.toLowerCase();
-            if (normalized === 'approved')
-                return sale_entity_1.PaymentStatus.CONFIRMED;
-            if (normalized === 'rejected' || normalized === 'cancelled')
-                return sale_entity_1.PaymentStatus.FAILED;
-            return sale_entity_1.PaymentStatus.PENDING;
-        }
-        return this.shouldAutoVerify(paymentMethod) ? sale_entity_1.PaymentStatus.CONFIRMED : sale_entity_1.PaymentStatus.PENDING;
-    }
 };
 exports.SalesService = SalesService;
 exports.SalesService = SalesService = __decorate([
@@ -268,7 +99,9 @@ exports.SalesService = SalesService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(cash_register_entity_1.CashRegister)),
     __param(3, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
     __param(4, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
+    __param(5, (0, typeorm_1.InjectRepository)(payment_account_entity_1.PaymentAccount)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
@@ -276,4 +109,241 @@ exports.SalesService = SalesService = __decorate([
         inventory_service_1.InventoryService,
         event_emitter_1.EventEmitter2])
 ], SalesService);
+return this.saleRepo.save(sale);
+async;
+revertSalePayment(saleId, string, tenantId, string);
+Promise < sale_entity_1.Sale > {
+    const: sale = await this.saleRepo.findOne({
+        where: { id: saleId, tenant_id: tenantId },
+    }),
+    if(, sale) { }, throw: new common_1.NotFoundException('Venta no encontrada'),
+    if(, sale) { }, : .payment_verified_at, throw: new common_1.BadRequestException('Esta venta no está verificada'),
+    sale, : .payment_status = sale_entity_1.PaymentStatus.PENDING,
+    sale, : .payment_verified_at = null,
+    return: this.saleRepo.save(sale)
+};
+async;
+uploadVoucher(saleId, string, imageUrl, string, tenantId, string);
+Promise < sale_entity_1.Sale > {
+    const: sale = await this.saleRepo.findOne({
+        where: { id: saleId, tenant_id: tenantId },
+    }),
+    if(, sale) { }, throw: new common_1.NotFoundException('Venta no encontrada'),
+    sale, : .voucher_image_url = imageUrl,
+    return: this.saleRepo.save(sale)
+};
+async;
+createSale(dto, sales_dto_1.CreateSaleDto, tenantId, string, userId, string);
+Promise < sale_entity_1.Sale > {
+    await, this: .assertBranchExists(dto.branch_id, tenantId),
+    for(, item, of, dto) { }, : .items
+};
+{
+    await this.inventoryService.findOneProduct(item.product_id, tenantId);
+}
+const activeRegister = await this.getActiveRegister(tenantId, dto.branch_id, userId);
+if (!activeRegister) {
+    throw new common_1.BadRequestException('Debes abrir la caja antes de registrar una venta');
+}
+let customer = null;
+if (dto.customer_id) {
+    customer = await this.findOneCustomer(dto.customer_id, tenantId);
+}
+if (dto.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT) {
+    if (!customer) {
+        throw new common_1.BadRequestException('Debes seleccionar un cliente válido para venderle al fiado');
+    }
+}
+const total = dto.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unit_price)), 0);
+const paymentStatus = this.resolvePaymentStatus(dto.payment_method, dto.payment_status, dto.payment_details?.mp_payment_status);
+if (dto.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT && customer) {
+    const newDebt = Number(customer.current_debt) + total;
+    if (customer.credit_limit > 0 && newDebt > customer.credit_limit) {
+        throw new common_1.ForbiddenException(`Límite de crédito excedido. Tope: $${customer.credit_limit}, Deuda acumulada: $${newDebt}`);
+    }
+    await this.customerRepo.update(customer.id, { current_debt: newDebt });
+}
+if (dto.payment_method === sale_entity_1.PaymentMethod.CASH) {
+    await this.cashRegisterRepo.update(activeRegister.id, {
+        cash_sales: Number(activeRegister.cash_sales) + total,
+    });
+}
+const sale = this.saleRepo.create({
+    tenant_id: tenantId,
+    branch_id: dto.branch_id,
+    user_id: userId,
+    customer_id: dto.customer_id,
+    payment_method: dto.payment_method,
+    payment_status: paymentStatus,
+    total: total,
+    status: sale_entity_1.SaleStatus.COMPLETED,
+    mp_payment_id: dto.payment_details?.mp_payment_id || null,
+    mp_payment_status: dto.payment_details?.mp_payment_status || null,
+    payer_name: dto.payment_details?.payer_name || null,
+    payer_email: dto.payment_details?.payer_email || null,
+    transfer_voucher: dto.payment_details?.transfer_voucher || null,
+    transfer_origin: dto.payment_details?.transfer_origin || null,
+    card_last_digits: dto.payment_details?.card_last_digits || null,
+    card_brand: dto.payment_details?.card_brand || null,
+    authorization_code: dto.payment_details?.authorization_code || null,
+    payment_notes: dto.payment_details?.payment_notes || null,
+    payment_verified_at: null,
+});
+const savedSale = await this.saleRepo.save(sale);
+const saleItems = dto.items.map((item) => this.saleItemRepo.create({
+    sale_id: savedSale.id,
+    product_id: item.product_id,
+    quantity: item.quantity,
+    unit_price: item.unit_price,
+    subtotal: Number(item.quantity) * Number(item.unit_price),
+}));
+await this.saleItemRepo.save(saleItems);
+for (const item of saleItems) {
+    await this.inventoryService.reduceStock(item.product_id, dto.branch_id, item.quantity, tenantId);
+}
+this.eventEmitter.emit('sale.completed', new sale_completed_event_1.SaleCompletedEvent(tenantId, savedSale.id, total, dto.payment_method, dto.branch_id, userId));
+if (paymentStatus === sale_entity_1.PaymentStatus.CONFIRMED) {
+    await this.verifySale(savedSale.id, tenantId);
+}
+return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] });
+async;
+listSales(tenantId, string, query, sales_dto_1.ListSalesQueryDto);
+Promise < { data: sale_entity_1.Sale[], total: number, page: number, limit: number } > {
+    const: page = Number(query.page) || 1,
+    const: limit = Number(query.limit) || 20,
+    const: qb = this.saleRepo
+        .createQueryBuilder('sale')
+        .leftJoinAndSelect('sale.items', 'items')
+        .leftJoinAndSelect('sale.customer', 'customer')
+        .where('sale.tenant_id = :tenantId', { tenantId }),
+    if(query) { }, : .payment_status
+};
+{
+    qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });
+}
+if (query.start_date) {
+    qb.andWhere('sale.created_at >= :startDate', {
+        startDate: `${query.start_date} 00:00:00`
+    });
+}
+if (query.end_date) {
+    qb.andWhere('sale.created_at <= :endDate', {
+        endDate: `${query.end_date} 23:59:59`
+    });
+}
+qb.orderBy('sale.created_at', 'DESC')
+    .skip((page - 1) * limit)
+    .take(limit);
+const [data, total] = await qb.getManyAndCount();
+return { data, total, page, limit };
+async;
+findAllCustomers(tenantId, string);
+Promise < customer_entity_1.Customer[] > {
+    return: this.customerRepo.find({
+        where: { tenant_id: tenantId },
+        order: { name: 'ASC' },
+    })
+};
+async;
+findOneCustomer(id, string, tenantId, string);
+Promise < customer_entity_1.Customer > {
+    const: customer = await this.customerRepo.findOne({ where: { id, tenant_id: tenantId } }),
+    if(, customer) { }, throw: new common_1.NotFoundException('Cliente no encontrado'),
+    return: customer
+};
+async;
+createCustomer(dto, sales_dto_1.CreateCustomerDto, tenantId, string);
+Promise < customer_entity_1.Customer > {
+    const: customer = this.customerRepo.create({ ...dto, tenant_id: tenantId }),
+    return: this.customerRepo.save(customer)
+};
+async;
+updateCustomer(id, string, dto, sales_dto_1.UpdateCustomerDto, tenantId, string);
+Promise < customer_entity_1.Customer > {
+    await, this: .findOneCustomer(id, tenantId),
+    await, this: .customerRepo.update({ id, tenant_id: tenantId }, dto),
+    return: this.findOneCustomer(id, tenantId)
+};
+async;
+payDebt(id, string, amount, number, tenantId, string);
+Promise < customer_entity_1.Customer > {
+    const: customer = await this.findOneCustomer(id, tenantId),
+    if(amount) { }
+} <= 0;
+throw new common_1.BadRequestException('El monto debe ser mayor a 0');
+let newDebt = Number(customer.current_debt) - amount;
+if (newDebt < 0)
+    newDebt = 0;
+await this.customerRepo.update({ id, tenant_id: tenantId }, { current_debt: newDebt });
+return this.findOneCustomer(id, tenantId);
+async;
+findAllPaymentAccounts(tenantId, string);
+Promise < payment_account_entity_1.PaymentAccount[] > {
+    return: this.paymentAccountRepo.find({
+        where: { tenant_id: tenantId },
+        order: { name: 'ASC' },
+    })
+};
+async;
+findOnePaymentAccount(id, string, tenantId, string);
+Promise < payment_account_entity_1.PaymentAccount > {
+    const: account = await this.paymentAccountRepo.findOne({ where: { id, tenant_id: tenantId } }),
+    if(, account) { }, throw: new common_1.NotFoundException('Cuenta de pago no encontrada'),
+    return: account
+};
+async;
+createPaymentAccount(dto, payment_account_dto_1.CreatePaymentAccountDto, tenantId, string);
+Promise < payment_account_entity_1.PaymentAccount > {
+    const: account = this.paymentAccountRepo.create({ ...dto, tenant_id: tenantId }),
+    return: this.paymentAccountRepo.save(account)
+};
+async;
+updatePaymentAccount(id, string, dto, payment_account_dto_1.UpdatePaymentAccountDto, tenantId, string);
+Promise < payment_account_entity_1.PaymentAccount > {
+    const: account = await this.findOnePaymentAccount(id, tenantId),
+    Object, : .assign(account, dto),
+    return: this.paymentAccountRepo.save(account)
+};
+async;
+deletePaymentAccount(id, string, tenantId, string);
+Promise < { message: string } > {
+    const: account = await this.findOnePaymentAccount(id, tenantId),
+    await, this: .paymentAccountRepo.remove(account),
+    return: { message: 'Cuenta eliminada correctamente' }
+};
+async;
+assertBranchExists(branchId, string, tenantId, string);
+Promise < branch_entity_1.Branch > {
+    const: branch = await this.branchRepo.findOne({ where: { id: branchId, tenant_id: tenantId } }),
+    if(, branch) {
+        throw new common_1.BadRequestException('La sucursal seleccionada no existe o no pertenece a tu negocio');
+    },
+    return: branch
+};
+shouldAutoVerify(paymentMethod, sale_entity_1.PaymentMethod);
+boolean;
+{
+    const autoVerifyMethods = [
+        sale_entity_1.PaymentMethod.CASH,
+        sale_entity_1.PaymentMethod.CREDIT_CLIENT,
+        sale_entity_1.PaymentMethod.DEBIT_CARD,
+        sale_entity_1.PaymentMethod.CREDIT_CARD,
+    ];
+    return autoVerifyMethods.includes(paymentMethod);
+}
+resolvePaymentStatus(paymentMethod, sale_entity_1.PaymentMethod, explicitStatus ?  : sale_entity_1.PaymentStatus, mpStatus ?  : string);
+sale_entity_1.PaymentStatus;
+{
+    if (explicitStatus)
+        return explicitStatus;
+    if (mpStatus) {
+        const normalized = mpStatus.toLowerCase();
+        if (normalized === 'approved')
+            return sale_entity_1.PaymentStatus.CONFIRMED;
+        if (normalized === 'rejected' || normalized === 'cancelled')
+            return sale_entity_1.PaymentStatus.FAILED;
+        return sale_entity_1.PaymentStatus.PENDING;
+    }
+    return this.shouldAutoVerify(paymentMethod) ? sale_entity_1.PaymentStatus.CONFIRMED : sale_entity_1.PaymentStatus.PENDING;
+}
 //# sourceMappingURL=sales.service.js.map

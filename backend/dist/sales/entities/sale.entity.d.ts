@@ -39,6 +39,7 @@ export declare class Sale extends BaseKioskosEntity {
     authorization_code: string | null;
     payment_notes: string | null;
     payment_verified_at: Date | null;
+    voucher_image_url: string | null;
     customer: Customer;
     items: SaleItem[];
 }

@@ -125,3 +125,84 @@ export const usePayDebt = () => {
       toast.error(err.response?.data?.message || 'Error al registrar el pago'),
   })
 }
+
+// ==========================================
+// NUEVOS: VOUCHERS Y REVERSIONES
+// ==========================================
+
+export const useRevertSalePayment = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (saleId: string) => salesApi.revertSalePayment(saleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sales'] })
+      toast.success('Cobro revertido a pendiente')
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al revertir el cobro'),
+  })
+}
+
+export const useUploadVoucher = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ saleId, file }: { saleId: string; file: File }) =>
+      salesApi.uploadVoucher(saleId, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sales'] })
+      toast.success('Comprobante subido con éxito')
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al subir el comprobante'),
+  })
+}
+
+// ==========================================
+// CUENTAS DE PAGO (Payment Accounts)
+// ==========================================
+
+export const usePaymentAccounts = () =>
+  useQuery({
+    queryKey: ['payment-accounts'],
+    queryFn: salesApi.getPaymentAccounts,
+  })
+
+export const useCreatePaymentAccount = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: salesApi.createPaymentAccount,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payment-accounts'] })
+      toast.success('Cuenta de cobro creada')
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al crear la cuenta'),
+  })
+}
+
+export const useUpdatePaymentAccount = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      salesApi.updatePaymentAccount(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payment-accounts'] })
+      toast.success('Cuenta de cobro actualizada')
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al actualizar la cuenta'),
+  })
+}
+
+export const useDeletePaymentAccount = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => salesApi.deletePaymentAccount(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payment-accounts'] })
+      toast.success('Cuenta de cobro eliminada')
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al eliminar la cuenta'),
+  })
+}
