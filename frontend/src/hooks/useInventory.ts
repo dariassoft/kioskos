@@ -85,7 +85,7 @@ export const useUpdateProduct = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       inventoryApi.updateProduct(id, data),
-    onSuccess: (_: any, { id }: { id: string }) => {
+    onSuccess: (_: any, { id }) => {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['product', id] })
       toast.success('Producto actualizado')
@@ -100,7 +100,7 @@ export const useUploadProductImage = () => {
   return useMutation({
     mutationFn: ({ productId, file }: { productId: string; file: File }) =>
       inventoryApi.uploadProductImage(productId, file),
-    onSuccess: (_: any, { productId }: { productId: string }) => {
+    onSuccess: (_: any, { productId }) => {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['product', productId] })
     },
