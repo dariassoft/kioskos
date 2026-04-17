@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Award, Loader2, X, Search, Trash2 } from 'lucide-react'
 import { useBrands, useCreateBrand } from '@hooks/useInventory'
+import type { Brand } from '@api/inventory.types'
 
 const brandSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -65,7 +66,7 @@ export default function BrandsPage() {
   const [search, setSearch] = useState('')
   const { data: brands = [], isLoading } = useBrands()
 
-  const filteredBrands = brands.filter(b => b.name.toLowerCase().includes(search.toLowerCase()))
+  const filteredBrands = brands.filter((b: Brand) => b.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="space-y-6">
@@ -106,7 +107,7 @@ export default function BrandsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {filteredBrands.map((brand) => (
+          {filteredBrands.map((brand: Brand) => (
             <div
               key={brand.id}
               className="group flex flex-col items-center justify-center p-6 bg-card border border-border rounded-3xl hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all text-center relative overflow-hidden"

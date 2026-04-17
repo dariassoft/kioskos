@@ -1,3 +1,4 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi } from '@api/inventory.api'
 import type { ProductQuery, PaginatedProducts, CreateBrandDto } from '@api/inventory.types'
 import toast from 'react-hot-toast'
@@ -84,7 +85,7 @@ export const useUpdateProduct = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       inventoryApi.updateProduct(id, data),
-    onSuccess: (_, { id }) => {
+    onSuccess: (_: any, { id }: { id: string }) => {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['product', id] })
       toast.success('Producto actualizado')
@@ -99,7 +100,7 @@ export const useUploadProductImage = () => {
   return useMutation({
     mutationFn: ({ productId, file }: { productId: string; file: File }) =>
       inventoryApi.uploadProductImage(productId, file),
-    onSuccess: (_, { productId }) => {
+    onSuccess: (_: any, { productId }: { productId: string }) => {
       qc.invalidateQueries({ queryKey: ['products'] })
       qc.invalidateQueries({ queryKey: ['product', productId] })
     },
@@ -170,7 +171,7 @@ export const useBulkUpdatePrices = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: inventoryApi.bulkUpdatePrices,
-    onSuccess: (res) => {
+    onSuccess: (res: any) => {
       qc.invalidateQueries({ queryKey: ['products'] })
       toast.success(`${res.updated} precios actualizados correctamente`)
     },

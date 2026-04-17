@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Tag, Loader2, X } from 'lucide-react'
 import { useCategories, useCreateCategory } from '@hooks/useInventory'
+import type { Category } from '@api/inventory.types'
 
 const CATEGORY_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
@@ -118,7 +119,7 @@ export default function CategoriesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {categories.map((cat) => (
+          {categories.map((cat: Category) => (
             <div
               key={cat.id}
               className="flex items-center gap-3 p-3.5 bg-card border border-border rounded-xl hover:border-primary/30 transition-colors"

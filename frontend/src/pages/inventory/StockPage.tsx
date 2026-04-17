@@ -6,7 +6,7 @@ import {
   AlertTriangle, BarChart3, Plus, Search, Loader2, X, Store,
 } from 'lucide-react'
 import { useBranches, useStockByBranch, useLowStock, useAddStock, useProducts } from '@hooks/useInventory'
-import type { Inventory, Product } from '@api/inventory.types'
+import type { Inventory, Product, Branch } from '@api/inventory.types'
 
 const addStockSchema = z.object({
   quantity: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
@@ -124,7 +124,7 @@ export default function StockPage() {
     page: 1 
   }, { enabled: isGlobalSearch && search.length > 2 })
 
-  const filteredLocal = stockItems.filter((i) =>
+  const filteredLocal = stockItems.filter((i: Inventory) =>
     !search || i.product?.name.toLowerCase().includes(search.toLowerCase()),
   )
 
@@ -141,8 +141,8 @@ export default function StockPage() {
               <p className="font-medium text-amber-600 dark:text-amber-400">
                 {lowStock.length} producto{lowStock.length > 1 ? 's' : ''} con stock bajo
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {lowStock.slice(0, 5).map((item) => (
+              <div className="mt-2 flex flex-wrap gap-2 text-foreground font-medium">
+                {lowStock.slice(0, 5).map((item: Inventory) => (
                   <span key={item.id} className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
                     {item.product?.name} — {item.stock_quantity} {item.product?.unit?.abbreviation ?? 'un'}
                   </span>
@@ -169,7 +169,7 @@ export default function StockPage() {
                          focus:outline-none focus:ring-2 focus:ring-primary/30"
             >
               <option value="">Seleccionar sucursal</option>
-              {branches.map((b) => (
+              {branches.map((b: Branch) => (
                 <option key={b.id} value={b.id}>
                   {b.name} {b.is_main_branch ? '(Principal)' : ''}
                 </option>
@@ -227,7 +227,7 @@ export default function StockPage() {
           </div>
           <div className="space-y-3">
             {globalProducts?.data.map((product: Product) => {
-              const localEntry = stockItems.find(si => si.product_id === product.id)
+              const localEntry = stockItems.find((si: Inventory) => si.product_id === product.id)
               return (
                 <div 
                   key={product.id} 
@@ -302,7 +302,7 @@ export default function StockPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredLocal.map((item) => {
+              {filteredLocal.map((item: Inventory) => {
                 const isLow = Number(item.stock_quantity) <= Number(item.min_stock_alert)
                 return (
                   <tr key={item.id} className={`hover:bg-muted/30 transition-colors ${isLow ? 'bg-amber-500/5' : ''}`}>

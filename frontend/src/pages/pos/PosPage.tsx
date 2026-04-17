@@ -30,7 +30,7 @@ import { inventoryApi } from '@api/inventory.api'
 import { useCartStore } from '@store/cart.store'
 import { useBranchStore } from '@store/branch.store'
 import toast from 'react-hot-toast'
-import type { Product } from '@api/inventory.types'
+import type { Product, Category } from '@api/inventory.types'
 import type { PaymentMethod, PaymentStatus, CreateSaleDto } from '@api/sales.types'
 import type { Customer } from '@api/sales.types'
 
@@ -470,7 +470,7 @@ export default function PosPage() {
             >
               Todas
             </button>
-            {categories.map((c) => (
+            {categories.map((c: Category) => (
               <button
                 key={c.id}
                 onClick={() => setActiveCategory(c.id)}
