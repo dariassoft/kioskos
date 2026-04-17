@@ -226,7 +226,7 @@ export default function StockPage() {
             <h2 className="text-sm font-black uppercase tracking-widest">Resultados del Catálogo General</h2>
           </div>
           <div className="space-y-3">
-            {globalProducts?.data.map((product) => {
+            {globalProducts?.data.map((product: Product) => {
               const localEntry = stockItems.find(si => si.product_id === product.id)
               return (
                 <div 

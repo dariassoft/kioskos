@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi } from '@api/inventory.api'
-import type { ProductQuery, Brand, CreateBrandDto } from '@api/inventory.types'
+import type { ProductQuery, PaginatedProducts, CreateBrandDto } from '@api/inventory.types'
 import toast from 'react-hot-toast'
 
 // ==========================================
@@ -8,7 +7,7 @@ import toast from 'react-hot-toast'
 // ==========================================
 
 export const useProducts = (params?: ProductQuery, options?: any) =>
-  useQuery({
+  useQuery<PaginatedProducts>({
     queryKey: ['products', params],
     queryFn: () => inventoryApi.getProducts(params),
     ...options,

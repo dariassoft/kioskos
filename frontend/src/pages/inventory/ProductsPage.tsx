@@ -14,7 +14,8 @@ import {
   useUploadProductImage,
 } from '@hooks/useInventory'
 import { useSuppliers, useCreateSupplier } from '@hooks/usePurchases'
-import type { Product } from '@api/inventory.types'
+import type { Product, Brand, Category, Unit } from '@api/inventory.types'
+import type { Supplier } from '@api/purchases.types'
 import toast from 'react-hot-toast'
 
 const productSchema = z.object({
@@ -436,7 +437,7 @@ export default function ProductsPage() {
   }
 
   const handleDeleteConfirmation = (product: Product) => {
-    toast((t) => (
+    toast((t: any) => (
       <div className="flex flex-col gap-3 p-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center text-destructive">
@@ -510,8 +511,8 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {products.map((product) => {
-            const defaultPrice = product.prices?.find((p) => p.price_list?.is_default)
+          {products.map((product: Product) => {
+            const defaultPrice = product.prices?.find((p: any) => p.price_list?.is_default)
             return (
               <div key={product.id} className="group bg-card border border-border rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
                 <div className="aspect-square relative overflow-hidden bg-muted">
