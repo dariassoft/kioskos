@@ -30,6 +30,7 @@ import {
   BulkUpdatePriceDto,
   PriceAdjustmentType,
   CreateBrandDto,
+  TransferStockDto,
 } from './dto/inventory.dto';
 
 @Injectable()
@@ -337,6 +338,65 @@ export class InventoryService {
     });
 
     return { ...inv, stock_quantity: newQty };
+  }
+
+  async transferStock(dto: TransferStockDto, tenantId: string) {
+    const { product_id, from_branch_id, to_branch_id, quantity } = dto;
+
+    if (from_branch_id === to_branch_id) {
+      throw new BadRequestException('La sucursal de origen y destino no pueden ser la misma');
+    }
+
+    return this.inventoryRepo.manager.transaction(async (manager) => {
+      const sourceInv = await manager.findOne(Inventory, {
+        where: { product_id, branch_id: from_branch_id, tenant_id: tenantId },
+        relations: ['product'],
+      });
+
+      if (!sourceInv) throw new NotFoundException('Producto no encontrado en la sucursal de origen');
+
+      const currentSourceQty = Number(sourceInv.stock_quantity);
+      if (currentSourceQty < quantity) {
+        throw new BadRequestException(
+          `Stock insuficiente en origen: disponible ${currentSourceQty}, solicitado ${quantity}`,
+        );
+      }
+
+      await manager.update(Inventory, sourceInv.id, {
+        stock_quantity: currentSourceQty - Number(quantity),
+      });
+
+      let targetInv = await manager.findOne(Inventory, {
+        where: { product_id, branch_id: to_branch_id, tenant_id: tenantId },
+      });
+
+      if (!targetInv) {
+        targetInv = manager.create(Inventory, {
+          product_id,
+          branch_id: to_branch_id,
+          tenant_id: tenantId,
+          stock_quantity: 0,
+          min_stock_alert: sourceInv.min_stock_alert,
+        });
+        await manager.save(targetInv);
+      }
+
+      await manager.update(Inventory, targetInv.id, {
+        stock_quantity: Number(targetInv.stock_quantity) + Number(quantity),
+        last_restock_date: new Date(),
+      });
+
+      this.eventEmitter.emit('stock.transferred', {
+        tenantId,
+        productId: product_id,
+        fromBranchId: from_branch_id,
+        toBranchId: to_branch_id,
+        quantity,
+        productName: sourceInv.product?.name ?? 'Producto',
+      });
+
+      return { success: true, transferred: quantity };
+    });
   }
 
   async getReplenishmentList(tenantId: string, branchId?: string) {

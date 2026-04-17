@@ -8,7 +8,7 @@ import { Category } from './entities/category.entity';
 import { PriceList } from './entities/price-list.entity';
 import { ProductPrice } from './entities/product-price.entity';
 import { Brand } from './entities/brand.entity';
-import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto, CreateBrandDto } from './dto/inventory.dto';
+import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto, CreateBrandDto, TransferStockDto } from './dto/inventory.dto';
 export declare class InventoryService {
     private readonly productRepo;
     private readonly inventoryRepo;
@@ -45,6 +45,10 @@ export declare class InventoryService {
         quantity: number;
         reason: string;
     }, tenantId: string): Promise<Inventory>;
+    transferStock(dto: TransferStockDto, tenantId: string): Promise<{
+        success: boolean;
+        transferred: number;
+    }>;
     getReplenishmentList(tenantId: string, branchId?: string): Promise<Inventory[]>;
     findAllBranches(tenantId: string): Promise<Branch[]>;
     createBranch(dto: CreateBranchDto, tenantId: string): Promise<Branch>;

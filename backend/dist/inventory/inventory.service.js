@@ -248,6 +248,53 @@ let InventoryService = class InventoryService {
         });
         return { ...inv, stock_quantity: newQty };
     }
+    async transferStock(dto, tenantId) {
+        const { product_id, from_branch_id, to_branch_id, quantity } = dto;
+        if (from_branch_id === to_branch_id) {
+            throw new common_1.BadRequestException('La sucursal de origen y destino no pueden ser la misma');
+        }
+        return this.inventoryRepo.manager.transaction(async (manager) => {
+            const sourceInv = await manager.findOne(inventory_entity_1.Inventory, {
+                where: { product_id, branch_id: from_branch_id, tenant_id: tenantId },
+                relations: ['product'],
+            });
+            if (!sourceInv)
+                throw new common_1.NotFoundException('Producto no encontrado en la sucursal de origen');
+            const currentSourceQty = Number(sourceInv.stock_quantity);
+            if (currentSourceQty < quantity) {
+                throw new common_1.BadRequestException(`Stock insuficiente en origen: disponible ${currentSourceQty}, solicitado ${quantity}`);
+            }
+            await manager.update(inventory_entity_1.Inventory, sourceInv.id, {
+                stock_quantity: currentSourceQty - Number(quantity),
+            });
+            let targetInv = await manager.findOne(inventory_entity_1.Inventory, {
+                where: { product_id, branch_id: to_branch_id, tenant_id: tenantId },
+            });
+            if (!targetInv) {
+                targetInv = manager.create(inventory_entity_1.Inventory, {
+                    product_id,
+                    branch_id: to_branch_id,
+                    tenant_id: tenantId,
+                    stock_quantity: 0,
+                    min_stock_alert: sourceInv.min_stock_alert,
+                });
+                await manager.save(targetInv);
+            }
+            await manager.update(inventory_entity_1.Inventory, targetInv.id, {
+                stock_quantity: Number(targetInv.stock_quantity) + Number(quantity),
+                last_restock_date: new Date(),
+            });
+            this.eventEmitter.emit('stock.transferred', {
+                tenantId,
+                productId: product_id,
+                fromBranchId: from_branch_id,
+                toBranchId: to_branch_id,
+                quantity,
+                productName: sourceInv.product?.name ?? 'Producto',
+            });
+            return { success: true, transferred: quantity };
+        });
+    }
     async getReplenishmentList(tenantId, branchId) {
         const qb = this.inventoryRepo.createQueryBuilder('inv')
             .leftJoinAndSelect('inv.product', 'product')

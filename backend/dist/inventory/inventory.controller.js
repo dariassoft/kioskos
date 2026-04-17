@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryController = void 0;
 const common_1 = require("@nestjs/common");
@@ -65,6 +66,9 @@ let InventoryController = class InventoryController {
     }
     adjustStock(tenantId, dto) {
         return this.inventoryService.adjustStock(dto, tenantId);
+    }
+    transferStock(tenantId, dto) {
+        return this.inventoryService.transferStock(dto, tenantId);
     }
     addStock(productId, dto, tenantId) {
         return this.inventoryService.addStock(dto, productId, tenantId);
@@ -241,6 +245,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "adjustStock", null);
+__decorate([
+    (0, common_1.Post)('stock/transfer'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Transferir stock entre sucursales' }),
+    __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_a = typeof TransferStockDto !== "undefined" && TransferStockDto) === "function" ? _a : Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "transferStock", null);
 __decorate([
     (0, common_1.Post)('products/:id/stock'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),

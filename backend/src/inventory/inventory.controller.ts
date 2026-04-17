@@ -154,6 +154,16 @@ export class InventoryController {
     return this.inventoryService.adjustStock(dto, tenantId);
   }
 
+  @Post('stock/transfer')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Transferir stock entre sucursales' })
+  transferStock(
+    @GetTenantId() tenantId: string,
+    @Body() dto: TransferStockDto,
+  ) {
+    return this.inventoryService.transferStock(dto, tenantId);
+  }
+
   @Post('products/:id/stock')
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({ summary: 'Agregar stock a un producto en una sucursal' })

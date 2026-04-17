@@ -115,3 +115,10 @@ export interface Brand {
 export interface CreateBrandDto {
   name: string
 }
+
+export interface TransferStockDto {
+  product_id: string
+  from_branch_id: string
+  to_branch_id: string
+  quantity: number
+}

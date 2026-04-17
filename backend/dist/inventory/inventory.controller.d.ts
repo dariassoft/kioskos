@@ -29,6 +29,10 @@ export declare class InventoryController {
         quantity: number;
         reason: string;
     }): Promise<import("./entities/inventory.entity").Inventory>;
+    transferStock(tenantId: string, dto: TransferStockDto): Promise<{
+        success: boolean;
+        transferred: number;
+    }>;
     addStock(productId: string, dto: UpdateStockDto, tenantId: string): Promise<import("./entities/inventory.entity").Inventory>;
     findBranches(tenantId: string): Promise<import("./entities/branch.entity").Branch[]>;
     createBranch(dto: CreateBranchDto, tenantId: string): Promise<import("./entities/branch.entity").Branch>;

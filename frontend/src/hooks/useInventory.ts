@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi } from '@api/inventory.api'
-import type { ProductQuery, PaginatedProducts, CreateBrandDto } from '@api/inventory.types'
+import type { ProductQuery, PaginatedProducts, CreateBrandDto, TransferStockDto } from '@api/inventory.types'
 import toast from 'react-hot-toast'
 
 // ==========================================
@@ -198,5 +198,19 @@ export function useCreateBrand() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory', 'brands'] })
     },
+  })
+}
+
+export const useTransferStock = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: TransferStockDto) => inventoryApi.transferStock(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['products'] })
+      toast.success('Stock transferido correctamente')
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al transferir stock'),
   })
 }

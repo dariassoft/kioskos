@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BulkUpdatePriceDto = exports.PriceAdjustmentType = exports.ProductQueryDto = exports.CreateUnitDto = exports.CreateCategoryDto = exports.CreateBranchDto = exports.UpdateStockDto = exports.CreateBrandDto = exports.SetPriceDto = exports.UpdateProductDto = exports.CreateProductDto = void 0;
+exports.TransferStockDto = exports.BulkUpdatePriceDto = exports.PriceAdjustmentType = exports.ProductQueryDto = exports.CreateUnitDto = exports.CreateCategoryDto = exports.CreateBranchDto = exports.UpdateStockDto = exports.CreateBrandDto = exports.SetPriceDto = exports.UpdateProductDto = exports.CreateProductDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -363,8 +363,33 @@ __decorate([
 ], BulkUpdatePriceDto.prototype, "value", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'ID de la lista de precios a afectar (por defecto la principal)' }),
-    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], BulkUpdatePriceDto.prototype, "price_list_id", void 0);
+class TransferStockDto {
+}
+exports.TransferStockDto = TransferStockDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID del producto a transferir' }),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], TransferStockDto.prototype, "product_id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID de sucursal de origen' }),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], TransferStockDto.prototype, "from_branch_id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID de sucursal de destino' }),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], TransferStockDto.prototype, "to_branch_id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 10, description: 'Cantidad a transferir' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01, { message: 'La cantidad debe ser mayor a 0' }),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], TransferStockDto.prototype, "quantity", void 0);
 //# sourceMappingURL=inventory.dto.js.map

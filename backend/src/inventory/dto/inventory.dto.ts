@@ -290,7 +290,27 @@ export class BulkUpdatePriceDto {
   value: number;
 
   @ApiPropertyOptional({ description: 'ID de la lista de precios a afectar (por defecto la principal)' })
-  @IsString()
   @IsOptional()
+  @IsString()
   price_list_id?: string;
+}
+
+export class TransferStockDto {
+  @ApiProperty({ description: 'ID del producto a transferir' })
+  @IsUUID()
+  product_id: string;
+
+  @ApiProperty({ description: 'ID de sucursal de origen' })
+  @IsUUID()
+  from_branch_id: string;
+
+  @ApiProperty({ description: 'ID de sucursal de destino' })
+  @IsUUID()
+  to_branch_id: string;
+
+  @ApiProperty({ example: 10, description: 'Cantidad a transferir' })
+  @IsNumber()
+  @Min(0.01, { message: 'La cantidad debe ser mayor a 0' })
+  @Type(() => Number)
+  quantity: number;
 }

@@ -3,6 +3,7 @@ import type {
   Product, Branch, Category, Unit, PriceList,
   Inventory, ProductQuery, PaginatedProducts,
   BulkUpdatePriceDto, Brand, CreateBrandDto,
+  TransferStockDto,
 } from './inventory.types'
 
 // ==========================================
@@ -116,6 +117,11 @@ export const inventoryApi = {
 
   async createBrand(data: CreateBrandDto): Promise<Brand> {
     const res = await apiClient.post('/inventory/brands', data)
+    return res.data
+  },
+  
+  async transferStock(data: TransferStockDto): Promise<{ success: boolean; transferred: number }> {
+    const res = await apiClient.post('/inventory/stock/transfer', data)
     return res.data
   },
 }

@@ -72,3 +72,9 @@ export declare class BulkUpdatePriceDto {
     value: number;
     price_list_id?: string;
 }
+export declare class TransferStockDto {
+    product_id: string;
+    from_branch_id: string;
+    to_branch_id: string;
+    quantity: number;
+}

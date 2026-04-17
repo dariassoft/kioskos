@@ -3,9 +3,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
-  AlertTriangle, BarChart3, Plus, Search, Loader2, X, Store,
+  AlertTriangle, BarChart3, Plus, Search, Loader2, X, Store, ArrowRightLeft, ArrowLeftRight,
 } from 'lucide-react'
-import { useBranches, useStockByBranch, useLowStock, useAddStock, useProducts } from '@hooks/useInventory'
+import { 
+  useBranches, useStockByBranch, useLowStock, useAddStock, useProducts, useTransferStock 
+} from '@hooks/useInventory'
 import type { Inventory, Product, Branch } from '@api/inventory.types'
 
 const addStockSchema = z.object({
@@ -13,6 +15,113 @@ const addStockSchema = z.object({
   min_stock_alert: z.coerce.number().min(0).optional(),
 })
 type AddStockForm = z.infer<typeof addStockSchema>
+
+const transferStockSchema = z.object({
+  to_branch_id: z.string().min(1, 'La sucursal de destino es requerida'),
+  quantity: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
+})
+type TransferStockForm = z.infer<typeof transferStockSchema>
+
+function TransferStockModal({
+  item,
+  branches,
+  onClose,
+}: {
+  item: Inventory;
+  branches: Branch[];
+  onClose: () => void;
+}) {
+  const transferStock = useTransferStock()
+  const availableBranches = branches.filter(b => b.id !== item.branch_id)
+  
+  const { register, handleSubmit, formState: { errors } } = useForm<TransferStockForm>({
+    resolver: zodResolver(transferStockSchema),
+  })
+
+  const onSubmit = (data: TransferStockForm) => {
+    if (data.quantity > item.stock_quantity) {
+      toast.error('No puedes transferir más de lo que hay disponible');
+      return;
+    }
+    transferStock.mutate(
+      { 
+        product_id: item.product_id, 
+        from_branch_id: item.branch_id,
+        to_branch_id: data.to_branch_id,
+        quantity: data.quantity 
+      },
+      { onSuccess: onClose }
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in text-foreground">
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="font-semibold flex items-center gap-2">
+            <ArrowRightLeft className="w-4 h-4 text-primary" />
+            Transferir Stock
+          </h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+          <div>
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Producto</p>
+            <p className="font-bold text-sm">{item.product.name}</p>
+            <p className="text-xs text-muted-foreground">Disponible: {item.stock_quantity} {item.product.unit?.abbreviation ?? 'un'}</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
+              Enviar a sucursal <span className="text-destructive">*</span>
+            </label>
+            <select
+              {...register('to_branch_id')}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            >
+              <option value="">Seleccionar destino...</option>
+              {availableBranches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            {errors.to_branch_id && <p className="text-destructive text-[10px] font-bold mt-1">{errors.to_branch_id.message}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">
+              Cantidad a mover <span className="text-destructive">*</span>
+            </label>
+            <input
+              {...register('quantity')}
+              type="number"
+              step="0.01"
+              max={item.stock_quantity}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+              placeholder="0.00"
+            />
+            {errors.quantity && <p className="text-destructive text-[10px] font-bold mt-1">{errors.quantity.message}</p>}
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-border rounded-xl text-sm font-bold hover:bg-accent transition-colors text-foreground">
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={transferStock.isPending}
+              className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all"
+            >
+              {transferStock.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowLeftRight className="w-4 h-4" />}
+              Transferir
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 function AddStockModal({
   item,
@@ -111,6 +220,7 @@ export default function StockPage() {
   const [selectedBranch, setSelectedBranch] = useState('')
   const [search, setSearch] = useState('')
   const [addStockItem, setAddStockItem] = useState<{ item?: Inventory, product?: Product } | null>(null)
+  const [transferStockItem, setTransferStockItem] = useState<Inventory | null>(null)
   const [isGlobalSearch, setIsGlobalSearch] = useState(false)
 
   const { data: branches = [], isLoading: loadingBranches } = useBranches()
@@ -338,13 +448,22 @@ export default function StockPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => setAddStockItem({ item })}
-                        className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary text-white transition-all shadow-sm flex items-center justify-center"
-                        title="Ajustar Stock"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setAddStockItem({ item })}
+                          className="p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center"
+                          title="Ajustar Stock"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setTransferStockItem(item)}
+                          className="p-2 bg-indigo-500/10 text-indigo-500 rounded-xl hover:bg-indigo-500 hover:text-white transition-all shadow-sm flex items-center justify-center"
+                          title="Transferir a otra sucursal"
+                        >
+                          <ArrowRightLeft className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -360,6 +479,14 @@ export default function StockPage() {
           product={addStockItem.product}
           branchId={selectedBranch}
           onClose={() => setAddStockItem(null)}
+        />
+      )}
+
+      {transferStockItem && (
+        <TransferStockModal
+          item={transferStockItem}
+          branches={branches}
+          onClose={() => setTransferStockItem(null)}
         />
       )}
     </div>

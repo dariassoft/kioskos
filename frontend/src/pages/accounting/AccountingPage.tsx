@@ -117,22 +117,22 @@ export default function AccountingPage() {
         </div>
 
         {/* Filtros */}
-        <div className="bg-card border border-border p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-4">
-          <div className="flex items-center gap-3 flex-1">
-            <Calendar className="w-5 h-5 text-muted-foreground" />
-            <div className="flex items-center gap-2">
+        <div className="bg-card border border-border p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Calendar className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+            <div className="flex items-center gap-2 flex-wrap">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-background border border-border text-sm rounded-lg px-3 py-2 text-foreground outline-none"
+                className="bg-background border border-border text-sm rounded-lg px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary/20"
               />
               <span className="text-muted-foreground font-medium">al</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="bg-background border border-border text-sm rounded-lg px-3 py-2 text-foreground outline-none"
+                className="bg-background border border-border text-sm rounded-lg px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
