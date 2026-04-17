@@ -350,12 +350,15 @@ export default function PosPage() {
 
   // Lógica de agregar al carrito
   const handleAddToCart = (product: Product) => {
-    // Buscar precio default
+    // Buscar precio: intentar default, si no, el primero disponible
     const defaultPriceListEntry = product.prices?.find((p) => p.price_list?.is_default)
-    const unitPrice = defaultPriceListEntry ? Number(defaultPriceListEntry.price) : 0
+    const firstAvailablePrice = product.prices?.[0]
+    
+    const priceEntry = defaultPriceListEntry || firstAvailablePrice
+    const unitPrice = priceEntry ? Number(priceEntry.price) : 0
 
     if (unitPrice === 0) {
-      // Idealmente mostrar un toast indicando que el producto no tiene precio
+      alert(`El producto "${product.name}" no tiene un precio configurado.`)
       return
     }
 

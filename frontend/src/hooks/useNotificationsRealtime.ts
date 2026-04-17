@@ -14,7 +14,13 @@ export function useNotificationsRealtime() {
   useEffect(() => {
     if (!user?.tenant_id) return
 
-    const socket: Socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
+    // Determinar la URL del WebSocket:
+    // Si VITE_API_URL está presente, la usamos (quitando /api/v1 si existe)
+    // De lo contrario, usamos el origen actual (window.location.origin)
+    let socketUrl = import.meta.env.VITE_API_URL || window.location.origin
+    socketUrl = socketUrl.replace(/\/api\/v1$/, '') // Asegurar que sea el base, no el endpoint rest
+
+    const socket: Socket = io(socketUrl, {
       transports: ['websocket'],
       query: { tenantId: user.tenant_id }
     })

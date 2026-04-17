@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Sparkles, Package, AlertTriangle, ArrowRight, X, Loader2, Factory, Trash2 } from 'lucide-react'
-import { useQuery } from '@tanstack_react-query'
-import { api } from '@api/client'
+import { Sparkles, Package, AlertTriangle, ArrowRight, X, Loader2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import api from '@api/client'
 import { useBranchStore } from '@store/branch.store'
 
 interface ReplenishmentItem {
@@ -83,7 +83,7 @@ export default function ReplenishmentAssistant({ isOpen, onClose }: { isOpen: bo
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-muted-foreground uppercase">{items.length} Productos críticos detectados</span>
                 <button 
-                  onClick={() => setSelectedItems(new Set(items.map(i => i.id)))}
+                  onClick={() => setSelectedItems(new Set(items.map((i: ReplenishmentItem) => i.id)))}
                   className="text-xs text-primary font-bold hover:underline"
                 >
                   Seleccionar todos
@@ -91,7 +91,7 @@ export default function ReplenishmentAssistant({ isOpen, onClose }: { isOpen: bo
               </div>
               
               <div className="grid gap-3">
-                {items.map((item) => (
+                {items.map((item: ReplenishmentItem) => (
                   <div 
                     key={item.id}
                     onClick={() => toggleItem(item.id)}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Package, Search, Plus, CheckCircle2, Factory, Sparkles } from 'lucide-react';
 import { useOrders, useReceiveOrder } from '@hooks/usePurchases';
 import { useBranchStore } from '@store/branch.store';

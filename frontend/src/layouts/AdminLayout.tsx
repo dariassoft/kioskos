@@ -7,7 +7,7 @@ import { usePWA } from '@hooks/usePWA'
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Truck,
   BookOpen, ChevronLeft, ChevronRight,
-  LogOut, Store, Bell, Menu, UserCircle, Moon, Sun, Settings, FileText, Download
+  LogOut, Store, Menu, UserCircle, Moon, Sun, Settings, FileText, Download
 } from 'lucide-react'
 import NotificationDropdown from '@components/NotificationDropdown'
 import { useNotificationsRealtime } from '@hooks/useNotificationsRealtime'

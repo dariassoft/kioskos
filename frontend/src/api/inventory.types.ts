@@ -47,6 +47,8 @@ export interface Product {
   unit?: Unit
   category?: Category
   prices: ProductPrice[]
+  min_stock_alert: number
+  image_url: string | null
   created_at: string
 }
 

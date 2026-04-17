@@ -42,6 +42,10 @@ export interface BusinessProfile {
   current_plan: Plan | null
   branch_count: number
   user_count: number
+  settings: {
+    generate_accounting_on_adjustment?: boolean;
+    [key: string]: any;
+  } | null
   created_at: string
 }
 

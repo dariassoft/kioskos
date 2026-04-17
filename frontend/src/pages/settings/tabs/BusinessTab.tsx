@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Building2, Save, Loader2, AlertCircle, CheckCircle2,
-  CreditCard, GitBranch, Users, type LucideIcon,
+  CreditCard, GitBranch, Users, type LucideIcon, Settings,
 } from 'lucide-react'
 import { settingsBusinessApi } from '@/api/settings.api'
 import type { UpdateBusinessProfileDto } from '@/api/settings.types'
