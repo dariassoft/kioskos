@@ -41,6 +41,10 @@ export class SettingsMercadopagoService {
     const clientId = this.configService.get<string>('MP_CLIENT_ID');
     const redirectUri = this.configService.get<string>('MP_REDIRECT_URI');
     
+    if (!clientId || !redirectUri) {
+      throw new Error('Falta configuración de la Aplicación en el servidor (CLIENT_ID o REDIRECT_URI). Revisa el archivo .env');
+    }
+
     // El state nos sirve para recuperar el tenantId al volver
     const state = tenantId; 
 

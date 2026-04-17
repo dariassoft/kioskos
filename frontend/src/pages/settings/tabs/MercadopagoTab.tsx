@@ -72,8 +72,9 @@ export default function MercadopagoTab() {
     try {
       const { url } = await getAuthUrlMutation.mutateAsync()
       window.location.href = url; // Redirigir a MercadoPago
-    } catch (err) {
-      toast.error('No se pudo generar la URL de vinculación.')
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'No se pudo generar la URL de vinculación.'
+      toast.error(msg, { duration: 6000 })
     }
   }
 
