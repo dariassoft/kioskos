@@ -102,7 +102,16 @@ export class InventoryService {
       }
     }
     const product = this.productRepo.create({ ...dto, tenant_id: tenantId });
-    return this.productRepo.save(product);
+    const saved = await this.productRepo.save(product);
+
+    // Inicializar inventario en la sucursal actual si hay stock o min_stock_alert
+    if (dto.min_stock_alert !== undefined) {
+      // Podemos crear un registro de inventario base si el usuario lo desea, 
+      // o simplemente dejar que se cree al agregar stock.
+      // Por ahora, el min_stock_alert ya está en la entidad Product como default.
+    }
+
+    return saved;
   }
 
   async updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<Product> {
@@ -212,6 +221,52 @@ export class InventoryService {
     );
 
     return { ...inv, stock_quantity: newQty };
+  }
+
+  async adjustStock(
+    dto: { product_id: string; branch_id: string; quantity: number; reason: string },
+    tenantId: string,
+  ): Promise<Inventory> {
+    const inv = await this.inventoryRepo.findOne({
+      where: { product_id: dto.product_id, branch_id: dto.branch_id, tenant_id: tenantId },
+      relations: ['product'],
+    });
+
+    if (!inv) throw new NotFoundException('Inventario no encontrado para este producto/sucursal');
+
+    const newQty = Number(inv.stock_quantity) - Number(dto.quantity);
+    if (newQty < 0) throw new BadRequestException('El ajuste resultaría en stock negativo');
+
+    await this.inventoryRepo.update(inv.id, { stock_quantity: newQty });
+
+    // Emitir evento para auditoría y posible asiento contable
+    this.eventEmitter.emit('stock.adjusted', {
+      tenantId,
+      productId: dto.product_id,
+      branchId: dto.branch_id,
+      quantity: dto.quantity,
+      reason: dto.reason,
+      newQuantity: newQty,
+    });
+
+    return { ...inv, stock_quantity: newQty };
+  }
+
+  async getReplenishmentList(tenantId: string, branchId?: string) {
+    const qb = this.inventoryRepo.createQueryBuilder('inv')
+      .leftJoinAndSelect('inv.product', 'product')
+      .leftJoinAndSelect('inv.branch', 'branch')
+      .where('inv.tenant_id = :tenantId', { tenantId });
+
+    if (branchId) {
+      qb.andWhere('inv.branch_id = :branchId', { branchId });
+    }
+
+    // Un producto necesita reposición si su cantidad es <= a su alerta de stock mínimo
+    qb.andWhere('inv.stock_quantity <= inv.min_stock_alert')
+      .orderBy('inv.stock_quantity', 'ASC');
+
+    return qb.getMany();
   }
 
   // ==========================================

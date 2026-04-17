@@ -47,6 +47,14 @@ __decorate([
     __metadata("design:type", Number)
 ], Product.prototype, "cost_price", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", Object)
+], Product.prototype, "image_url", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 5.0 }),
+    __metadata("design:type", Number)
+], Product.prototype, "min_stock_alert", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
 ], Product.prototype, "is_active", void 0);

@@ -33,6 +33,12 @@ export class Product extends BaseKioskosEntity {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   cost_price: number; // Precio de costo (para calcular margen)
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  image_url: string | null;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 5.0 })
+  min_stock_alert: number;
+
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 

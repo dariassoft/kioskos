@@ -4,11 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Plus, Search, Edit2, Trash2, X, Loader2,
-  Package, ChevronLeft, ChevronRight,
+  Package, ChevronLeft, ChevronRight, Camera,
 } from 'lucide-react'
 import {
   useProducts, useCreateProduct, useUpdateProduct,
   useDeleteProduct, useCategories, useUnits,
+  useUploadProductImage,
 } from '@hooks/useInventory'
 import type { Product } from '@api/inventory.types'
 
@@ -20,6 +21,8 @@ const productSchema = z.object({
   category_id: z.string().optional(),
   unit_id: z.string().optional(),
   cost_price: z.coerce.number().min(0).optional(),
+  min_stock_alert: z.coerce.number().min(0).optional(),
+  image_url: z.string().optional(),
 })
 type ProductForm = z.infer<typeof productSchema>
 
@@ -53,15 +56,39 @@ function ProductModal({
           category_id: product.category_id,
           unit_id: product.unit_id,
           cost_price: product.cost_price,
+          min_stock_alert: product.min_stock_alert,
+          image_url: product.image_url ?? '',
         }
-      : {},
+      : {
+          image_url: '',
+          min_stock_alert: 5,
+        },
   })
 
-  const onSubmit = (data: ProductForm) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image_url ?? null)
+  const uploadImage = useUploadProductImage()
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+    }
+  }
+
+  const onSubmit = async (data: ProductForm) => {
+    const onSuccessAction = async (savedProduct: Product) => {
+      if (selectedFile) {
+        await uploadImage.mutateAsync({ productId: savedProduct.id, file: selectedFile })
+      }
+      onClose()
+    }
+
     if (product) {
-      updateProduct.mutate({ id: product.id, data }, { onSuccess: onClose })
+      updateProduct.mutate({ id: product.id, data }, { onSuccess: onSuccessAction })
     } else {
-      createProduct.mutate(data as any, { onSuccess: onClose })
+      createProduct.mutate(data as any, { onSuccess: onSuccessAction })
     }
   }
 
@@ -86,7 +113,35 @@ function ProductModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* Imagen del producto */}
+          <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-border rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors relative group">
+            {previewUrl ? (
+              <img
+                src={previewUrl.startsWith('http') || previewUrl.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL}${previewUrl}` : previewUrl}
+                alt="Vista previa"
+                className="w-32 h-32 object-cover rounded-lg shadow-md"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-background rounded-lg flex flex-col items-center justify-center text-muted-foreground">
+                <Camera className="w-8 h-8 mb-2 opacity-20" />
+                <span className="text-[10px]">Sin foto</span>
+              </div>
+            )}
+            <label className="absolute inset-0 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 rounded-xl transition-opacity">
+              <span className="text-white text-xs font-medium bg-primary px-3 py-1.5 rounded-full shadow-lg">
+                {previewUrl ? 'Cambiar foto' : 'Subir foto'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </label>
+            <p className="mt-2 text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Imagen del producto</p>
+          </div>
+
           {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -157,20 +212,36 @@ function ProductModal({
             </div>
           </div>
 
-          {/* Precio de costo */}
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Precio de costo ($)
-            </label>
-            <input
-              {...register('cost_price')}
-              type="number"
-              step="0.01"
-              min="0"
-              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
-                         focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="0.00"
-            />
+          {/* Precio de costo + Stock Mínimo */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Precio de costo ($)
+              </label>
+              <input
+                {...register('cost_price')}
+                type="number"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
+                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Stock Mínimo (Alerta)
+              </label>
+              <input
+                {...register('min_stock_alert')}
+                type="number"
+                step="1"
+                min="0"
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
+                           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                placeholder="Ej: 5"
+              />
+            </div>
           </div>
 
           {/* Descripción */}
@@ -199,12 +270,12 @@ function ProductModal({
             </button>
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || uploadImage.isPending}
               className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm
                          font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors
                          flex items-center justify-center gap-2"
             >
-              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {(isPending || uploadImage.isPending) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               {product ? 'Guardar cambios' : 'Crear producto'}
             </button>
           </div>
@@ -303,8 +374,16 @@ export default function ProductsPage() {
                       <tr key={product.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Package className="w-4 h-4 text-muted-foreground" />
+                            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-border">
+                              {product.image_url ? (
+                                <img
+                                  src={`${import.meta.env.VITE_API_URL}${product.image_url}`}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Package className="w-5 h-5 text-muted-foreground/50" />
+                              )}
                             </div>
                             <div>
                               <p className="font-medium text-foreground">{product.name}</p>

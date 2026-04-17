@@ -6,6 +6,8 @@ export declare class CreateProductDto {
     unit_id?: string;
     category_id?: string;
     cost_price?: number;
+    min_stock_alert?: number;
+    image_url?: string;
 }
 export declare class UpdateProductDto {
     name?: string;
@@ -15,6 +17,8 @@ export declare class UpdateProductDto {
     unit_id?: string;
     category_id?: string;
     cost_price?: number;
+    image_url?: string;
+    min_stock_alert?: number;
     is_active?: boolean;
 }
 export declare class SetPriceDto {

@@ -23,9 +23,10 @@ const sale_completed_event_1 = require("../sales/events/sale-completed.event");
 const purchase_received_event_1 = require("../purchases/events/purchase-received.event");
 const sale_entity_1 = require("../sales/entities/sale.entity");
 let AccountingListener = AccountingListener_1 = class AccountingListener {
-    constructor(accountingService, saleRepo) {
+    constructor(accountingService, saleRepo, tenantRepo) {
         this.accountingService = accountingService;
         this.saleRepo = saleRepo;
+        this.tenantRepo = tenantRepo;
         this.logger = new common_1.Logger(AccountingListener_1.name);
     }
     async handleSaleCompletedEvent(event) {
@@ -45,6 +46,20 @@ let AccountingListener = AccountingListener_1 = class AccountingListener {
         entries.push({ account_name: 'Mercadería', debit: event.total, credit: 0 });
         entries.push({ account_name: 'Caja/Banco', debit: 0, credit: event.total });
         await this.accountingService.createEntry(event.tenantId, `Compra de mercadería reabastecida en sucursal ${event.branchId}`, entries, event.purchaseOrderId);
+    }
+    async handleStockAdjustedEvent(event) {
+        this.logger.log(`Procesando ajuste de stock para Auditoría/Contabilidad: ${event.reason}`);
+        const tenant = await this.tenantRepo.findOne({ where: { id: event.tenantId } });
+        if (!tenant?.settings?.generate_accounting_on_adjustment) {
+            this.logger.log(`Contabilidad automática desactivada para ajustes en tenant ${event.tenantId}`);
+            return;
+        }
+        let expenseAccount = 'Mermas y Pérdidas';
+        if (event.reason === 'VENCIMIENTO')
+            expenseAccount = 'Pérdida por Vencimiento';
+        if (event.reason === 'ROBO')
+            expenseAccount = 'Pérdida por Siniestros';
+        const entries = [];
     }
     resolveDebitAccount(paymentMethod, paymentStatus) {
         if (paymentStatus === sale_entity_1.PaymentStatus.PENDING) {
@@ -87,10 +102,18 @@ __decorate([
     __metadata("design:paramtypes", [purchase_received_event_1.PurchaseReceivedEvent]),
     __metadata("design:returntype", Promise)
 ], AccountingListener.prototype, "handlePurchaseReceivedEvent", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('stock.adjusted'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AccountingListener.prototype, "handleStockAdjustedEvent", null);
 exports.AccountingListener = AccountingListener = AccountingListener_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(1, (0, typeorm_1.InjectRepository)(sale_entity_1.Sale)),
+    __param(2, (0, typeorm_1.InjectRepository)(require('../tenants/entities/tenant.entity').Tenant)),
     __metadata("design:paramtypes", [accounting_service_1.AccountingService,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], AccountingListener);
 //# sourceMappingURL=accounting.listener.js.map

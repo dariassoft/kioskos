@@ -249,6 +249,7 @@ export class SalesService {
   ): Promise<{ data: Sale[]; total: number; page: number; limit: number }> {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
+    
     const qb = this.saleRepo
       .createQueryBuilder('sale')
       .leftJoinAndSelect('sale.items', 'items')
@@ -259,14 +260,23 @@ export class SalesService {
       qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });
     }
 
-    if (query.start_date && query.end_date) {
-      qb.andWhere('DATE(sale.created_at) BETWEEN :startDate AND :endDate', {
-        startDate: query.start_date,
-        endDate: query.end_date,
+    if (query.start_date) {
+      // Usar >= para incluir el inicio del día
+      qb.andWhere('sale.created_at >= :startDate', { 
+        startDate: `${query.start_date} 00:00:00` 
       });
     }
 
-    qb.orderBy('sale.created_at', 'DESC').skip((page - 1) * limit).take(limit);
+    if (query.end_date) {
+      // Usar <= para incluir el final del día
+      qb.andWhere('sale.created_at <= :endDate', { 
+        endDate: `${query.end_date} 23:59:59` 
+      });
+    }
+
+    qb.orderBy('sale.created_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
 
     const [data, total] = await qb.getManyAndCount();
     return { data, total, page, limit };

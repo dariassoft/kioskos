@@ -54,7 +54,7 @@ class CreatePurchaseOrderItemDto {
 exports.CreatePurchaseOrderItemDto = CreatePurchaseOrderItemDto;
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsUUID)('all'),
     __metadata("design:type", String)
 ], CreatePurchaseOrderItemDto.prototype, "product_id", void 0);
 __decorate([
@@ -76,12 +76,12 @@ class CreatePurchaseOrderDto {
 exports.CreatePurchaseOrderDto = CreatePurchaseOrderDto;
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsUUID)('all'),
     __metadata("design:type", String)
 ], CreatePurchaseOrderDto.prototype, "supplier_id", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsUUID)('all'),
     __metadata("design:type", String)
 ], CreatePurchaseOrderDto.prototype, "branch_id", void 0);
 __decorate([

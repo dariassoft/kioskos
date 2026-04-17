@@ -45,13 +45,13 @@ __decorate([
 ], CreateProductDto.prototype, "internal_code", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'ID de la unidad de medida' }),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "unit_id", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'ID de la categoría' }),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "category_id", void 0);
@@ -63,6 +63,20 @@ __decorate([
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "cost_price", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 5.0, description: 'Umbral de stock mínimo para alertas' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateProductDto.prototype, "min_stock_alert", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'URL de la imagen del producto' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "image_url", void 0);
 class UpdateProductDto {
 }
 exports.UpdateProductDto = UpdateProductDto;
@@ -92,13 +106,13 @@ __decorate([
 ], UpdateProductDto.prototype, "internal_code", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateProductDto.prototype, "unit_id", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateProductDto.prototype, "category_id", void 0);
@@ -112,6 +126,20 @@ __decorate([
 ], UpdateProductDto.prototype, "cost_price", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductDto.prototype, "image_url", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateProductDto.prototype, "min_stock_alert", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
@@ -121,7 +149,7 @@ class SetPriceDto {
 exports.SetPriceDto = SetPriceDto;
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'ID de la lista de precios' }),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SetPriceDto.prototype, "price_list_id", void 0);
 __decorate([
@@ -136,7 +164,7 @@ class UpdateStockDto {
 exports.UpdateStockDto = UpdateStockDto;
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'ID de la sucursal' }),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateStockDto.prototype, "branch_id", void 0);
 __decorate([
@@ -231,7 +259,7 @@ __decorate([
 ], ProductQueryDto.prototype, "search", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], ProductQueryDto.prototype, "category_id", void 0);

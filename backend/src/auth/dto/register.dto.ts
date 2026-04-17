@@ -31,7 +31,7 @@ export class RegisterDto {
   role?: UserRole;
 
   @ApiPropertyOptional({ description: 'ID de la sucursal asignada' })
-  @IsUUID()
+  @IsUUID('all')
   @IsOptional()
   branch_id?: string;
 }

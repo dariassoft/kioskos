@@ -44,7 +44,7 @@ export class UpdateSupplierDto extends CreateSupplierDto {}
 
 export class CreatePurchaseOrderItemDto {
   @ApiProperty()
-  @IsUUID()
+  @IsUUID('all')
   product_id: string;
 
   @ApiProperty()
@@ -62,11 +62,11 @@ export class CreatePurchaseOrderItemDto {
 
 export class CreatePurchaseOrderDto {
   @ApiProperty()
-  @IsUUID()
+  @IsUUID('all')
   supplier_id: string;
 
   @ApiProperty()
-  @IsUUID()
+  @IsUUID('all')
   branch_id: string;
 
   @ApiProperty({ type: [CreatePurchaseOrderItemDto] })

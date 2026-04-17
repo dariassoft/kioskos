@@ -10,6 +10,8 @@ export declare class Product extends BaseKioskosEntity {
     unit_id: string;
     category_id: string;
     cost_price: number;
+    image_url: string | null;
+    min_stock_alert: number;
     is_active: boolean;
     unit: Unit;
     category: Category;

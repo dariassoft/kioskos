@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const swagger_1 = require("@nestjs/swagger");
 const inventory_service_1 = require("./inventory.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
@@ -43,6 +44,10 @@ let InventoryController = class InventoryController {
     deleteProduct(id, tenantId) {
         return this.inventoryService.deleteProduct(id, tenantId);
     }
+    async uploadProductImage(id, tenantId, file) {
+        const imageUrl = `/uploads/${file.filename}`;
+        return this.inventoryService.updateProduct(id, { image_url: imageUrl }, tenantId);
+    }
     setPrice(productId, dto, tenantId) {
         return this.inventoryService.setProductPrice(productId, dto, tenantId);
     }
@@ -51,6 +56,12 @@ let InventoryController = class InventoryController {
     }
     getLowStock(tenantId) {
         return this.inventoryService.getLowStockItems(tenantId);
+    }
+    getReplenishment(tenantId, branchId) {
+        return this.inventoryService.getReplenishmentList(tenantId, branchId);
+    }
+    adjustStock(tenantId, dto) {
+        return this.inventoryService.adjustStock(dto, tenantId);
     }
     addStock(productId, dto, tenantId) {
         return this.inventoryService.addStock(dto, productId, tenantId);
@@ -148,6 +159,18 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "deleteProduct", null);
 __decorate([
+    (0, common_1.Post)('products/:id/image'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image')),
+    (0, swagger_1.ApiOperation)({ summary: 'Subir imagen para un producto' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __param(2, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], InventoryController.prototype, "uploadProductImage", null);
+__decorate([
     (0, common_1.Post)('products/:id/prices'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
     (0, swagger_1.ApiOperation)({ summary: 'Establecer precio para una lista de precios' }),
@@ -178,6 +201,27 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "getLowStock", null);
+__decorate([
+    (0, common_1.Get)('stock/replenishment'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Lista de reposición (productos bajo el mínimo)' }),
+    (0, swagger_1.ApiQuery)({ name: 'branch_id', required: false }),
+    __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
+    __param(1, (0, common_1.Query)('branch_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "getReplenishment", null);
+__decorate([
+    (0, common_1.Post)('stock/adjust'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Ajustar stock (bajas por robo, rotura, etc.)' }),
+    __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "adjustStock", null);
 __decorate([
     (0, common_1.Post)('products/:id/stock'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),

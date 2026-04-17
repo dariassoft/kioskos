@@ -13,6 +13,10 @@ export declare class Tenant {
     status: TenantStatus;
     phone: string;
     address: string;
+    settings: {
+        generate_accounting_on_adjustment?: boolean;
+        [key: string]: any;
+    };
     created_at: Date;
     updated_at: Date;
 }

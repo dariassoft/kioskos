@@ -8,6 +8,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryModule = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const path_1 = require("path");
+const uuid_1 = require("uuid");
 const typeorm_1 = require("@nestjs/typeorm");
 const product_entity_1 = require("./entities/product.entity");
 const inventory_entity_1 = require("./entities/inventory.entity");
@@ -36,6 +40,15 @@ exports.InventoryModule = InventoryModule = __decorate([
                 product_price_entity_1.ProductPrice,
             ]),
             notifications_module_1.NotificationsModule,
+            platform_express_1.MulterModule.register({
+                storage: (0, multer_1.diskStorage)({
+                    destination: './uploads',
+                    filename: (req, file, cb) => {
+                        const uniqueSuffix = (0, uuid_1.v4)();
+                        cb(null, `${uniqueSuffix}${(0, path_1.extname)(file.originalname)}`);
+                    },
+                }),
+            }),
         ],
         controllers: [inventory_controller_1.InventoryController],
         providers: [inventory_service_1.InventoryService, inventory_listener_1.InventoryListener],

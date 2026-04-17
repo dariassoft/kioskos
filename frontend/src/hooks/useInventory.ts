@@ -94,6 +94,20 @@ export const useUpdateProduct = () => {
   })
 }
 
+export const useUploadProductImage = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ productId, file }: { productId: string; file: File }) =>
+      inventoryApi.uploadProductImage(productId, file),
+    onSuccess: (_, { productId }) => {
+      qc.invalidateQueries({ queryKey: ['products'] })
+      qc.invalidateQueries({ queryKey: ['product', productId] })
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || 'Error al subir la imagen'),
+  })
+}
+
 export const useDeleteProduct = () => {
   const qc = useQueryClient()
   return useMutation({

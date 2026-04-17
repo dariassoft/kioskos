@@ -33,6 +33,15 @@ export const inventoryApi = {
     await apiClient.delete(`/inventory/products/${id}`)
   },
 
+  uploadProductImage: async (productId: string, file: File): Promise<Product> => {
+    const formData = new FormData()
+    formData.append('image', file)
+    const res = await apiClient.post(`/inventory/products/${productId}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data
+  },
+
   setPrice: async (productId: string, data: { price_list_id: string; price: number }) => {
     const res = await apiClient.post(`/inventory/products/${productId}/prices`, data)
     return res.data

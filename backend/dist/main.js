@@ -147,6 +147,9 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, swaggerConfig);
     swagger_1.SwaggerModule.setup('api/docs', app, document);
+    app.useStaticAssets(path.join(__dirname, '..', 'uploads'), {
+        prefix: '/uploads/',
+    });
     const port = Number(configService.get('APP_PORT') || 3000);
     await app.listen(port);
     console.log(`🚀 Kioskos & Despenzas API corriendo en: http://localhost:${port}/api/v1`);

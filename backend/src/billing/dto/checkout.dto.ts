@@ -6,7 +6,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCheckoutDto {
   @ApiProperty({ example: 'uuid-del-plan' })
-  @IsUUID()
+  @IsUUID('all')
   plan_id: string;
 
   @ApiProperty({ example: 'Kiosko Don Pedro' })
@@ -49,7 +49,7 @@ export class CreateCheckoutDto {
 
 export class ConfirmTransferDto {
   @ApiProperty({ description: 'ID del pending_subscription' })
-  @IsUUID()
+  @IsUUID('all')
   pending_id: string;
 
   @ApiProperty({ example: 'pedro.gonzalez.bru' })

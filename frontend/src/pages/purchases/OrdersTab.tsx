@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { Package, Search, Plus, CheckCircle2, Factory } from 'lucide-react';
+import { Package, Search, Plus, CheckCircle2, Factory, Sparkles } from 'lucide-react';
 import { useOrders, useReceiveOrder } from '@hooks/usePurchases';
 import { useBranchStore } from '@store/branch.store';
-// import { useProducts } from '@hooks/useInventory'; // Asumiento que se haría para crear orden..
+import ReplenishmentAssistant from '@components/ReplenishmentAssistant';
 import type { PurchaseOrder } from '@api/purchases.types';
 
 function CreatePOModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
@@ -29,6 +28,7 @@ export default function OrdersTab() {
   const { activeBranch } = useBranchStore();
   const [search, setSearch] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isAssistantOpen, setAssistantOpen] = useState(false);
 
   // Filtrar por sucursal actual y búsqueda local (ej: prov o total)
   const branchOrders = orders.filter((o: PurchaseOrder) => o.branch_id === activeBranch?.id);
@@ -45,13 +45,22 @@ export default function OrdersTab() {
               className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-xl focus:outline-none focus:border-primary/50"
             />
           </div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 font-semibold hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nueva O.C.
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAssistantOpen(true)}
+              className="px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-sm bg-indigo-600/10 text-indigo-600 hover:bg-indigo-600/20 shadow-sm border border-indigo-200/50 transition-all dark:border-indigo-800/50 animate-pulse hover:animate-none"
+            >
+              <Sparkles className="w-4 h-4" />
+              Asistente IA
+            </button>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Nueva O.C.
+            </button>
+          </div>
       </div>
 
       {isLoading ? (
@@ -117,6 +126,7 @@ export default function OrdersTab() {
       )}
       
       <CreatePOModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
+      <ReplenishmentAssistant isOpen={isAssistantOpen} onClose={() => setAssistantOpen(false)} />
     </div>
   );
 }

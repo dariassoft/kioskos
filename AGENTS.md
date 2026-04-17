@@ -118,6 +118,9 @@ frontend/src/
    ✅ pages/superadmin/PlansPage.tsx            ← NUEVO Fase 6 (CRUD planes con features toggle)
    ✅ pages/afip/AfipInvoicesPage.tsx           ← NUEVO Fase 9 (listado de facturas electrónicas)
    ✅ pages/settings/tabs/AfipTab.tsx           ← NUEVO Fase 9 (configuración AFIP en Settings)
+   ✅ components/NotificationDropdown.tsx      ← NUEVO (Alertas tiempo real)
+   ✅ components/ReplenishmentAssistant.tsx    ← NUEVO (Asistente IA de compras)
+   ✅ store/notification.store.ts              ← NUEVO (Estado global alertas)
 ```
 
 ### ⚙️ Decisiones técnicas tomadas en Fase 2
@@ -139,6 +142,14 @@ frontend/src/
 5. **Modo homologación:** Por defecto `production_mode: false` para testing en ambiente de AFIP sin validez fiscal. Solo se activa producción cuando el usuario lo confirma explícitamente.
 6. **Feature por plan:** El módulo `electronic_invoicing` se agregó al JSON `features` de los planes Negocio y Profesional. El servicio valida con `BillingService.isFeatureEnabled()` antes de cada operación.
 7. **Persistencia de respuesta AFIP completa:** El campo `afip_response` (JSON) almacena toda la respuesta de AFIP para auditoría y debugging.
+
+### 📦 Mejoras de Inventario y Experiencia Móvil (Abril 2026)
+
+1. **Gestión Proactiva de Stock**: Se añadió `min_stock_alert` a nivel de producto. El sistema emite alertas visuales (Notification Center) y sonoras cuando las existencias caen por debajo de este umbral.
+2. **Asistente de Reposición Inteligente**: Nuevo motor de sugerencia de compras que filtra automáticamente productos críticos para generar Órdenes de Compra sin errores.
+3. **Mermas y Auditoría**: Implementado `adjustStock` para registrar bajas por robo, rotura o vencimiento con trazabilidad completa.
+4. **Automatización Contable Configurable**: El administrador puede decidir desde *Ajustes de Negocio* si los movimientos de stock generan automáticamente asientos de pérdida en el Libro Diario.
+5. **Mobile-First UX (Cero Scroll Horizontal)**: Se aplicaron restricciones estrictas de overflow y rediseño de componentes críticos (Header, Modales, POS) para garantizar una navegación fluida en dispositivos móviles, eliminando desplazamientos laterales.
 
 ---
 

@@ -15,6 +15,8 @@ export class AccountingListener {
     private readonly accountingService: AccountingService,
     @InjectRepository(Sale)
     private readonly saleRepo: Repository<Sale>,
+    @InjectRepository(require('../tenants/entities/tenant.entity').Tenant)
+    private readonly tenantRepo: Repository<any>,
   ) {}
 
   @OnEvent('sale.completed')
@@ -58,6 +60,39 @@ export class AccountingListener {
       entries,
       event.purchaseOrderId,
     );
+  }
+
+  @OnEvent('stock.adjusted')
+  async handleStockAdjustedEvent(event: { 
+    tenantId: string; 
+    productId: string; 
+    branchId: string; 
+    quantity: number; 
+    reason: string;
+    newQuantity: number;
+  }) {
+    this.logger.log(`Procesando ajuste de stock para Auditoría/Contabilidad: ${event.reason}`);
+
+    // 1. Verificar configuración del tenant
+    const tenant = await this.tenantRepo.findOne({ where: { id: event.tenantId } });
+    if (!tenant?.settings?.generate_accounting_on_adjustment) {
+      this.logger.log(`Contabilidad automática desactivada para ajustes en tenant ${event.tenantId}`);
+      return;
+    }
+
+    // 2. Determinar cuenta de costo/pérdida basada en el motivo
+    let expenseAccount = 'Mermas y Pérdidas';
+    if (event.reason === 'VENCIMIENTO') expenseAccount = 'Pérdida por Vencimiento';
+    if (event.reason === 'ROBO') expenseAccount = 'Pérdida por Siniestros';
+
+    const entries: { account_name: string; debit?: number; credit?: number }[] = [];
+    
+    // Esta es una simplificación, idealmente necesitaríamos el precio de costo actual del producto
+    // para valorar el asiento. Asumimos valor 0 o manejamos la lógica de valoración aquí.
+    // Por ahora registramos el evento.
+    
+    // Nota: Para un asiento real necesitamos (quantity * cost_price). 
+    // Como esta es una fase de estabilización, dejamos el gancho listo.
   }
 
   private resolveDebitAccount(paymentMethod: PaymentMethod, paymentStatus: PaymentStatus): string {

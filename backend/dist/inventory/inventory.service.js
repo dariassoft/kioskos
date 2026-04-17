@@ -78,7 +78,10 @@ let InventoryService = class InventoryService {
             }
         }
         const product = this.productRepo.create({ ...dto, tenant_id: tenantId });
-        return this.productRepo.save(product);
+        const saved = await this.productRepo.save(product);
+        if (dto.min_stock_alert !== undefined) {
+        }
+        return saved;
     }
     async updateProduct(id, dto, tenantId) {
         await this.findOneProduct(id, tenantId);
@@ -156,6 +159,39 @@ let InventoryService = class InventoryService {
         await this.inventoryRepo.update(inv.id, { stock_quantity: newQty });
         this.eventEmitter.emit('stock.reduced', new stock_reduced_event_1.StockReducedEvent(tenantId, productId, branchId, newQty, inv.product?.name ?? ''));
         return { ...inv, stock_quantity: newQty };
+    }
+    async adjustStock(dto, tenantId) {
+        const inv = await this.inventoryRepo.findOne({
+            where: { product_id: dto.product_id, branch_id: dto.branch_id, tenant_id: tenantId },
+            relations: ['product'],
+        });
+        if (!inv)
+            throw new common_1.NotFoundException('Inventario no encontrado para este producto/sucursal');
+        const newQty = Number(inv.stock_quantity) - Number(dto.quantity);
+        if (newQty < 0)
+            throw new common_1.BadRequestException('El ajuste resultaría en stock negativo');
+        await this.inventoryRepo.update(inv.id, { stock_quantity: newQty });
+        this.eventEmitter.emit('stock.adjusted', {
+            tenantId,
+            productId: dto.product_id,
+            branchId: dto.branch_id,
+            quantity: dto.quantity,
+            reason: dto.reason,
+            newQuantity: newQty,
+        });
+        return { ...inv, stock_quantity: newQty };
+    }
+    async getReplenishmentList(tenantId, branchId) {
+        const qb = this.inventoryRepo.createQueryBuilder('inv')
+            .leftJoinAndSelect('inv.product', 'product')
+            .leftJoinAndSelect('inv.branch', 'branch')
+            .where('inv.tenant_id = :tenantId', { tenantId });
+        if (branchId) {
+            qb.andWhere('inv.branch_id = :branchId', { branchId });
+        }
+        qb.andWhere('inv.stock_quantity <= inv.min_stock_alert')
+            .orderBy('inv.stock_quantity', 'ASC');
+        return qb.getMany();
     }
     async findAllBranches(tenantId) {
         return this.branchRepo.find({

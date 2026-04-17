@@ -13,6 +13,9 @@ import {
   Store,
   Loader2,
   CheckCircle2,
+  LayoutGrid,
+  List,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -307,6 +310,15 @@ export default function PosPage() {
   const [productsCache, setProductsCache] = useState<Product[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [showCartMobile, setShowCartMobile] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('pos_view_mode') as 'grid' | 'list') || 'grid'
+  })
+
+  // Persistir la preferencia de vista
+  useEffect(() => {
+    localStorage.setItem('pos_view_mode', viewMode)
+  }, [viewMode])
 
   const { activeBranch } = useBranchStore()
   const cart = useCartStore()
@@ -384,9 +396,9 @@ export default function PosPage() {
   }
 
   return (
-    <div className="h-full flex bg-muted/20">
+    <div className="h-full flex flex-col md:flex-row bg-muted/20 relative overflow-hidden">
       {/* LADO IZQUIERDO: PRODUCTOS Y BÚSQUEDA */}
-      <div className="flex-1 flex flex-col min-w-0 border-r border-border">
+      <div className="flex-1 flex flex-col min-w-0 md:border-r border-border h-full overflow-hidden">
         {/* Topbar interno */}
         <div className="bg-card p-4 border-b border-border shadow-sm z-10">
           <div className="relative max-w-2xl mx-auto">
@@ -428,7 +440,7 @@ export default function PosPage() {
                 onClick={() => setActiveCategory(c.id)}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap
                   ${activeCategory === c.id ? 'bg-primary text-primary-foreground shadow-md' : 'bg-background border border-border text-foreground hover:bg-accent'}`}
-                style={activeCategory === c.id ? { backgroundColor: c.color, borderColor: c.color } : {}}
+                style={activeCategory === c.id && c.color ? { backgroundColor: c.color, borderColor: c.color } : {}}
               >
                 {c.name}
               </button>
@@ -436,8 +448,31 @@ export default function PosPage() {
           </div>
         </div>
 
+        {/* View mode toggle + Stats */}
+        <div className="px-4 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div className="flex items-center gap-1 bg-background p-1 rounded-lg border border-border">
+            <button
+               onClick={() => setViewMode('grid')}
+               className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
+               title="Vista de grilla"
+            >
+               <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+               onClick={() => setViewMode('list')}
+               className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
+               title="Vista de lista"
+            >
+               <List className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-[10px] md:text-xs text-muted-foreground font-medium uppercase tracking-wider">
+            {productsCache.length} productos {searchQuery ? 'encontrados' : 'sugeridos'}
+          </p>
+        </div>
+
         {/* Product Grid Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-28 md:pb-6">
           <div className="max-w-7xl mx-auto">
             {searchQuery && productsCache.length === 0 && !isSearching ? (
               <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground mt-10">
@@ -448,34 +483,94 @@ export default function PosPage() {
             ) : null}
 
             {/* Render results or placeholder */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-              {productsCache.map((product) => {
-                const defaultPrice = product.prices?.find((p) => p.price_list?.is_default)
-                const price = defaultPrice ? Number(defaultPrice.price) : 0
-                return (
-                  <button
-                    key={product.id}
-                    onClick={() => handleAddToCart(product)}
-                    className="flex flex-col text-left bg-card border border-border hover:border-primary/50 hover:shadow-md
-                               rounded-2xl p-4 transition-all active:scale-95 group focus:outline-none focus:ring-2 focus:ring-primary h-full"
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 flex-shrink-0">
-                      {product.category?.icon ? <span className="font-bold text-xl">{product.category.name.charAt(0)}</span> : <Store className="w-6 h-6" />}
-                    </div>
-                    <div className="flex-1 min-h-0">
-                      <p className="font-semibold text-foreground text-sm line-clamp-2 leading-snug mb-1">{product.name}</p>
-                      <p className="text-xs text-muted-foreground mb-3">{product.barcode || product.internal_code || 'Sin código'}</p>
-                    </div>
-                    <div className="w-full flex items-center justify-between mt-auto pt-2 border-t border-border group-hover:border-primary/20 transition-colors">
-                      <span className="font-extrabold text-primary text-lg">${price.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        <Plus className="w-4 h-4" />
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+                {productsCache.map((product) => {
+                  const defaultPrice = product.prices?.find((p) => p.price_list?.is_default)
+                  const price = defaultPrice ? Number(defaultPrice.price) : 0
+                  return (
+                    <button
+                      key={product.id}
+                      onClick={() => handleAddToCart(product)}
+                      className="flex flex-col text-left bg-card border border-border hover:border-primary/50 hover:shadow-md
+                                 rounded-2xl overflow-hidden transition-all active:scale-95 group focus:outline-none focus:ring-2 focus:ring-primary h-full"
+                    >
+                      <div className="aspect-square w-full bg-muted relative overflow-hidden flex-shrink-0">
+                        {product.image_url ? (
+                          <img
+                            src={`${import.meta.env.VITE_API_URL}${product.image_url}`}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                            {product.category?.name ? (
+                              <span className="font-black text-4xl uppercase opacity-10">{product.category.name.charAt(0)}</span>
+                            ) : (
+                              <Store className="w-12 h-12 opacity-10" />
+                            )}
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-md flex items-center justify-center text-primary shadow-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                           <Plus className="w-5 h-5" />
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+                      <div className="p-3 flex-1 flex flex-col">
+                        <p className="font-bold text-foreground text-xs md:text-sm line-clamp-2 leading-tight mb-1">{product.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate mb-2">{product.barcode || product.internal_code || 'Sin código'}</p>
+                        <div className="mt-auto pt-2 border-t border-border flex items-baseline gap-1">
+                          <span className="text-primary font-black text-base md:text-lg">${price.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                          {product.unit && <span className="text-[10px] text-muted-foreground">/ {product.unit.abbreviation}</span>}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {productsCache.map((product) => {
+                  const defaultPrice = product.prices?.find((p) => p.price_list?.is_default)
+                  const price = defaultPrice ? Number(defaultPrice.price) : 0
+                  return (
+                    <button
+                      key={product.id}
+                      onClick={() => handleAddToCart(product)}
+                      className="flex items-center gap-3 p-3 bg-card border border-border hover:border-primary/50 rounded-xl transition-all active:scale-[0.98] group text-left"
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-muted flex-shrink-0 overflow-hidden border border-border/50">
+                        {product.image_url ? (
+                          <img src={`${import.meta.env.VITE_API_URL}${product.image_url}`} className="w-full h-full object-cover" alt="" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground/30 font-black">
+                            {product.name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-foreground truncate">{product.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <span className="text-[10px] font-medium px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
+                              {product.barcode || product.internal_code || 'SC'}
+                           </span>
+                           {product.category && (
+                             <span className="text-[10px] font-medium" style={{ color: product.category.color }}>
+                                {product.category.name}
+                             </span>
+                           )}
+                        </div>
+                      </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <span className="text-primary font-black text-lg">${price.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</span>
+                        <div className="flex items-center gap-1 text-[10px] text-primary font-bold">
+                           <Plus className="w-3 h-3" /> AGREGAR
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
             {!searchQuery && (
               <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground mt-20 opacity-40">
@@ -488,8 +583,8 @@ export default function PosPage() {
         </div>
       </div>
 
-      {/* LADO DERECHO: TICKET / CARRITO */}
-      <div className="w-full max-w-sm lg:max-w-md bg-card flex flex-col shadow-[-4px_0_24px_rgba(0,0,0,0.05)] z-20">
+      {/* LADO DERECHO: TICKET / CARRITO (Escritorio) */}
+      <div className="hidden md:flex w-full max-w-sm lg:max-w-md bg-card flex-col shadow-[-4px_0_24px_rgba(0,0,0,0.05)] z-20">
         <div className="p-4 border-b border-border bg-slate-900 flex items-center justify-between flex-shrink-0">
           <h2 className="font-semibold text-white flex items-center gap-2">
             <ShoppingCart className="w-4 h-4" />
@@ -573,6 +668,103 @@ export default function PosPage() {
           </div>
         </div>
       </div>
+
+      {/* TICKET MÓVIL (Drawer) */}
+      {showCartMobile && (
+        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm md:hidden animate-in fade-in duration-300">
+          <div 
+            className="absolute inset-x-0 bottom-0 top-10 bg-card rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom-full duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <ShoppingCart className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="font-bold text-lg">Ticket Actual</h2>
+              </div>
+              <button 
+                onClick={() => setShowCartMobile(false)}
+                className="p-2 bg-muted rounded-full hover:bg-accent transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/5">
+              {cart.items.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center opacity-40">
+                  <ShoppingCart className="w-16 h-16 mb-4" />
+                  <p>Carrito vacío</p>
+                </div>
+              ) : (
+                cart.items.map((item) => (
+                  <div key={item.productId} className="bg-card border border-border rounded-2xl p-4 flex gap-4 shadow-sm h-24">
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <p className="font-bold text-base text-foreground truncate">{item.name}</p>
+                      <p className="text-sm text-primary font-bold mt-1">
+                        ${item.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 bg-muted rounded-xl p-1 px-2">
+                       <button onClick={() => cart.updateQuantity(item.productId, item.quantity - 1)} className="p-2"><Minus className="w-4 h-4" /></button>
+                       <span className="font-bold w-6 text-center">{item.quantity}</span>
+                       <button onClick={() => cart.updateQuantity(item.productId, item.quantity + 1)} className="p-2"><Plus className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-6 border-t border-border bg-card shadow-[0_-8px_24px_rgba(0,0,0,0.05)]">
+               <div className="flex justify-between items-center mb-6">
+                 <span className="text-sm font-bold text-muted-foreground uppercase">Total cobrar</span>
+                 <span className="text-3xl font-black text-primary">
+                    ${cart.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                 </span>
+               </div>
+               <div className="flex gap-3">
+                 <button 
+                   onClick={() => { cart.clearCart(); setShowCartMobile(false); }}
+                   className="p-4 bg-destructive/10 text-destructive rounded-2xl border border-destructive/20"
+                 >
+                   <Trash2 className="w-6 h-6" />
+                 </button>
+                 <button 
+                   onClick={() => { setShowCartMobile(false); setShowPayment(true); }}
+                   className="flex-1 py-4 bg-primary text-primary-foreground rounded-2xl font-black text-xl shadow-lg shadow-primary/30"
+                 >
+                   COBRAR AHORA
+                 </button>
+               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BOTÓN FLOTANTE MÓVIL (FAB) */}
+      {!showCartMobile && cart.items.length > 0 && (
+        <button
+          onClick={() => setShowCartMobile(true)}
+          className="md:hidden fixed bottom-20 left-4 right-4 z-50 bg-indigo-600 text-white p-4 rounded-2xl shadow-[0_8px_30px_rgb(79,70,229,0.4)] flex items-center justify-between animate-in slide-in-from-bottom-10 duration-500 overflow-hidden"
+        >
+          <div className="flex items-center gap-3">
+             <div className="relative">
+                <ShoppingCart className="w-6 h-6" />
+                <span className="absolute -top-2 -right-2 bg-white text-indigo-600 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-indigo-600">
+                  {cart.itemCount}
+                </span>
+             </div>
+             <div>
+                <p className="text-[10px] uppercase font-black opacity-80 leading-none mb-1">Ver mi ticket</p>
+                <p className="text-lg font-black leading-none">${cart.total.toLocaleString('es-AR', { minimumFractionDigits: 0 })}</p>
+             </div>
+          </div>
+          <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-xl font-black text-xs">
+             Siguiente <ChevronRight className="w-4 h-4" />
+          </div>
+        </button>
+      )}
 
       {showPayment && <PaymentModal total={cart.total} onClose={() => setShowPayment(false)} />}
     </div>

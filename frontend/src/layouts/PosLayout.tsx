@@ -27,7 +27,7 @@ export default function PosLayout({ children }: PosLayoutProps) {
   useBranches()
 
   const defaultClosingBalance = useMemo(
-    () => Number(((activeRegister?.opening_balance ?? 0) + (activeRegister?.cash_sales ?? 0)).toFixed(2)),
+    () => Number((Number(activeRegister?.opening_balance ?? 0) + Number(activeRegister?.cash_sales ?? 0)).toFixed(2)),
     [activeRegister?.opening_balance, activeRegister?.cash_sales],
   )
 
@@ -81,43 +81,47 @@ export default function PosLayout({ children }: PosLayoutProps) {
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header mínimo del POS */}
       <header className="h-12 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center">
-            <Store className="w-3.5 h-3.5 text-white" />
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-indigo-600 rounded flex items-center justify-center flex-shrink-0">
+            <Store className="w-4 h-4 text-white" />
           </div>
-          <span className="text-white text-sm font-semibold">
-            Kioskos & Despenzas
+          <div className="flex flex-col min-w-0">
+            <span className="text-white text-[10px] md:text-sm font-bold truncate leading-tight">
+              Kioskos & Despenzas
+            </span>
             {activeBranch && (
-              <span className="text-slate-400 font-normal ml-2">
-                — {activeBranch.name}
+              <span className="text-slate-400 text-[9px] md:text-xs font-normal truncate">
+                {activeBranch.name}
               </span>
             )}
-          </span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-xs">
+        <div className="flex items-center gap-1.5 md:gap-3">
+          <span className="hidden md:flex text-slate-400 text-xs">
             {user?.name} · <span className="capitalize">{user?.role}</span>
           </span>
           <button
             onClick={handleGoToMenu}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white transition-colors text-xs font-medium"
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
             title="Volver al menú principal"
           >
             <LayoutGrid className="w-4 h-4" />
-            Menú
+            <span className="hidden xs:inline text-xs font-medium">Menú</span>
           </button>
           <button
             onClick={handleCloseCashRegister}
             disabled={closeRegister.isPending || !activeRegister}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-rose-900/60 bg-rose-950/40 text-rose-300 hover:text-rose-100 hover:bg-rose-900/50 transition-colors text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-            title={activeRegister ? 'Cerrar caja y volver al menú principal' : 'No hay caja abierta para cerrar'}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-md border border-rose-900/60 bg-rose-950/40 text-rose-300 hover:text-rose-100 hover:bg-rose-900/50 transition-colors disabled:opacity-40"
+            title={activeRegister ? 'Cerrar caja' : 'No hay caja abierta'}
           >
             <Power className="w-4 h-4" />
-            {closeRegister.isPending ? 'Cerrando...' : 'Cerrar caja'}
+            <span className="hidden xs:inline text-xs font-medium">
+              {closeRegister.isPending ? '...' : 'Cerrar'}
+            </span>
           </button>
           <button
             onClick={handleLogout}
-            className="p-1.5 rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition-colors"
+            className="p-1.5 rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400"
             title="Cerrar sesión"
           >
             <LogOut className="w-4 h-4" />
@@ -131,8 +135,8 @@ export default function PosLayout({ children }: PosLayoutProps) {
       </main>
 
       {showCloseModal && activeRegister && activeBranch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-border bg-card shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
             <div className="border-b border-border p-5">
               <h2 className="text-lg font-semibold text-foreground">Cerrar caja</h2>
               <p className="mt-1 text-sm text-muted-foreground">

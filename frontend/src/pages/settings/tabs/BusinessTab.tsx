@@ -17,7 +17,7 @@ export default function BusinessTab() {
   const [success, setSuccess] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
-  const [form, setForm] = useState<UpdateBusinessProfileDto>({})
+  const [form, setForm] = useState<UpdateBusinessProfileDto & { settings?: any }>({})
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['settings', 'business'],
     queryFn: settingsBusinessApi.get,
@@ -28,6 +28,7 @@ export default function BusinessTab() {
       tax_id: profile.tax_id ?? '',
       phone: profile.phone ?? '',
       address: profile.address ?? '',
+      settings: profile.settings ?? { generate_accounting_on_adjustment: false },
     })
     setInitialized(true)
   }
@@ -136,6 +137,32 @@ export default function BusinessTab() {
               </button>
             </div>
           </form>
+        </div>
+
+        {/* PREFERENCIAS */}
+        <div className="card p-6 border border-border rounded-xl">
+          <div className="flex items-center gap-3 mb-6">
+            <Settings className="w-5 h-5 text-muted-foreground" />
+            <h2 className="text-base font-semibold text-foreground">Preferencias y Automatización</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+              <div className="flex-1 pr-4">
+                <p className="text-sm font-bold text-foreground">Asientos contables automáticos</p>
+                <p className="text-xs text-muted-foreground">Generar un asiento de pérdida automáticamente cuando se registre un ajuste de stock (robo, vencimiento, rotura).</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ 
+                  ...f, 
+                  settings: { ...f.settings, generate_accounting_on_adjustment: !f.settings?.generate_accounting_on_adjustment } 
+                }))}
+                className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${form.settings?.generate_accounting_on_adjustment ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+              >
+                <div className={`absolute w-4 h-4 rounded-full bg-white transition-all ${form.settings?.generate_accounting_on_adjustment ? 'right-1' : 'left-1'}`} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       {/* PANEL LATERAL */}

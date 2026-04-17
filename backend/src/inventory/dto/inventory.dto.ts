@@ -30,12 +30,12 @@ export class CreateProductDto {
   internal_code?: string;
 
   @ApiPropertyOptional({ description: 'ID de la unidad de medida' })
-  @IsUUID()
+  @IsString()
   @IsOptional()
   unit_id?: string;
 
   @ApiPropertyOptional({ description: 'ID de la categoría' })
-  @IsUUID()
+  @IsString()
   @IsOptional()
   category_id?: string;
 
@@ -45,6 +45,18 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => Number)
   cost_price?: number;
+
+  @ApiPropertyOptional({ example: 5.0, description: 'Umbral de stock mínimo para alertas' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  min_stock_alert?: number;
+
+  @ApiPropertyOptional({ description: 'URL de la imagen del producto' })
+  @IsString()
+  @IsOptional()
+  image_url?: string;
 }
 
 export class UpdateProductDto {
@@ -69,12 +81,12 @@ export class UpdateProductDto {
   internal_code?: string;
 
   @ApiPropertyOptional()
-  @IsUUID()
+  @IsString()
   @IsOptional()
   unit_id?: string;
 
   @ApiPropertyOptional()
-  @IsUUID()
+  @IsString()
   @IsOptional()
   category_id?: string;
 
@@ -86,6 +98,18 @@ export class UpdateProductDto {
   cost_price?: number;
 
   @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  image_url?: string;
+
+  @ApiPropertyOptional()
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  min_stock_alert?: number;
+
+  @ApiPropertyOptional()
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
@@ -93,7 +117,7 @@ export class UpdateProductDto {
 
 export class SetPriceDto {
   @ApiProperty({ description: 'ID de la lista de precios' })
-  @IsUUID()
+  @IsString()
   price_list_id: string;
 
   @ApiProperty({ example: 1500.0 })
@@ -105,7 +129,7 @@ export class SetPriceDto {
 
 export class UpdateStockDto {
   @ApiProperty({ description: 'ID de la sucursal' })
-  @IsUUID()
+  @IsString()
   branch_id: string;
 
   @ApiProperty({ example: 50.0, description: 'Cantidad a agregar al stock actual' })
@@ -179,7 +203,7 @@ export class ProductQueryDto {
   search?: string;
 
   @ApiPropertyOptional()
-  @IsUUID()
+  @IsString()
   @IsOptional()
   category_id?: string;
 

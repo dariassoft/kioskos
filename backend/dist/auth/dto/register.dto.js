@@ -41,7 +41,7 @@ __decorate([
 ], RegisterDto.prototype, "role", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'ID de la sucursal asignada' }),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsUUID)('all'),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "branch_id", void 0);

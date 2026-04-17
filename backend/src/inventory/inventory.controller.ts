@@ -1,7 +1,9 @@
 import {
-  Controller, Get, Post, Put, Patch, Delete,
+  Controller, Get, Post, Patch, Delete,
   Body, Param, Query, UseGuards, HttpCode, HttpStatus,
+  UseInterceptors, UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { InventoryService } from './inventory.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -73,6 +75,19 @@ export class InventoryController {
     return this.inventoryService.deleteProduct(id, tenantId);
   }
 
+  @Post('products/:id/image')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiOperation({ summary: 'Subir imagen para un producto' })
+  async uploadProductImage(
+    @Param('id') id: string,
+    @GetTenantId() tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const imageUrl = `/uploads/${file.filename}`;
+    return this.inventoryService.updateProduct(id, { image_url: imageUrl }, tenantId);
+  }
+
   // ==========================================
   // PRECIOS
   // ==========================================
@@ -105,6 +120,24 @@ export class InventoryController {
   @ApiOperation({ summary: 'Productos con stock por debajo del mínimo' })
   getLowStock(@GetTenantId() tenantId: string) {
     return this.inventoryService.getLowStockItems(tenantId);
+  }
+
+  @Get('stock/replenishment')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Lista de reposición (productos bajo el mínimo)' })
+  @ApiQuery({ name: 'branch_id', required: false })
+  getReplenishment(@GetTenantId() tenantId: string, @Query('branch_id') branchId?: string) {
+    return this.inventoryService.getReplenishmentList(tenantId, branchId);
+  }
+
+  @Post('stock/adjust')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Ajustar stock (bajas por robo, rotura, etc.)' })
+  adjustStock(
+    @GetTenantId() tenantId: string,
+    @Body() dto: { product_id: string; branch_id: string; quantity: number; reason: string },
+  ) {
+    return this.inventoryService.adjustStock(dto, tenantId);
   }
 
   @Post('products/:id/stock')

@@ -15,9 +15,17 @@ export declare class InventoryController {
     createProduct(dto: CreateProductDto, tenantId: string): Promise<import("./entities/product.entity").Product>;
     updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<import("./entities/product.entity").Product>;
     deleteProduct(id: string, tenantId: string): Promise<void>;
+    uploadProductImage(id: string, tenantId: string, file: Express.Multer.File): Promise<import("./entities/product.entity").Product>;
     setPrice(productId: string, dto: SetPriceDto, tenantId: string): Promise<import("./entities/product-price.entity").ProductPrice>;
     getStock(tenantId: string, branchId: string): Promise<import("./entities/inventory.entity").Inventory[]>;
     getLowStock(tenantId: string): Promise<import("./entities/inventory.entity").Inventory[]>;
+    getReplenishment(tenantId: string, branchId?: string): Promise<import("./entities/inventory.entity").Inventory[]>;
+    adjustStock(tenantId: string, dto: {
+        product_id: string;
+        branch_id: string;
+        quantity: number;
+        reason: string;
+    }): Promise<import("./entities/inventory.entity").Inventory>;
     addStock(productId: string, dto: UpdateStockDto, tenantId: string): Promise<import("./entities/inventory.entity").Inventory>;
     findBranches(tenantId: string): Promise<import("./entities/branch.entity").Branch[]>;
     createBranch(dto: CreateBranchDto, tenantId: string): Promise<import("./entities/branch.entity").Branch>;

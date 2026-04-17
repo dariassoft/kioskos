@@ -34,6 +34,13 @@ export declare class InventoryService {
     getLowStockItems(tenantId: string): Promise<Inventory[]>;
     addStock(dto: UpdateStockDto, productId: string, tenantId: string): Promise<Inventory>;
     reduceStock(productId: string, branchId: string, quantity: number, tenantId: string): Promise<Inventory>;
+    adjustStock(dto: {
+        product_id: string;
+        branch_id: string;
+        quantity: number;
+        reason: string;
+    }, tenantId: string): Promise<Inventory>;
+    getReplenishmentList(tenantId: string, branchId?: string): Promise<Inventory[]>;
     findAllBranches(tenantId: string): Promise<Branch[]>;
     createBranch(dto: CreateBranchDto, tenantId: string): Promise<Branch>;
     updateBranch(id: string, dto: Partial<CreateBranchDto>, tenantId: string): Promise<Branch>;
