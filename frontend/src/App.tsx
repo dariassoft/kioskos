@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@store/auth.store'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { usePwaStore } from '@store/pwa.store'
+import { Download, X } from 'lucide-react'
 
 // Layouts
 import AdminLayout from '@layouts/AdminLayout'
@@ -64,7 +64,8 @@ function PrivateRoute({ children, roles }: { children: React.ReactNode; roles?: 
 }
 
 export default function App() {
-  const { setDeferredPrompt, setIsInstalled } = usePwaStore()
+  const { setDeferredPrompt, setIsInstalled, isInstallable, isInstalled, deferredPrompt } = usePwaStore()
+  const [showToast, setShowToast] = useState(false)
 
   useEffect(() => {
     // Detectar si ya está instalada
@@ -77,9 +78,9 @@ export default function App() {
     }
 
     const handler = (e: any) => {
-      e.preventDefault()
+      // Ya NO llamamos a e.preventDefault() para permitir el banner nativo
       setDeferredPrompt(e)
-      console.log('✅ PWA: beforeinstallprompt capturado globalmente')
+      console.log('✅ PWA: beforeinstallprompt capturado (nativo habilitado)')
     }
 
     const appInstalledHandler = () => {
@@ -96,6 +97,24 @@ export default function App() {
       window.removeEventListener('appinstalled', appInstalledHandler)
     }
   }, [setDeferredPrompt, setIsInstalled])
+
+  useEffect(() => {
+    if (isInstallable && !isInstalled) {
+      // Mostrar el toast tras 5 segundos de navegación
+      const timer = setTimeout(() => setShowToast(true), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [isInstallable, isInstalled])
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return
+    await (deferredPrompt as any).prompt()
+    const { outcome } = await (deferredPrompt as any).userChoice
+    if (outcome === 'accepted') {
+      setShowToast(false)
+      setDeferredPrompt(null)
+    }
+  }
 
   return (
     <BrowserRouter>
@@ -176,6 +195,36 @@ export default function App() {
         {/* 404 Fallback → landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* PWA Install Alert (Toast) */}
+      {showToast && isInstallable && !isInstalled && (
+        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[9999] animate-in slide-in-from-bottom-5 duration-500">
+          <div className="bg-indigo-600 text-white p-4 rounded-2xl shadow-2xl shadow-indigo-500/40 flex items-center gap-4 border border-indigo-400/50">
+            <div className="bg-white/20 p-2 rounded-xl">
+              <Download className="w-6 h-6" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-bold text-sm">¿Instalar Kioskos & Despenzas?</p>
+              <p className="text-xs text-indigo-100 italic">Disfruta de una experiencia más rápida y pantalla completa.</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={handleInstall}
+                className="bg-white text-indigo-600 px-3 py-1.5 rounded-lg text-xs font-extrabold hover:bg-indigo-50 transition-colors shadow-sm"
+              >
+                INSTALAR
+              </button>
+              <button 
+                onClick={() => setShowToast(false)}
+                className="text-white/60 hover:text-white flex justify-center py-1"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </BrowserRouter>
   )
 }
