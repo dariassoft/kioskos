@@ -14,7 +14,7 @@ import {
   CreateProductDto, UpdateProductDto, SetPriceDto,
   UpdateStockDto, CreateBranchDto, CreateCategoryDto,
   CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto,
-  CreateBrandDto,
+  CreateBrandDto, TransferStockDto,
 } from './dto/inventory.dto';
 
 @ApiTags('inventory')
