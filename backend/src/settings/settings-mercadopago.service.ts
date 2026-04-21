@@ -41,6 +41,10 @@ export class SettingsMercadopagoService {
     const clientId = this.configService.get<string>('MP_CLIENT_ID');
     const redirectUri = this.configService.get<string>('MP_REDIRECT_URI');
     
+    console.log('[MP-DEBUG] Generating Auth URL...');
+    console.log('[MP-DEBUG] Client ID present:', !!clientId);
+    console.log('[MP-DEBUG] Redirect URI:', redirectUri || 'MISSING');
+
     if (!clientId || !redirectUri) {
       throw new Error('Falta configuración de la Aplicación en el servidor (CLIENT_ID o REDIRECT_URI). Revisa el archivo .env');
     }
@@ -48,7 +52,9 @@ export class SettingsMercadopagoService {
     // El state nos sirve para recuperar el tenantId al volver
     const state = tenantId; 
 
-    return `https://auth.mercadopago.com.ar/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const url = `https://auth.mercadopago.com.ar/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    console.log('[MP-DEBUG] URL generated successfully');
+    return url;
   }
 
   /**

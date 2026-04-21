@@ -125,8 +125,13 @@ export class SettingsController {
   @Get('mercadopago/auth-url')
   @ApiOperation({ summary: 'Obtener URL para vincular cuenta de MercadoPago (OAuth)' })
   async getMpAuthUrl(@GetTenantId() tenantId: string) {
-    const url = await this.mercadopagoService.getAuthUrl(tenantId);
-    return { url };
+    try {
+      const url = await this.mercadopagoService.getAuthUrl(tenantId);
+      return { url };
+    } catch (error) {
+      console.error('[MP-ERROR] Error al generar Auth URL:', error.message);
+      throw error; 
+    }
   }
 
   @Get('mercadopago/callback')

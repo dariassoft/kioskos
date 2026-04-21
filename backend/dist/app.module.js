@@ -39,7 +39,8 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                envFilePath: '.env',
+                envFilePath: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env',
+                ignoreEnvFile: false,
             }),
             typeorm_1.TypeOrmModule.forRoot(data_source_1.dataSourceOptions),
             event_emitter_1.EventEmitterModule.forRoot({

@@ -70,9 +70,22 @@ export default function MercadopagoTab() {
 
   const handleStartOAuth = async () => {
     try {
+      console.log('[MP-DEBUG] Solicitando URL de vinculación...');
       const { url } = await getAuthUrlMutation.mutateAsync()
-      window.location.href = url; // Redirigir a MercadoPago
+      console.log('[MP-DEBUG] URL recibida:', url);
+      
+      // Detectar si es móvil
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // En móvil redirigimos en la misma pestaña para que pueda abrir la App de MP si está instalada
+        window.location.href = url;
+      } else {
+        // En desktop abrimos en pestaña nueva para no perder el contexto del sistema
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
     } catch (err: any) {
+      console.error('[MP-DEBUG] Error al iniciar OAuth:', err);
       const msg = err.response?.data?.message || err.message || 'No se pudo generar la URL de vinculación.'
       toast.error(msg, { duration: 6000 })
     }
