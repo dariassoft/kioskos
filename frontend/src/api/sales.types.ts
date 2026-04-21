@@ -96,6 +96,9 @@ export interface CreateSaleDto {
   payment_status?: PaymentStatus
   payment_details?: PaymentDetailsDto
   items: CreateSaleItemDto[]
+  request_invoice?: boolean
+  invoice_doc_tipo?: number
+  invoice_doc_nro?: string
 }
 
 export interface ListSalesQuery {

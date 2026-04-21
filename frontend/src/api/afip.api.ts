@@ -38,5 +38,8 @@ export const afipInvoicesApi = {
 
   generate: (dto: GenerateInvoiceDto): Promise<ElectronicInvoice> =>
     apiClient.post(`${BASE}/invoices`, dto).then((r) => r.data),
+
+  downloadPdf: (id: string): Promise<Blob> =>
+    apiClient.get(`${BASE}/invoices/${id}/pdf`, { responseType: 'blob' }).then((r) => r.data),
 }
 

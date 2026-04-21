@@ -1,5 +1,6 @@
 import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
 import { Sale } from './sale.entity';
+import { Product } from '../../inventory/entities/product.entity';
 
 @Entity('sale_items')
 export class SaleItem {
@@ -24,4 +25,8 @@ export class SaleItem {
   @ManyToOne(() => Sale, (sale) => sale.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sale_id' })
   sale: Sale;
+
+  @ManyToOne(() => Product, { eager: true })
+  @JoinColumn({ name: 'product_id' })
+  product: Product;
 }

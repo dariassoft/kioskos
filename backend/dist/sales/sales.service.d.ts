@@ -9,6 +9,7 @@ import { Branch } from '@inventory/entities/branch.entity';
 import { CreateSaleDto, OpenCashRegisterDto, CloseCashRegisterDto, CreateCustomerDto, UpdateCustomerDto, ListSalesQueryDto } from './dto/sales.dto';
 import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
 import { InventoryService } from '@inventory/inventory.service';
+import { ElectronicInvoicingService } from '@electronic-invoicing/electronic-invoicing.service';
 export declare class SalesService {
     private readonly saleRepo;
     private readonly saleItemRepo;
@@ -17,8 +18,9 @@ export declare class SalesService {
     private readonly branchRepo;
     private readonly paymentAccountRepo;
     private readonly inventoryService;
+    private readonly electronicInvoicingService;
     private readonly eventEmitter;
-    constructor(saleRepo: Repository<Sale>, saleItemRepo: Repository<SaleItem>, cashRegisterRepo: Repository<CashRegister>, customerRepo: Repository<Customer>, branchRepo: Repository<Branch>, paymentAccountRepo: Repository<PaymentAccount>, inventoryService: InventoryService, eventEmitter: EventEmitter2);
+    constructor(saleRepo: Repository<Sale>, saleItemRepo: Repository<SaleItem>, cashRegisterRepo: Repository<CashRegister>, customerRepo: Repository<Customer>, branchRepo: Repository<Branch>, paymentAccountRepo: Repository<PaymentAccount>, inventoryService: InventoryService, electronicInvoicingService: ElectronicInvoicingService, eventEmitter: EventEmitter2);
     openCashRegister(dto: OpenCashRegisterDto, tenantId: string, userId: string): Promise<CashRegister>;
     closeCashRegister(branchId: string, dto: CloseCashRegisterDto, tenantId: string, userId: string): Promise<CashRegister>;
     getActiveRegister(tenantId: string, branchId: string, userId: string): Promise<CashRegister | null>;

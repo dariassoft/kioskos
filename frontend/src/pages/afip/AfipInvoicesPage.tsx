@@ -1,12 +1,35 @@
 import { useState } from 'react'
 import { useAfipInvoices, useAfipCredentials } from '@hooks/useAfip'
-import { FileText, Eye, Download, AlertCircle, Settings as SettingsIcon } from 'lucide-react'
+import { FileText, Eye, Download, AlertCircle, Settings as SettingsIcon, Loader2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { afipInvoicesApi } from '@api/afip.api'
+import toast from 'react-hot-toast'
 
 export default function AfipInvoicesPage() {
   const [page, setPage] = useState(1)
   const { data: credentials } = useAfipCredentials()
   const { data, isLoading } = useAfipInvoices(page, 20)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const handleDownloadPdf = async (invoiceId: string) => {
+    try {
+      setDownloadingId(invoiceId)
+      const blob = await afipInvoicesApi.downloadPdf(invoiceId)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `factura-${invoiceId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Error downloading PDF:', err)
+      toast.error('No se pudo descargar el PDF')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   if (!credentials?.is_configured) {
     return (
@@ -165,10 +188,16 @@ export default function AfipInvoicesPage() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => handleDownloadPdf(invoice.id)}
+                          disabled={downloadingId === invoice.id}
+                          className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                           title="Descargar PDF"
                         >
-                          <Download className="w-4 h-4" />
+                          {downloadingId === invoice.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Download className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </td>

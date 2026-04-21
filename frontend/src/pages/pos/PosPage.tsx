@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Camera,
   Image as ImageIcon,
+  FileText,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -29,6 +30,7 @@ import {
   useUploadVoucher,
   useVerifySalePayment,
 } from '@hooks/useSales'
+import { useAfipCredentials } from '@hooks/useAfip'
 import { useCategories, useBranches } from '@hooks/useInventory'
 import { inventoryApi } from '@api/inventory.api'
 import { useCartStore } from '@store/cart.store'
@@ -119,6 +121,12 @@ function PaymentModal({
   const [authorizationCode, setAuthorizationCode] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
 
+  // AFIP Facturación Electrónica
+  const { data: afipCreds } = useAfipCredentials()
+  const [requestInvoice, setRequestInvoice] = useState(false)
+  const [docTipo, setDocTipo] = useState(96) // DNI por defecto
+  const [docNro, setDocNro] = useState('')
+
   // Nuevos estados para transferencia
   const { data: accounts } = usePaymentAccounts()
   const uploadVoucher = useUploadVoucher()
@@ -172,6 +180,9 @@ function PaymentModal({
         quantity: i.quantity,
         unit_price: i.unitPrice,
       })),
+      request_invoice: requestInvoice,
+      invoice_doc_tipo: requestInvoice ? docTipo : undefined,
+      invoice_doc_nro: requestInvoice ? docNro : undefined,
     }
 
     createSale.mutate(payload, {
@@ -389,6 +400,58 @@ function PaymentModal({
             <label className="block text-sm font-medium mb-1">Notas del pago</label>
             <textarea className="input-field" rows={3} value={paymentNotes} onChange={(e) => setPaymentNotes(e.target.value)} placeholder="Datos adicionales, observaciones o reclamos" />
           </div>
+
+          {/* FACTURACIÓN ELECTRÓNICA (ARCA/AFIP) */}
+          {afipCreds?.is_configured && (
+            <div className="p-4 rounded-xl border-2 border-primary/20 bg-primary/5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  <span className="font-bold text-sm text-foreground">Factura Electrónica ARCA</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRequestInvoice(!requestInvoice)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-primary/20 ${
+                    requestInvoice ? 'bg-primary' : 'bg-muted'
+                  }`}
+                >
+                  <span
+                    className={`${
+                      requestInvoice ? 'translate-x-6' : 'translate-x-1'
+                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+                </button>
+              </div>
+
+              {requestInvoice && (
+                <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1">Tipo Doc.</label>
+                    <select
+                      value={docTipo}
+                      onChange={(e) => setDocTipo(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-xs"
+                    >
+                      <option value={96}>DNI</option>
+                      <option value={80}>CUIT</option>
+                      <option value={99}>Consumidor Final</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1">Número</label>
+                    <input
+                      type="text"
+                      value={docNro}
+                      onChange={(e) => setDocNro(e.target.value)}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-xs font-mono"
+                      placeholder="Sin puntos ni guiones"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <button
             onClick={handleConfirm}

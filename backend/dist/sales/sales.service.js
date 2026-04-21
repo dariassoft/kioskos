@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SalesService = void 0;
 const common_1 = require("@nestjs/common");
@@ -24,9 +25,10 @@ const customer_entity_1 = require("./entities/customer.entity");
 const payment_account_entity_1 = require("./entities/payment-account.entity");
 const branch_entity_1 = require("../inventory/entities/branch.entity");
 const inventory_service_1 = require("../inventory/inventory.service");
+const electronic_invoicing_service_1 = require("@electronic-invoicing/electronic-invoicing.service");
 const sale_completed_event_1 = require("./events/sale-completed.event");
 let SalesService = class SalesService {
-    constructor(saleRepo, saleItemRepo, cashRegisterRepo, customerRepo, branchRepo, paymentAccountRepo, inventoryService, eventEmitter) {
+    constructor(saleRepo, saleItemRepo, cashRegisterRepo, customerRepo, branchRepo, paymentAccountRepo, inventoryService, electronicInvoicingService, eventEmitter) {
         this.saleRepo = saleRepo;
         this.saleItemRepo = saleItemRepo;
         this.cashRegisterRepo = cashRegisterRepo;
@@ -34,6 +36,7 @@ let SalesService = class SalesService {
         this.branchRepo = branchRepo;
         this.paymentAccountRepo = paymentAccountRepo;
         this.inventoryService = inventoryService;
+        this.electronicInvoicingService = electronicInvoicingService;
         this.eventEmitter = eventEmitter;
     }
     async openCashRegister(dto, tenantId, userId) {
@@ -191,6 +194,21 @@ let SalesService = class SalesService {
         if (paymentStatus === sale_entity_1.PaymentStatus.CONFIRMED) {
             await this.verifySale(savedSale.id, tenantId);
         }
+        if (dto.request_invoice) {
+            try {
+                await this.electronicInvoicingService.generateInvoice({
+                    sale_id: savedSale.id,
+                    concepto: 1,
+                    doc_tipo_receptor: dto.invoice_doc_tipo || 99,
+                    doc_nro_receptor: dto.invoice_doc_nro || '0',
+                    nombre_receptor: customer?.name || 'Consumidor Final',
+                    importe_total: total,
+                }, tenantId);
+            }
+            catch (err) {
+                console.error('Error generando factura AFIP:', err);
+            }
+        }
         return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] });
     }
     async listSales(tenantId, query) {
@@ -322,7 +340,6 @@ exports.SalesService = SalesService = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        inventory_service_1.InventoryService,
-        event_emitter_1.EventEmitter2])
+        inventory_service_1.InventoryService, typeof (_a = typeof electronic_invoicing_service_1.ElectronicInvoicingService !== "undefined" && electronic_invoicing_service_1.ElectronicInvoicingService) === "function" ? _a : Object, event_emitter_1.EventEmitter2])
 ], SalesService);
 //# sourceMappingURL=sales.service.js.map

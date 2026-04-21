@@ -18,6 +18,8 @@ import {
 import { ElectronicInvoice } from './entities/electronic-invoice.entity';
 import { SaveAfipCredentialsDto, GenerateInvoiceDto } from './dto/afip.dto';
 import { BillingService } from '@billing/billing.service';
+import { InvoicePdfService } from './invoice-pdf.service';
+import { Sale } from '@sales/entities/sale.entity';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Afip = require('@afipsdk/afip.js');
@@ -55,8 +57,11 @@ export class ElectronicInvoicingService {
     private readonly credentialsRepo: Repository<AfipCredentials>,
     @InjectRepository(ElectronicInvoice)
     private readonly invoiceRepo: Repository<ElectronicInvoice>,
+    @InjectRepository(Sale)
+    private readonly saleRepo: Repository<Sale>,
     private readonly billingService: BillingService,
     private readonly configService: ConfigService,
+    private readonly invoicePdfService: InvoicePdfService,
   ) {
     // Derivar clave de 32 bytes desde la variable de entorno usando scrypt
     const secret =
@@ -459,6 +464,39 @@ export class ElectronicInvoicingService {
     });
     if (!invoice) throw new NotFoundException('Factura no encontrada');
     return invoice;
+  }
+
+  /**
+   * Obtiene el PDF de una factura.
+   */
+  async getInvoicePdf(id: string, tenantId: string): Promise<Buffer> {
+    const invoice = await this.invoiceRepo.findOne({
+      where: { id, tenant_id: tenantId },
+    });
+    if (!invoice) throw new NotFoundException('Factura no encontrada');
+
+    const creds = await this.credentialsRepo.findOne({
+      where: { tenant_id: tenantId },
+    });
+    if (!creds) throw new NotFoundException('Configuración AFIP no encontrada');
+
+    // Desencriptar CUIT para el PDF/QR
+    const decryptedCreds = { ...creds };
+    try {
+      (decryptedCreds as any).cuit = this.decrypt(creds.cuit_encrypted);
+    } catch (e) {
+      this.logger.warn(`No se pudo desencriptar CUIT para PDF del tenant ${tenantId}`);
+    }
+
+    let sale: Sale | undefined;
+    if (invoice.sale_id) {
+      sale = await this.saleRepo.findOne({
+        where: { id: invoice.sale_id, tenant_id: tenantId },
+        relations: ['items', 'items.product', 'customer'],
+      }) || undefined;
+    }
+
+    return this.invoicePdfService.generateInvoicePdf(invoice, decryptedCreds as any, sale);
   }
 
   // ==========================================

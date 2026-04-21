@@ -22,6 +22,7 @@ const branch_entity_1 = require("../inventory/entities/branch.entity");
 const sales_service_1 = require("./sales.service");
 const sales_controller_1 = require("./sales.controller");
 const inventory_module_1 = require("../inventory/inventory.module");
+const electronic_invoicing_module_1 = require("../electronic-invoicing/electronic-invoicing.module");
 let SalesModule = class SalesModule {
 };
 exports.SalesModule = SalesModule;
@@ -30,6 +31,7 @@ exports.SalesModule = SalesModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([sale_entity_1.Sale, sale_item_entity_1.SaleItem, cash_register_entity_1.CashRegister, customer_entity_1.Customer, branch_entity_1.Branch, payment_account_entity_1.PaymentAccount]),
             inventory_module_1.InventoryModule,
+            electronic_invoicing_module_1.ElectronicInvoicingModule,
             platform_express_1.MulterModule.register({
                 storage: (0, multer_1.diskStorage)({
                     destination: './uploads',

@@ -1,6 +1,6 @@
-import {
-  Controller, Get, Post, Body, Param, Query, UseGuards,
+  Controller, Get, Post, Body, Param, Query, UseGuards, Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 import { ElectronicInvoicingService } from './electronic-invoicing.service';
@@ -95,6 +95,24 @@ export class ElectronicInvoicingController {
     @GetTenantId() tenantId: string,
   ) {
     return this.eiService.generateInvoice(dto, tenantId);
+  }
+
+  @Get('invoices/:id/pdf')
+  @ApiOperation({ summary: 'Obtener el comprobante PDF de la factura' })
+  async getInvoicePdf(
+    @Param('id') id: string,
+    @GetTenantId() tenantId: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.eiService.getInvoicePdf(id, tenantId);
+    
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=factura-${id}.pdf`,
+      'Content-Length': buffer.length,
+    });
+
+    res.end(buffer);
   }
 }
 

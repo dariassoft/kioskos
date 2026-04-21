@@ -15,12 +15,14 @@ import { Branch } from '../inventory/entities/branch.entity';
 import { SalesService } from './sales.service';
 import { SalesController } from './sales.controller';
 
-import { InventoryModule } from '../inventory/inventory.module'; // Importante para rebajar stock!
+import { InventoryModule } from '../inventory/inventory.module';
+import { ElectronicInvoicingModule } from '../electronic-invoicing/electronic-invoicing.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Sale, SaleItem, CashRegister, Customer, Branch, PaymentAccount]),
-    InventoryModule, // Inyectamos InventoryService desde su módulo
+    InventoryModule,
+    ElectronicInvoicingModule,
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads',

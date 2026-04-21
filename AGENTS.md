@@ -16,7 +16,7 @@
 | **Fase 6** — SuperAdmin Panel Completo | ✅ **COMPLETA** | Billing, Suscripciones, Pagos, Planes, MRR |
 | **Fase 7** — Gestión de Sucursales y Usuarios | ✅ **COMPLETA** | CRUD Branches, Usuarios por Sucursal, Settings |
 | **Fase 8** — Hardening y Deploy VPS | ✅ **COMPLETA** | Migraciones, CI/CD, SSL, Backups, Git Deploy |
-| **Fase 9** — Facturación Electrónica AFIP | ✅ **COMPLETA** | Credenciales encriptadas, Facturas A/B/C, CAE, Testing |
+| **Fase 9** — Facturación Electrónica AFIP | 🚀 **EN PROGRESO** | Integración completa POS + Generación CAE + PDF |
 
 ---
 
@@ -144,6 +144,8 @@ frontend/src/
 5. **Modo homologación:** Por defecto `production_mode: false` para testing en ambiente de AFIP sin validez fiscal. Solo se activa producción cuando el usuario lo confirma explícitamente.
 6. **Feature por plan:** El módulo `electronic_invoicing` se agregó al JSON `features` de los planes Negocio y Profesional. El servicio valida con `BillingService.isFeatureEnabled()` antes de cada operación.
 7. **Persistencia de respuesta AFIP completa:** El campo `afip_response` (JSON) almacena toda la respuesta de AFIP para auditoría y debugging.
+8. **Integración Directa con POS:** Se añadió un toggle en el terminal de ventas para emitir factura ARCA en el momento del cobro. El sistema valida si el negocio tiene el módulo habilitado y configurado antes de mostrar la opción.
+9. **Determinación Inteligente de Receptor:** Si el cliente seleccionado tiene CUIT/DNI guardado, se precarga en el formulario de facturación. En caso contrario, permite el ingreso manual de datos fiscales del receptor.
 
 ### 📦 Mejoras de Inventario y Gestión de Precios (Abril 2026)
 

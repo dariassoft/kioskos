@@ -38,6 +38,9 @@ export declare class CreateSaleDto {
     payment_status?: PaymentStatus;
     items: CreateSaleItemDto[];
     payment_details?: PaymentDetailsDto;
+    request_invoice?: boolean;
+    invoice_doc_tipo?: number;
+    invoice_doc_nro?: string;
 }
 export declare class ListSalesQueryDto {
     page?: number;

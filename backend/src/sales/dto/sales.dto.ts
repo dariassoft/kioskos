@@ -168,6 +168,23 @@ export class CreateSaleDto {
   @ValidateNested()
   @Type(() => PaymentDetailsDto)
   payment_details?: PaymentDetailsDto;
+
+  // ─── Facturación Electrónica (AFIP) ───────────────────────────────────────
+  @ApiPropertyOptional({ description: 'Solicitar factura electrónica ARCA' })
+  @IsOptional()
+  @IsNotEmpty()
+  request_invoice?: boolean;
+
+  @ApiPropertyOptional({ description: 'Tipo de documento para la factura (DNI=96, CUIT=80)' })
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  invoice_doc_tipo?: number;
+
+  @ApiPropertyOptional({ description: 'Número de documento para la factura' })
+  @IsOptional()
+  @IsString()
+  invoice_doc_nro?: string;
 }
 
 // ==========================================

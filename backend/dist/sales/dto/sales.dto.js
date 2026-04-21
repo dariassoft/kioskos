@@ -198,6 +198,25 @@ __decorate([
     (0, class_transformer_1.Type)(() => PaymentDetailsDto),
     __metadata("design:type", PaymentDetailsDto)
 ], CreateSaleDto.prototype, "payment_details", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Solicitar factura electrónica ARCA' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", Boolean)
+], CreateSaleDto.prototype, "request_invoice", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Tipo de documento para la factura (DNI=96, CUIT=80)' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateSaleDto.prototype, "invoice_doc_tipo", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Número de documento para la factura' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSaleDto.prototype, "invoice_doc_nro", void 0);
 class ListSalesQueryDto {
 }
 exports.ListSalesQueryDto = ListSalesQueryDto;

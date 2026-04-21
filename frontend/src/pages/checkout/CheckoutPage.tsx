@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import {
   Store, ArrowLeft, CreditCard, Building2, User, Mail, Phone,
@@ -107,6 +107,7 @@ function SandboxPanel({ info }: { info: SandboxInfo }) {
 
 // ─── Paso 2: Método de pago ────────────────────────────────────────────────────
 function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<StartCheckoutPayload>; planPrice: number; onBack: () => void }) {
+  const navigate = useNavigate()
   const [method, setMethod] = useState<'mercadopago' | 'transfer' | null>(null)
   const [transferAlias, setTransferAlias] = useState('')
   const [transferNotes, setTransferNotes] = useState('')

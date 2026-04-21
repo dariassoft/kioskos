@@ -27,6 +27,7 @@ import {
 import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
 
 import { InventoryService } from '@inventory/inventory.service';
+import { ElectronicInvoicingService } from '@electronic-invoicing/electronic-invoicing.service';
 import { SaleCompletedEvent } from '@sales/events/sale-completed.event';
 
 @Injectable()
@@ -45,6 +46,7 @@ export class SalesService {
     @InjectRepository(PaymentAccount)
     private readonly paymentAccountRepo: Repository<PaymentAccount>,
     private readonly inventoryService: InventoryService,
+    private readonly electronicInvoicingService: ElectronicInvoicingService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -279,6 +281,26 @@ export class SalesService {
 
     if (paymentStatus === PaymentStatus.CONFIRMED) {
       await this.verifySale(savedSale.id, tenantId);
+    }
+
+    // 9. Si se solicita factura electrónica (ARCA/AFIP)
+    if (dto.request_invoice) {
+      try {
+        await this.electronicInvoicingService.generateInvoice({
+          sale_id: savedSale.id,
+          concepto: 1, // Productos
+          doc_tipo_receptor: dto.invoice_doc_tipo || 99, // Consumidor Final por defecto
+          doc_nro_receptor: dto.invoice_doc_nro || '0',
+          nombre_receptor: customer?.name || 'Consumidor Final',
+          importe_total: total,
+          // El desglose de IVA se podría mejorar extrayendo info de los productos
+          // Por ahora simplificamos a 21% si no es monotributista (esto lo maneja el service)
+        }, tenantId);
+      } catch (err) {
+        // No bloqueamos la venta si falla la factura, pero logueamos el error
+        // En producción se podría reintentar o marcar para emisión manual posterior
+        console.error('Error generando factura AFIP:', err);
+      }
     }
 
     return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] }) as Promise<Sale>;

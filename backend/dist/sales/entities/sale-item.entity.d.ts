@@ -1,4 +1,5 @@
 import { Sale } from './sale.entity';
+import { Product } from '../../inventory/entities/product.entity';
 export declare class SaleItem {
     id: string;
     sale_id: string;
@@ -7,4 +8,5 @@ export declare class SaleItem {
     unit_price: number;
     subtotal: number;
     sale: Sale;
+    product: Product;
 }
