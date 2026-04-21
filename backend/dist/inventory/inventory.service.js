@@ -86,8 +86,8 @@ let InventoryService = class InventoryService {
             if (cleanedData[key] === '')
                 cleanedData[key] = null;
         });
-        const product = this.productRepo.create({ ...cleanedData, tenant_id: tenantId });
-        const saved = await this.productRepo.save(product);
+        const productEntity = this.productRepo.create({ ...cleanedData, tenant_id: tenantId });
+        const savedProduct = await this.productRepo.save(productEntity);
         let finalPrice = Number(sale_price || 0);
         if (!finalPrice && sale_margin && dto.cost_price) {
             finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
@@ -97,13 +97,13 @@ let InventoryService = class InventoryService {
                 where: { tenant_id: tenantId, is_default: true }
             });
             if (defaultList) {
-                await this.setProductPrice(saved.id, {
+                await this.setProductPrice(savedProduct.id, {
                     price_list_id: defaultList.id,
                     price: finalPrice
                 }, tenantId);
             }
         }
-        return this.findOneProduct(saved.id, tenantId);
+        return this.findOneProduct(savedProduct.id, tenantId);
     }
     async updateProduct(id, dto, tenantId) {
         await this.findOneProduct(id, tenantId);

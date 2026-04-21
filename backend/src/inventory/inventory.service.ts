@@ -116,8 +116,8 @@ export class InventoryService {
       if (cleanedData[key] === '') cleanedData[key] = null;
     });
 
-    const product = this.productRepo.create({ ...cleanedData, tenant_id: tenantId });
-    const saved = await this.productRepo.save(product);
+    const productEntity = this.productRepo.create({ ...cleanedData, tenant_id: tenantId } as Partial<Product>);
+    const savedProduct: Product = await this.productRepo.save(productEntity as any);
 
     // Si se envió precio de venta o margen, asignar a la lista de precios DEFAULT
     let finalPrice = Number(sale_price || 0);
@@ -133,14 +133,14 @@ export class InventoryService {
       });
 
       if (defaultList) {
-        await this.setProductPrice(saved.id, {
+        await this.setProductPrice(savedProduct.id, {
           price_list_id: defaultList.id,
           price: finalPrice
         }, tenantId);
       }
     }
 
-    return this.findOneProduct(saved.id, tenantId);
+    return this.findOneProduct(savedProduct.id, tenantId);
   }
 
   async updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<Product> {
