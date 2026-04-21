@@ -30,7 +30,7 @@ let AppModule = class AppModule {
     configure(consumer) {
         consumer
             .apply(tenant_middleware_1.TenantMiddleware)
-            .exclude('api/v1/auth/(.*)', 'api/v1/checkout/plans', 'api/v1/checkout/start', 'api/v1/checkout/status/(.*)', 'api/v1/checkout/confirm-transfer', 'api/v1/checkout/webhook/(.*)', 'api/v1/checkout/sandbox-info')
+            .exclude('api/v1/auth/(.*)', 'api/v1/checkout/plans', 'api/v1/checkout/start', 'api/v1/checkout/status/(.*)', 'api/v1/checkout/confirm-transfer', 'api/v1/checkout/webhook/(.*)', 'api/v1/checkout/sandbox-info', 'api/v1/system-settings/public-info')
             .forRoutes('*');
     }
 };

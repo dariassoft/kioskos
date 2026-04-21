@@ -8,6 +8,7 @@ import {
   BellRing, Tags, Layers, Ruler, Share2, Gift
 } from 'lucide-react'
 import checkoutApi, { type PublicPlan, FEATURE_LABELS } from '@api/checkout.api'
+import systemSettingsApi from '@api/system-settings.api'
 import { usePWA } from '@hooks/usePWA'
 
 // --- Navbar ---
@@ -222,7 +223,7 @@ function FeaturesSection() {
 }
 
 // --- Referral Section ---
-function ReferralSection() {
+function ReferralSection({ discount }: { discount: string }) {
   return (
     <section className="py-24 px-4 bg-indigo-600 relative overflow-hidden">
       <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -238,7 +239,7 @@ function ReferralSection() {
           <span className="text-indigo-200">¡Ganan los dos!</span>
         </h2>
         <p className="text-xl text-indigo-100 max-w-2xl mx-auto leading-relaxed font-medium">
-          Compartí tu código de referido desde el panel de control. Si tu amigo se suscribe, ambos reciben un <b>5% de descuento mensual</b> durante el primer mes de uso. ¡Crecer juntos es más fácil!
+          Compartí tu código de referido desde el panel de control. Si tu amigo se suscribe, ambos reciben un <b>{discount}% de descuento mensual</b> durante el primer mes de uso. ¡Crecer juntos es más fácil!
         </p>
         <div className="flex justify-center pt-4">
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 shadow-2xl">
@@ -267,7 +268,7 @@ function ReferralSection() {
 
 // El objeto FEATURE_LABELS ahora se importa de @api/checkout.api para uso global
 
-function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean }) {
+function PlanCard({ plan, isPopular, trialDays }: { plan: PublicPlan; isPopular: boolean; trialDays: string }) {
   const navigate = useNavigate()
 
   return (
@@ -295,7 +296,7 @@ function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean })
           <span className="text-gray-500 dark:text-gray-400 font-bold mb-1 tracking-tight">/mes</span>
         </div>
         <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-2 uppercase tracking-widest">
-          3 DÍAS DE PRUEBA TOTALMENTE GRATIS
+          {trialDays} DÍAS DE PRUEBA TOTALMENTE GRATIS
         </p>
       </div>
       
@@ -360,7 +361,7 @@ function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean })
   )
 }
 
-function PricingSection({ plans: fetchedPlans }: { plans: PublicPlan[] }) {
+function PricingSection({ plans: fetchedPlans, trialDays }: { plans: PublicPlan[]; trialDays: string }) {
   const popularIndex = 1
   
   const mockPlans: PublicPlan[] = [
@@ -434,14 +435,14 @@ function PricingSection({ plans: fetchedPlans }: { plans: PublicPlan[] }) {
       <div className="max-w-7xl mx-auto">
         <div className="text-center space-y-4 mb-20">
           <h2 className="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white">Invertí en tu tranquilidad</h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto font-medium leading-relaxed">
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-xl mx-auto font-medium leading-relaxed">
             Sin contratos de permanencia. Sin gastos de instalación. Cancelá cuando quieras con un solo clic.
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-start">
           {plans.map((plan, i) => (
-            <PlanCard key={plan.id} plan={plan} isPopular={i === popularIndex} />
+            <PlanCard key={plan.id} plan={plan} isPopular={i === popularIndex} trialDays={trialDays} />
           ))}
         </div>
         
@@ -550,6 +551,15 @@ export default function LandingPage() {
     staleTime: 5 * 60 * 1000,
   })
 
+  const { data: systemInfo = {} } = useQuery({
+    queryKey: ['system-public-info'],
+    queryFn: systemSettingsApi.getPublicInfo,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const discount = systemInfo.referral_discount_percentage || '5'
+  const trialDays = systemInfo.trial_days || '3'
+
   // Smooth scroll para anclas
   useEffect(() => {
     const hash = window.location.hash
@@ -566,8 +576,8 @@ export default function LandingPage() {
       <HeroSection />
       <ShowcaseSection />
       <FeaturesSection />
-      <ReferralSection />
-      <PricingSection plans={plans} />
+      <ReferralSection discount={discount} />
+      <PricingSection plans={plans} trialDays={trialDays} />
       <CtaSection />
       <Footer />
     </div>

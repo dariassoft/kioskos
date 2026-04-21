@@ -11,7 +11,6 @@ export class SystemSettingsController {
   constructor(private readonly settingsService: SystemSettingsService) {}
 
   @Get('public-info')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Obtener información pública del sistema (trial, referidos)' })
   getPublicInfo() {
     return this.settingsService.getPublicSettings();

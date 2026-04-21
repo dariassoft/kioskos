@@ -78,6 +78,7 @@ export class AppModule implements NestModule {
         'api/v1/checkout/confirm-transfer', // Confirmar transferencia (público)
         'api/v1/checkout/webhook/(.*)', // Webhooks de MercadoPago (sin tenant)
         'api/v1/checkout/sandbox-info', // Info de testing (público)
+        'api/v1/system-settings/public-info', // Trial y referidos público
       )
       .forRoutes('*');     // Aplicar a todas las demás rutas
   }
