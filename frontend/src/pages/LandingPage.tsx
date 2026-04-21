@@ -17,13 +17,10 @@ function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2.5 group cursor-pointer">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform">
-            <Store className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-indigo-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform">
+            <Store className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
-          <div className="flex flex-col leading-none">
-            <span className="font-bold text-gray-900 dark:text-white text-lg">Kioskos & Despenzas</span>
-            <span className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 tracking-wider uppercase">SaaS ERP + POS</span>
-          </div>
+          <span className="font-black text-lg sm:text-xl tracking-tighter text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">Kioskos & Despenzas</span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-600 dark:text-gray-400">
           <a href="#funciones" className="hover:text-indigo-600 transition-colors relative group">
@@ -172,15 +169,15 @@ function ShowcaseSection() {
               </div>
             ))}
           </div>
-          <div className="order-1 lg:order-2 relative">
+          <div className="order-1 lg:order-2 relative inline-block">
             <div className="aspect-video rounded-[2.5rem] bg-indigo-600/5 dark:bg-indigo-400/5 p-4 sm:p-8">
               <div className="w-full h-full rounded-[1.5rem] overflow-hidden shadow-2xl border-2 border-white dark:border-gray-800">
                 <img src="/img/pos.png" alt="POS View" className="w-full h-full object-cover" />
               </div>
             </div>
-            <div className="absolute -top-10 -right-10 bg-indigo-600 text-white p-6 rounded-[2rem] shadow-2xl hidden sm:block">
-              <p className="text-2xl font-black italic">100% Mobile</p>
-              <p className="text-xs font-bold opacity-80 tracking-widest uppercase">Optimizado para celulares</p>
+            <div className="absolute top-0 right-0 translate-x-4 -translate-y-4 bg-indigo-600 text-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] shadow-2xl z-20">
+              <p className="text-xl sm:text-2xl font-black italic">100% Mobile</p>
+              <p className="text-[10px] sm:text-xs font-bold opacity-80 tracking-widest uppercase">Optimizado para celulares</p>
             </div>
           </div>
         </div>
@@ -372,10 +369,19 @@ function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean })
   )
 }
 
-function PricingSection({ plans }: { plans: PublicPlan[] }) {
-  const popularIndex = plans.length > 1 ? 1 : 0
+function PricingSection({ plans: fetchedPlans }: { plans: PublicPlan[] }) {
+  const popularIndex = 1
+  
+  const mockPlans: PublicPlan[] = [
+    { id: '1', name: 'Emprendedor', description: 'Ideal para quienes recién comienzan.', price_monthly: 1900, max_branches: 1, max_users: 1, features: {} },
+    { id: '2', name: 'Negocio', description: 'El plan más equilibrado para tu comercio.', price_monthly: 4500, max_branches: 3, max_users: 5, features: {} },
+    { id: '3', name: 'Profesional', description: 'Potencia total para cadenas de locales.', price_monthly: 8900, max_branches: 10, max_users: 20, features: {} },
+  ]
+
+  const plans = fetchedPlans && fetchedPlans.length > 0 ? fetchedPlans : mockPlans
+
   return (
-    <section id="planes" className="py-24 px-4 bg-white dark:bg-gray-950">
+    <section id="planes" className="py-32 px-4 bg-white dark:bg-gray-950 relative">
       <div className="max-w-7xl mx-auto">
         <div className="text-center space-y-4 mb-20">
           <h2 className="text-3xl sm:text-5xl font-black text-gray-900 dark:text-white">Invertí en tu tranquilidad</h2>
@@ -383,17 +389,13 @@ function PricingSection({ plans }: { plans: PublicPlan[] }) {
             Sin contratos de permanencia. Sin gastos de instalación. Cancelá cuando quieras con un solo clic.
           </p>
         </div>
-        {!Array.isArray(plans) || plans.length === 0 ? (
-          <div className="text-center text-gray-500 py-12 font-bold animate-pulse">
-            {plans && !Array.isArray(plans) ? 'Ocurrió un error al cargar los planes' : 'Preparando los mejores planes para vos...'}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-start">
-            {plans.map((plan, i) => (
-              <PlanCard key={plan.id} plan={plan} isPopular={i === popularIndex} />
-            ))}
-          </div>
-        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-start">
+          {plans.map((plan, i) => (
+            <PlanCard key={plan.id} plan={plan} isPopular={i === popularIndex} />
+          ))}
+        </div>
+        
         <div className="mt-20 p-10 rounded-[3rem] bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row items-center justify-between gap-8">
            <div className="space-y-2 text-center md:text-left">
              <h4 className="text-xl font-black text-gray-900 dark:text-white">¿Tenés una cadena de más de 10 locales?</h4>

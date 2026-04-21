@@ -570,23 +570,23 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border">
-         <div className="relative flex-1 w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-card p-5 rounded-3xl border border-border shadow-sm">
+         <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Buscar por nombre, EAN o marca..."
-            className="w-full pl-10 pr-4 py-2 bg-muted/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20"
+            placeholder="Buscar por nombre, código o marca..."
+            className="w-full pl-11 pr-4 h-12 bg-muted/50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
         
         <button
           onClick={() => { setEditingProduct(undefined); setShowModal(true) }}
-          className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          className="flex items-center justify-center gap-2 h-12 px-8 bg-primary text-primary-foreground rounded-2xl text-sm font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
           <Plus className="w-5 h-5" />
-          Nuevo Producto
+          NUEVO PRODUCTO
         </button>
       </div>
 
@@ -605,46 +605,52 @@ export default function ProductsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
           {products.map((product: Product) => {
             const defaultPrice = product.prices?.find((p: any) => p.price_list?.is_default)
             return (
-              <div key={product.id} className="group bg-card border border-border rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
-                <div className="aspect-square relative overflow-hidden bg-muted">
+              <div 
+                key={product.id} 
+                className="group bg-card border border-border rounded-[2rem] overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-1 flex flex-col"
+              >
+                {/* Image Container */}
+                <div className="aspect-[4/3] sm:aspect-square relative overflow-hidden bg-muted/30">
                   {product.image_url ? (
                     <img
                       src={`${import.meta.env.VITE_API_URL}${product.image_url}`}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/20 italic">
-                       <Package className="w-12 h-12 mb-2" />
-                       <span className="text-[10px] uppercase font-bold tracking-tighter">Sin imagen</span>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30">
+                       <Package className="w-12 h-12 mb-2 opacity-50" />
+                       <span className="text-[10px] uppercase font-black tracking-widest">Sin imagen</span>
                     </div>
                   )}
                   
-                  <div className="absolute top-3 right-3 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Actions Overlay */}
+                  <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
                     <button
                       onClick={() => handleEdit(product)}
-                      className="p-2 bg-white/90 backdrop-blur-sm text-foreground rounded-full shadow-lg hover:bg-primary hover:text-white transition-all"
+                      className="p-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-foreground rounded-xl shadow-xl hover:bg-primary hover:text-white transition-all active:scale-90"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteConfirmation(product)}
-                      className="p-2 bg-white/90 backdrop-blur-sm text-destructive rounded-full shadow-lg hover:bg-destructive hover:text-white transition-all"
+                      className="p-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-destructive rounded-xl shadow-xl hover:bg-destructive hover:text-white transition-all active:scale-90"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
+                  {/* Category Badge */}
                   {product.category && (
-                     <div className="absolute bottom-3 left-3">
+                     <div className="absolute bottom-4 left-4">
                        <span 
-                        className="px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm backdrop-blur-md border border-white/20"
+                        className="px-3 py-1.5 rounded-xl text-[10px] font-black shadow-lg backdrop-blur-md border border-white/20 uppercase tracking-widest"
                         style={{ 
-                          backgroundColor: `${product.category.color}CC`,
+                          backgroundColor: `${product.category.color}EE`,
                           color: '#fff' 
                         }}
                       >
@@ -654,29 +660,34 @@ export default function ProductsPage() {
                   )}
                 </div>
 
-                <div className="p-4">
-                  <div className="mb-3">
-                    <h3 className="font-bold text-foreground line-clamp-1 text-sm">{product.name}</h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                       <Award className="w-3 h-3 text-primary" />
-                       <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                        {product.brand?.name || 'Genérico'}
+                {/* Content */}
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="mb-4 flex-1">
+                    <div className="flex items-center gap-1.5 mb-1">
+                       <Award className="w-3.5 h-3.5 text-primary" />
+                       <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em] truncate">
+                        {product.brand?.name || 'Marca Genérica'}
                       </p>
                     </div>
+                    <h3 className="font-black text-slate-900 dark:text-white line-clamp-2 text-sm leading-tight uppercase tracking-tight group-hover:text-primary transition-colors">
+                      {product.name}
+                    </h3>
                   </div>
 
-                  <div className="flex items-center justify-between mt-auto">
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Precio</span>
-                      <span className="text-lg font-black text-primary">
+                      <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-0.5">Precio Venta</span>
+                      <span className="text-xl font-black text-primary tracking-tighter">
                         {defaultPrice
                           ? `$${Number(defaultPrice.price).toLocaleString('es-AR', { minimumFractionDigits: 0 })}`
-                          : <span className="text-muted-foreground text-sm font-normal">—</span>}
+                          : <span className="text-muted-foreground text-sm font-normal">S/P</span>}
                       </span>
                     </div>
                     <div className="text-right flex flex-col items-end">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Code</span>
-                      <p className="text-[10px] font-mono font-medium truncate max-w-[80px] bg-muted px-1 rounded">{product.internal_code || product.barcode || '—'}</p>
+                      <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-0.5">Código</span>
+                      <p className="text-[11px] font-mono font-bold truncate max-w-[80px] bg-muted px-2 py-0.5 rounded-lg text-slate-600 dark:text-slate-400">
+                        {product.internal_code || product.barcode || '—'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -688,24 +699,24 @@ export default function ProductsPage() {
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border shadow-sm">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            Hoja {page} / {totalPages}
+        <div className="flex items-center justify-between p-5 bg-card rounded-3xl border border-border shadow-sm">
+          <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">
+            Página {page} <span className="mx-2 text-border">/</span> {totalPages}
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
-              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo(0, 400) }}
+              onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo(0, 0) }}
               disabled={page === 1}
-              className="p-2 rounded-xl border border-border hover:bg-accent disabled:opacity-30 transition-all"
+              className="w-12 h-12 flex items-center justify-center rounded-2xl border border-border hover:bg-accent disabled:opacity-30 transition-all active:scale-90"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-6 h-6" />
             </button>
             <button
-              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo(0, 400) }}
+              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo(0, 0) }}
               disabled={page === totalPages}
-              className="p-2 rounded-xl border border-border hover:bg-accent disabled:opacity-30 transition-all"
+              className="w-12 h-12 flex items-center justify-center rounded-2xl border border-border hover:bg-accent disabled:opacity-30 transition-all active:scale-90"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-6 h-6" />
             </button>
           </div>
         </div>
