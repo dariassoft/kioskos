@@ -223,7 +223,12 @@ function FeaturesSection() {
 }
 
 // --- Referral Section ---
-function ReferralSection({ discount }: { discount: string }) {
+function ReferralSection({ discount, months }: { discount: string; months: string }) {
+  const monthsNum = parseInt(months) || 1
+  const monthsText = monthsNum === 1 
+    ? 'durante el primer mes' 
+    : `durante los primeros ${monthsNum} meses`
+
   return (
     <section className="py-24 px-4 bg-indigo-600 relative overflow-hidden">
       <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -239,7 +244,7 @@ function ReferralSection({ discount }: { discount: string }) {
           <span className="text-indigo-200">¡Ganan los dos!</span>
         </h2>
         <p className="text-xl text-indigo-100 max-w-2xl mx-auto leading-relaxed font-medium">
-          Compartí tu código de referido desde el panel de control. Si tu amigo se suscribe, ambos reciben un <b>{discount}% de descuento mensual</b> durante el primer mes de uso. ¡Crecer juntos es más fácil!
+          Compartí tu código de referido desde el panel de control. Si tu amigo se suscribe, ambos reciben un <b>{discount}% de descuento mensual</b> {monthsText} de uso. ¡Crecer juntos es más fácil!
         </p>
         <div className="flex justify-center pt-4">
           <div className="bg-white/10 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 shadow-2xl">
@@ -558,6 +563,7 @@ export default function LandingPage() {
   })
 
   const discount = systemInfo.referral_discount_percentage || '5'
+  const months = systemInfo.referral_benefit_months || '1'
   const trialDays = systemInfo.trial_days || '3'
 
   // Smooth scroll para anclas
@@ -576,7 +582,7 @@ export default function LandingPage() {
       <HeroSection />
       <ShowcaseSection />
       <FeaturesSection />
-      <ReferralSection discount={discount} />
+      <ReferralSection discount={discount} months={months} />
       <PricingSection plans={plans} trialDays={trialDays} />
       <CtaSection />
       <Footer />
