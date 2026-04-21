@@ -12,6 +12,9 @@ const systemSettingsApi = {
 
   updateSetting: (key: string, value: string): Promise<SystemSetting> =>
     apiClient.patch(`/system-settings/${key}`, { value }).then((r) => r.data),
+
+  getPublicInfo: (): Promise<Record<string, string>> =>
+    apiClient.get('/system-settings/public-info').then((r) => r.data),
 }
 
 export default systemSettingsApi

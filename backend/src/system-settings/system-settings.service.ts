@@ -47,4 +47,20 @@ export class SystemSettingsService implements OnModuleInit {
   async updateSetting(key: string, value: string) {
     return this.settingRepo.save({ key, value });
   }
+
+  async getPublicSettings() {
+    const keys = [
+      'trial_days',
+      'referral_benefit_enabled',
+      'referral_discount_percentage',
+      'referral_benefit_months',
+    ];
+    const settings = await this.settingRepo.find({
+      where: keys.map((key) => ({ key })),
+    });
+    return settings.reduce((acc: Record<string, string>, curr) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {});
+  }
 }

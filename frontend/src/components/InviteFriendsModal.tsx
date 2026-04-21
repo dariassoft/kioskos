@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '@store/auth.store'
+import { useQuery } from '@tanstack/react-query'
+import systemSettingsApi from '@api/system-settings.api'
 import { Share2, Copy, Check, Gift, MessageCircle, X } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -12,11 +14,19 @@ export default function InviteFriendsModal({ open, onOpenChange }: InviteFriends
   const { user } = useAuthStore()
   const [copied, setCopied] = useState(false)
 
+  const { data: systemInfo = {} } = useQuery({
+    queryKey: ['system-public-info'],
+    queryFn: systemSettingsApi.getPublicInfo,
+    enabled: open
+  })
+
   if (!open) return null
 
+  const discount = systemInfo.referral_discount_percentage || '5'
+  const months = systemInfo.referral_benefit_months || '1'
   const referralCode = user?.referral_code || 'PROMO2026'
   const referralLink = `${window.location.origin}/checkout?ref=${referralCode}`
-  const shareText = `¡Hola! Te recomiendo "Kioskos & Despenzas", el sistema que uso para mi negocio. Si te registras con mi link, ¡ambos ganamos un 5% de descuento! 😉\n\nLink: ${referralLink}`
+  const shareText = `¡Hola! Te recomiendo "Kioskos & Despenzas", el sistema que uso para mi negocio. Si te registras con mi link, ¡ambos ganamos un ${discount}% de descuento por ${months} ${Number(months) === 1 ? 'mes' : 'meses'}! 😉\n\nLink: ${referralLink}`
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink)
@@ -57,7 +67,7 @@ export default function InviteFriendsModal({ open, onOpenChange }: InviteFriends
         >
           <X className="w-5 h-5 text-muted-foreground" />
         </button>
-
+ 
         <div className="p-8">
           <div className="space-y-4 text-center mb-8">
             <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-3xl flex items-center justify-center mx-auto mb-2 animate-bounce">
@@ -65,16 +75,16 @@ export default function InviteFriendsModal({ open, onOpenChange }: InviteFriends
             </div>
             <h2 className="text-2xl font-black text-foreground">¡Invitá y ganá!</h2>
             <p className="text-muted-foreground font-medium text-sm text-balance">
-              Compartí tu enlace con otros comerciantes. Si se suscriben, <b>ambos reciben un 5% de descuento</b> en su próxima cuota mensual.
+              Compartí tu enlace con otros comerciantes. Si se suscriben, <b>ambos reciben un {discount}% de descuento</b> en su próxima cuota mensual.
             </p>
           </div>
-
+ 
           <div className="space-y-6">
             <div className="p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/50">
               <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3 text-center">TU CÓDIGO DE REFERIDO</p>
               <p className="text-3xl font-black text-center tracking-[0.2em] text-gray-900 dark:text-white uppercase">{referralCode}</p>
             </div>
-
+ 
             <div className="space-y-2 text-left">
               <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Enlace de invitación</label>
               <div className="flex gap-2">
@@ -92,7 +102,7 @@ export default function InviteFriendsModal({ open, onOpenChange }: InviteFriends
               </div>
             </div>
           </div>
-
+ 
           <div className="mt-8">
             <button 
               onClick={handleShare} 
