@@ -107,7 +107,7 @@ const checkoutApi = {
     apiClient.get('/checkout/sandbox-info').then((r) => r.data),
 
   getManualPendingList: (): Promise<PendingSubscriptionItem[]> =>
-    apiClient.get('/checkout/admin/manual-pending').then((r) => r.data),
+    apiClient.get('/checkout/admin/manual-pending').then((r) => Array.isArray(r.data) ? r.data : []),
 
   adminApprovePending: (pendingId: string): Promise<{ message: string }> =>
     apiClient.post(`/checkout/admin/approve/${pendingId}`).then((r) => r.data),

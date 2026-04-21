@@ -8,6 +8,7 @@ import {
   BellRing, Tags, Layers, Ruler, Share2, Gift
 } from 'lucide-react'
 import checkoutApi, { type PublicPlan } from '@api/checkout.api'
+import { toast } from 'react-hot-toast'
 import { usePWA } from '@hooks/usePWA'
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
@@ -40,17 +41,9 @@ function Navbar() {
           <Link to="/login" className="hidden xs:inline-flex text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-3 py-2">
             Ingresar
           </Link>
-          {isInstallable && !isInstalled && (
-            <button
-              onClick={installApp}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-xs font-bold rounded-xl transition-all border border-indigo-200 dark:border-indigo-800"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>INSTALAR</span>
-            </button>
-          )}
-          <a href="#planes" className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-indigo-500/20 active:scale-95">
-            Probar Gratis <ChevronRight className="w-4 h-4" />
+          {/* Botón Instalar removido de aquí */}
+          <a href="#planes" className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] sm:text-sm font-bold rounded-xl transition-all shadow-md shadow-indigo-500/20 active:scale-95 whitespace-nowrap min-w-[100px] justify-center">
+            Probar Gratis <ChevronRight className="w-3 h-3 sm:w-4 h-4" />
           </a>
         </div>
       </div>
@@ -67,21 +60,21 @@ function HeroSection() {
         <div className="absolute top-1/2 -left-40 w-[400px] h-[400px] bg-purple-200/30 dark:bg-purple-900/10 rounded-full blur-[100px]" />
       </div>
 
-      <div className="relative max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 overflow-x-hidden">
         <div className="flex-1 text-center lg:text-left space-y-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 text-indigo-700 dark:text-indigo-400 rounded-2xl text-xs font-bold border border-indigo-100 dark:border-indigo-900/50 shadow-sm">
             <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-ping" />
             NUEVA VERSIÓN 2026 DISPONIBLE
           </div>
-          <h1 className="text-5xl sm:text-6xl xl:text-7xl font-black text-gray-900 dark:text-white leading-[1.1] tracking-tight">
+          <h1 className="text-4xl sm:text-6xl xl:text-7xl font-black text-gray-900 dark:text-white leading-[1.1] tracking-tight px-2 sm:px-0">
             Controlá tu negocio <br className="hidden lg:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">sin complicaciones.</span>
           </h1>
-          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
+          <p className="text-base sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium px-4 sm:px-0">
             Diseñado para personas que quieren ver crecer su kiosco o despensa. Gestioná stock, ventas, fiados y proveedores desde tu celular o PC. <b>Fácil, rápido y profesional.</b>
           </p>
-          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4">
-            <a href="#planes" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold rounded-2xl transition-all shadow-xl shadow-indigo-500/30 hover:-translate-y-1">
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4 px-2 sm:px-0">
+            <a href="#planes" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-base sm:text-lg font-bold rounded-2xl transition-all shadow-xl shadow-indigo-500/30 active:scale-[0.98]">
               Empezar 3 Días Gratis <ArrowRight className="w-5 h-5" />
             </a>
             <div className="flex items-center gap-4 px-6 py-4">
@@ -113,8 +106,9 @@ function HeroSection() {
           <div className="absolute -bottom-6 -left-6 z-20 w-48 rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-gray-800 -rotate-3 hover:rotate-0 transition-transform duration-500 hidden sm:block">
              <img src="/img/mobile.png" alt="Mobile App" className="w-full h-auto" />
           </div>
-          <div className="absolute top-1/2 -right-8 w-24 h-24 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl animate-bounce pointer-events-none">
-            <QrCode className="w-12 h-12 text-white" />
+          <div className="absolute top-1/2 -right-4 sm:-right-8 w-20 h-20 sm:w-24 sm:h-24 bg-indigo-600 text-white rounded-3xl flex flex-col items-center justify-center shadow-2xl animate-bounce pointer-events-none z-30">
+            <QrCode className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
+            <span className="text-[8px] font-black uppercase mt-1">Scan Me</span>
           </div>
         </div>
       </div>
@@ -274,18 +268,21 @@ function ReferralSection() {
 
 // ─── Planes ───────────────────────────────────────────────────────────────────
 const FEATURE_LABELS: Record<string, string> = {
-  accounting: 'Contabilidad automática',
-  multisite: 'Múltiples sucursales',
-  reports_advanced: 'BI y reportes avanzados',
-  reports_history: 'Historial de reportes',
-  email_alerts: 'Alertas por email',
-  bulk_import: 'Importación masiva',
-  pdf_export: 'Exportación PDF/Excel',
-  pdf_excel: 'Exportación PDF/Excel',
-  fiados: 'Cuentas corrientes (fiados)',
-  pos: 'Terminal POS (Caja)',
-  inventory: 'Gestión de inventario',
-  electronic_invoicing: 'Factura Electrónica ARCA',
+  pos_terminal: 'Terminal POS (Punto de Venta)',
+  inventory: 'Control de Inventario y Stock',
+  barcode_scanner: 'Soporte para Código de Barras',
+  categories_brands: 'Categorías y Marcas',
+  customers_credit: 'Clientes y Cuentas Corrientes',
+  purchases_suppliers: 'Compras y Proveedores',
+  automated_accounting: 'Contabilidad Automática',
+  reports_bi: 'Reportes Avanzados y BI',
+  export_pdf_excel: 'Exportación PDF/Excel',
+  multi_branch: 'Gestión Multi-sucursal',
+  electronic_invoicing: 'Facturación Electrónica AFIP',
+  email_notifications: 'Alertas por Email',
+  priority_support: 'Soporte Prioritario',
+  daily_backups: 'Backups Diarios en la Nube',
+  ai_assistant: 'Asistente de Compras con IA'
 }
 
 function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean }) {
@@ -373,9 +370,67 @@ function PricingSection({ plans: fetchedPlans }: { plans: PublicPlan[] }) {
   const popularIndex = 1
   
   const mockPlans: PublicPlan[] = [
-    { id: '1', name: 'Emprendedor', description: 'Ideal para quienes recién comienzan.', price_monthly: 1900, max_branches: 1, max_users: 1, features: {} },
-    { id: '2', name: 'Negocio', description: 'El plan más equilibrado para tu comercio.', price_monthly: 4500, max_branches: 3, max_users: 5, features: {} },
-    { id: '3', name: 'Profesional', description: 'Potencia total para cadenas de locales.', price_monthly: 8900, max_branches: 10, max_users: 20, features: {} },
+    { 
+      id: 'plan_emprendedor', 
+      name: 'Emprendedor', 
+      description: 'Ideal para quienes recién comienzan su negocio.', 
+      price_monthly: 8500, 
+      max_branches: 1, 
+      max_users: 1, 
+      features: { 
+        pos_terminal: true, 
+        inventory: true, 
+        barcode_scanner: true, 
+        customers_credit: true, 
+        reports_bi: true,
+        automated_accounting: false,
+        electronic_invoicing: false,
+        email_notifications: true
+      } 
+    },
+    { 
+      id: 'plan_negocio', 
+      name: 'Negocio', 
+      description: 'Para comercios en crecimiento con múltiples empleados.', 
+      price_monthly: 15000, 
+      max_branches: 3, 
+      max_users: 3, 
+      features: { 
+        pos_terminal: true, 
+        inventory: true, 
+        barcode_scanner: true, 
+        customers_credit: true, 
+        reports_bi: true,
+        automated_accounting: true,
+        electronic_invoicing: true,
+        multi_branch: true,
+        export_pdf_excel: true,
+        email_notifications: true
+      } 
+    },
+    { 
+      id: 'plan_profesional', 
+      name: 'Profesional', 
+      description: 'La solución completa para cadenas y grandes comercios.', 
+      price_monthly: 25000, 
+      max_branches: 9999, 
+      max_users: 9999, 
+      features: { 
+        pos_terminal: true, 
+        inventory: true, 
+        barcode_scanner: true, 
+        customers_credit: true, 
+        reports_bi: true,
+        automated_accounting: true,
+        electronic_invoicing: true,
+        multi_branch: true,
+        export_pdf_excel: true,
+        ai_assistant: true,
+        daily_backups: true,
+        email_notifications: true,
+        priority_support: true
+      } 
+    },
   ]
 
   const plans = fetchedPlans && fetchedPlans.length > 0 ? fetchedPlans : mockPlans

@@ -103,28 +103,27 @@ export default function SuperAdminLayout() {
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleToggleSound}
-            className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-            aria-pressed={soundEnabled}
-          >
-            {soundEnabled ? <Bell className="w-3.5 h-3.5 text-emerald-400" /> : <BellOff className="w-3.5 h-3.5 text-slate-400" />}
-            Sonido de alertas {soundEnabled ? 'activado' : 'desactivado'}
-          </button>
+          <div className="pb-10 space-y-3">
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-all active:scale-95"
+              aria-pressed={soundEnabled}
+            >
+              {soundEnabled ? <Bell className="w-3.5 h-3.5 text-emerald-400" /> : <BellOff className="w-3.5 h-3.5 text-slate-400" />}
+              Alertas {soundEnabled ? 'ON' : 'OFF'}
+            </button>
 
-          <button
-            type="button"
-            onClick={playSoftNotificationSound}
-            disabled={!soundEnabled}
-            className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 text-slate-300 hover:text-white hover:bg-slate-800"
-          >
-            <PlayCircle className="w-3.5 h-3.5" />
-            Probar sonido
-          </button>
-          <p className="mt-1.5 px-1 text-[11px] leading-4 text-slate-500">
-            Reproduce una alerta breve para verificar que el audio esté funcionando.
-          </p>
+            <button
+              type="button"
+              onClick={playSoftNotificationSound}
+              disabled={!soundEnabled}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 text-slate-400 hover:text-white hover:bg-slate-800"
+            >
+              <PlayCircle className="w-3.5 h-3.5" />
+              Probar Audio
+            </button>
+          </div>
         </div>
       </aside>
 

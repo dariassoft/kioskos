@@ -32,10 +32,10 @@ export class Subscription {
   @Column({ type: 'date', nullable: true })
   next_billing_date: Date;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ name: 'discount_percentage', type: 'decimal', precision: 5, scale: 2, default: 0 })
   discount_percentage: number;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'discount_ends_at', type: 'date', nullable: true })
   discount_ends_at: Date;
 
   @CreateDateColumn({ type: 'timestamp' })

@@ -173,43 +173,55 @@ let BillingService = class BillingService {
         });
     }
     async getMrr() {
-        const today = new Date();
-        const activeSubscriptions = await this.subscriptionRepo.find({
-            where: { end_date: (0, typeorm_2.MoreThan)(today) },
-        });
-        let mrr = 0;
-        for (const sub of activeSubscriptions) {
-            const plan = await this.planRepo.findOne({ where: { id: sub.plan_id } });
-            if (plan)
-                mrr += Number(plan.price_monthly);
+        try {
+            const today = new Date();
+            const activeSubscriptions = await this.subscriptionRepo.find({
+                where: { end_date: (0, typeorm_2.MoreThan)(today) },
+            });
+            let mrr = 0;
+            for (const sub of activeSubscriptions) {
+                const plan = await this.planRepo.findOne({ where: { id: sub.plan_id } });
+                if (plan)
+                    mrr += Number(plan.price_monthly);
+            }
+            const soon = new Date();
+            soon.setDate(soon.getDate() + 7);
+            const expiringSoon = await this.subscriptionRepo.count({
+                where: { end_date: (0, typeorm_2.Between)(today, soon) },
+            });
+            const totalTenants = await this.tenantRepo.count();
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+            const revenueRaw = await this.billingRepo
+                .createQueryBuilder('bh')
+                .select("DATE_FORMAT(bh.created_at, '%Y-%m') AS month")
+                .addSelect('SUM(bh.amount) AS revenue')
+                .where('bh.created_at >= :from', { from: sixMonthsAgo })
+                .andWhere('bh.payment_status = :status', { status: billing_history_entity_1.PaymentStatus.PAID })
+                .groupBy("DATE_FORMAT(bh.created_at, '%Y-%m')")
+                .orderBy('month', 'ASC')
+                .getRawMany();
+            return {
+                mrr,
+                total_active: activeSubscriptions.length,
+                total_tenants: totalTenants,
+                expiring_soon: expiringSoon,
+                monthly_revenue: revenueRaw.map((r) => ({
+                    month: r.month,
+                    revenue: Number(r.revenue),
+                })),
+            };
         }
-        const soon = new Date();
-        soon.setDate(soon.getDate() + 7);
-        const expiringSoon = await this.subscriptionRepo.count({
-            where: { end_date: (0, typeorm_2.Between)(today, soon) },
-        });
-        const totalTenants = await this.tenantRepo.count();
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-        const revenueRaw = await this.billingRepo
-            .createQueryBuilder('bh')
-            .select("DATE_FORMAT(bh.created_at, '%Y-%m') AS month")
-            .addSelect('SUM(bh.amount) AS revenue')
-            .where('bh.created_at >= :from', { from: sixMonthsAgo })
-            .andWhere('bh.payment_status = :status', { status: billing_history_entity_1.PaymentStatus.PAID })
-            .groupBy("DATE_FORMAT(bh.created_at, '%Y-%m')")
-            .orderBy('month', 'ASC')
-            .getRawMany();
-        return {
-            mrr,
-            total_active: activeSubscriptions.length,
-            total_tenants: totalTenants,
-            expiring_soon: expiringSoon,
-            monthly_revenue: revenueRaw.map((r) => ({
-                month: r.month,
-                revenue: Number(r.revenue),
-            })),
-        };
+        catch (error) {
+            console.error('[BillingService] Error fetching MRR metrics:', error);
+            return {
+                mrr: 0,
+                total_active: 0,
+                total_tenants: 0,
+                expiring_soon: 0,
+                monthly_revenue: [],
+            };
+        }
     }
     async getExpiringSubscriptions(days = 7) {
         const today = new Date();

@@ -64,6 +64,7 @@ export default function PendingPaymentsPage() {
   )
 
   const filteredPending = useMemo(() => {
+    if (!Array.isArray(pending)) return []
     const term = search.trim().toLowerCase()
     if (!term) return pending
 
@@ -84,9 +85,9 @@ export default function PendingPaymentsPage() {
     })
   }, [pending, search])
 
-  const totalAmount = filteredPending.reduce((sum, item) => sum + Number(item.amount), 0)
-  const transferCount = filteredPending.filter((item) => item.payment_method === 'transfer').length
-  const mpCount = filteredPending.filter((item) => item.payment_method === 'mercadopago').length
+  const totalAmount = Array.isArray(filteredPending) ? filteredPending.reduce((sum, item) => sum + Number(item.amount), 0) : 0
+  const transferCount = Array.isArray(filteredPending) ? filteredPending.filter((item) => item.payment_method === 'transfer').length : 0
+  const mpCount = Array.isArray(filteredPending) ? filteredPending.filter((item) => item.payment_method === 'mercadopago').length : 0
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-AR', {

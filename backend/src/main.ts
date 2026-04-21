@@ -44,6 +44,39 @@ async function ensureAuxiliaryTables(dataSource: DataSource) {
     await dataSource.query('ALTER TABLE `mercadopago_credentials` ADD COLUMN `token_expires_at` timestamp NULL');
   }
 
+  // Asegurar columna referral_code en tenants
+  const tenantColumns = await dataSource.query('SHOW COLUMNS FROM `tenants`');
+  const tenantColumnNames = tenantColumns.map((c: any) => c.Field);
+  if (!tenantColumnNames.includes('referral_code')) {
+    await dataSource.query('ALTER TABLE `tenants` ADD COLUMN `referral_code` varchar(20) NULL');
+  }
+  if (!tenantColumnNames.includes('referred_by_id')) {
+    await dataSource.query('ALTER TABLE `tenants` ADD COLUMN `referred_by_id` varchar(36) NULL');
+  }
+  if (!tenantColumnNames.includes('settings')) {
+    await dataSource.query('ALTER TABLE `tenants` ADD COLUMN `settings` json NULL');
+  }
+  if (!tenantColumnNames.includes('trial_ends_at')) {
+    await dataSource.query('ALTER TABLE `tenants` ADD COLUMN `trial_ends_at` timestamp NULL');
+  }
+
+  // Asegurar columnas en subscriptions
+  const subColumns = await dataSource.query('SHOW COLUMNS FROM `subscriptions`');
+  const subColumnNames = subColumns.map((c: any) => c.Field);
+  if (!subColumnNames.includes('discount_percentage')) {
+    await dataSource.query('ALTER TABLE `subscriptions` ADD COLUMN `discount_percentage` decimal(5,2) DEFAULT 0');
+  }
+  if (!subColumnNames.includes('discount_ends_at')) {
+    await dataSource.query('ALTER TABLE `subscriptions` ADD COLUMN `discount_ends_at` date NULL');
+  }
+
+  // Asegurar columnas en pending_subscriptions
+  const pendingColumns = await dataSource.query('SHOW COLUMNS FROM `pending_subscriptions`');
+  const pendingColumnNames = pendingColumns.map((c: any) => c.Field);
+  if (!pendingColumnNames.includes('referred_by_code')) {
+    await dataSource.query('ALTER TABLE `pending_subscriptions` ADD COLUMN `referred_by_code` varchar(10) NULL');
+  }
+
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS \`afip_credentials\` (
       \`id\` varchar(36) NOT NULL,
@@ -95,6 +128,15 @@ async function ensureAuxiliaryTables(dataSource: DataSource) {
       INDEX \`IDX_electronic_invoices_tenant\` (\`tenant_id\`),
       INDEX \`IDX_electronic_invoices_sale\` (\`sale_id\`),
       INDEX \`IDX_electronic_invoices_fecha\` (\`fecha_comprobante\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS \`system_settings\` (
+      \`key\` varchar(100) NOT NULL,
+      \`value\` text NOT NULL,
+      \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+      PRIMARY KEY (\`key\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }

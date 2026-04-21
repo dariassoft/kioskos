@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import * as PDFDocument from 'pdfkit';
-import * as bwipjs from 'bwip-js';
+// Lazy load modules to prevent boot crashes if not installed in the environment
+let PDFDocument: any;
+let bwipjs: any;
 import { ElectronicInvoice } from './entities/electronic-invoice.entity';
 import { AfipCredentials, TipoIva } from './entities/afip-credentials.entity';
 import { Sale } from '@sales/entities/sale.entity';
@@ -15,6 +16,9 @@ export class InvoicePdfService {
     creds: AfipCredentials,
     sale?: Sale,
   ): Promise<Buffer> {
+    if (!PDFDocument) PDFDocument = require('pdfkit');
+    if (!bwipjs) bwipjs = require('bwip-js');
+
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
         size: 'A4',
@@ -23,9 +27,9 @@ export class InvoicePdfService {
       });
 
       const chunks: Buffer[] = [];
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+      doc.on('error', (err: Error) => reject(err));
 
       this.renderHeader(doc, invoice, creds);
       this.renderReceptor(doc, invoice);
@@ -36,7 +40,7 @@ export class InvoicePdfService {
     });
   }
 
-  private renderHeader(doc: PDFKit.PDFDocument, invoice: ElectronicInvoice, creds: AfipCredentials) {
+  private renderHeader(doc: any, invoice: ElectronicInvoice, creds: AfipCredentials) {
     // Rectángulo exterior de cabecera
     doc.rect(40, 40, 515, 100).stroke();
 
@@ -63,7 +67,7 @@ export class InvoicePdfService {
     doc.moveDown(4);
   }
 
-  private renderReceptor(doc: PDFKit.PDFDocument, invoice: ElectronicInvoice) {
+  private renderReceptor(doc: any, invoice: ElectronicInvoice) {
     doc.rect(40, 145, 515, 60).stroke();
     doc.fontSize(10).text(`Cliente: ${invoice.nombre_receptor || 'Consumidor Final'}`, 50, 155);
     
@@ -73,7 +77,7 @@ export class InvoicePdfService {
     doc.text('Condición IVA: Consumidor Final', 50, 185); // TODO: Mejorar esto si es Responsable Inscripto
   }
 
-  private renderItems(doc: PDFKit.PDFDocument, sale?: Sale) {
+  private renderItems(doc: any, sale?: Sale) {
     const startY = 220;
     doc.rect(40, startY, 515, 20).fill('#eee').stroke('#000');
     doc.fillColor('#000').fontSize(9);
@@ -104,7 +108,7 @@ export class InvoicePdfService {
     });
   }
 
-  private async renderFooter(doc: PDFKit.PDFDocument, invoice: ElectronicInvoice, creds: AfipCredentials) {
+  private async renderFooter(doc: any, invoice: ElectronicInvoice, creds: AfipCredentials) {
     const footerY = 720;
     doc.lineCap('butt').moveTo(40, footerY).lineTo(555, footerY).stroke();
 

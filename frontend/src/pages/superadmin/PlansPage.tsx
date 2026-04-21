@@ -5,11 +5,16 @@ import toast from 'react-hot-toast'
 import { Plus, X, Edit2, ToggleLeft, ToggleRight, Users, GitBranch, Check } from 'lucide-react'
 
 const FEATURES_LIST = [
-  { key: 'accounting', label: 'Contabilidad automática' },
-  { key: 'multisite', label: 'Multi-sucursal' },
-  { key: 'reports_history', label: 'Historial de reportes' },
-  { key: 'pdf_export', label: 'Exportación PDF/Excel' },
-  { key: 'email_alerts', label: 'Alertas por email' },
+  { key: 'pos_terminal', label: 'Terminal POS' },
+  { key: 'inventory', label: 'Gestión de Inventario' },
+  { key: 'barcode_scanner', label: 'Lector de Barras' },
+  { key: 'customers_credit', label: 'Cuentas Corrientes' },
+  { key: 'automated_accounting', label: 'Contabilidad automática' },
+  { key: 'multi_branch', label: 'Multi-sucursal' },
+  { key: 'reports_bi', label: 'Historial de reportes' },
+  { key: 'export_pdf_excel', label: 'Exportación PDF/Excel' },
+  { key: 'email_notifications', label: 'Alertas por email' },
+  { key: 'electronic_invoicing', label: 'Facturación electrónica AFIP' },
 ]
 
 const emptyForm = {
