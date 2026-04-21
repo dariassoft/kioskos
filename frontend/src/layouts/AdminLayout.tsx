@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import NotificationDropdown from '@components/NotificationDropdown'
 import { useNotificationsRealtime } from '@hooks/useNotificationsRealtime'
+import InviteFriendsModal from '@components/InviteFriendsModal'
+import { Gift } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Tablero & Reportes' },
@@ -26,6 +28,7 @@ const navItems = [
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
   const { user, logout } = useAuthStore()
   const { activeBranch } = useBranchStore()
@@ -102,6 +105,21 @@ export default function AdminLayout() {
             {(!collapsed || isMobile) && <span className="truncate">{label}</span>}
           </NavLink>
         ))}
+
+        {/* Separador y Botón Especial */}
+        <div className="pt-4 mt-4 border-t border-border/50">
+          <button
+            onClick={() => {
+              setInviteModalOpen(true)
+              if (isMobile) setMobileMenuOpen(false)
+            }}
+            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 font-bold text-xs hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all border border-indigo-200 dark:border-indigo-800/50 ${collapsed && !isMobile ? 'justify-center px-2' : ''}`}
+            title={collapsed && !isMobile ? 'Invitar Amigos' : undefined}
+          >
+            <Gift className="w-4 h-4 flex-shrink-0" />
+            {(!collapsed || isMobile) && <span className="truncate">INVITAR AMIGOS</span>}
+          </button>
+        </div>
       </nav>
 
       {/* Perfil de usuario */}
@@ -241,6 +259,11 @@ export default function AdminLayout() {
           ))}
         </nav>
       </div>
+
+      <InviteFriendsModal 
+        open={inviteModalOpen} 
+        onOpenChange={setInviteModalOpen} 
+      />
     </div>
   )
 }

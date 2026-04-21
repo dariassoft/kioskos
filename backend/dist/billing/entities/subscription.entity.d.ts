@@ -7,6 +7,8 @@ export declare class Subscription {
     auto_renew: boolean;
     last_payment_date: Date;
     next_billing_date: Date;
+    discount_percentage: number;
+    discount_ends_at: Date;
     created_at: Date;
     updated_at: Date;
 }

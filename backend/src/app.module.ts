@@ -16,6 +16,7 @@ import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { TenantMiddleware } from './tenants/tenant.middleware';
 
 @Module({
@@ -62,6 +63,7 @@ import { TenantMiddleware } from './tenants/tenant.middleware';
     NotificationsModule,
     SettingsModule,
     ElectronicInvoicingModule,
+    SystemSettingsModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -9,6 +9,7 @@ export interface JwtPayload {
   role: string;
   tenant_id: string;  // Discriminador multi-tenant
   name: string;
+  referral_code?: string;
 }
 
 /**
@@ -37,6 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: payload.role,
       tenant_id: payload.tenant_id,
       name: payload.name,
+      referral_code: payload.referral_code,
     };
   }
 }

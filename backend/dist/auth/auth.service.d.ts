@@ -3,10 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { User } from '../tenants/entities/user.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 export declare class AuthService {
     private readonly userRepo;
+    private readonly tenantRepo;
     private readonly jwtService;
-    constructor(userRepo: Repository<User>, jwtService: JwtService);
+    constructor(userRepo: Repository<User>, tenantRepo: Repository<Tenant>, jwtService: JwtService);
     login(dto: LoginDto): Promise<{
         access_token: string;
         user: object;

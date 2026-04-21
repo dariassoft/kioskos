@@ -48,6 +48,7 @@ import BillingPage from '@pages/superadmin/BillingPage'
 import SubscriptionsPage from '@pages/superadmin/SubscriptionsPage'
 import PlansPage from '@pages/superadmin/PlansPage'
 import PendingPaymentsPage from '@pages/superadmin/PendingPaymentsPage'
+import SuperAdminSettingsPage from '@pages/superadmin/SettingsPage'
 
 // Rutas protegidas
 function PrivateRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -191,6 +192,7 @@ export default function App() {
           <Route path="/superadmin/pending-payments" element={<PendingPaymentsPage />} />
           <Route path="/superadmin/subscriptions" element={<SubscriptionsPage />} />
           <Route path="/superadmin/plans" element={<PlansPage />} />
+          <Route path="/superadmin/settings" element={<SuperAdminSettingsPage />} />
         </Route>
 
         {/* 404 Fallback → landing */}

@@ -13,6 +13,9 @@ export declare class Tenant {
     status: TenantStatus;
     phone: string;
     address: string;
+    referral_code: string;
+    referred_by_id: string;
+    trial_ends_at: Date;
     settings: {
         generate_accounting_on_adjustment?: boolean;
         [key: string]: any;

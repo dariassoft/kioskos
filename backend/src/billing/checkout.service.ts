@@ -15,6 +15,7 @@ import { User } from '@tenants/entities/user.entity';
 import { CreateCheckoutDto, ConfirmTransferDto } from './dto/checkout.dto';
 import { NotificationsGateway } from '@notifications/notifications.gateway';
 import { MailService } from '@common/services/mail.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
@@ -36,6 +37,7 @@ export class CheckoutService {
     private readonly notificationsGateway: NotificationsGateway,
     private readonly mailService: MailService,
     private readonly config: ConfigService,
+    private readonly systemSettings: SystemSettingsService,
   ) {
     const accessToken = this.config.get<string>('MP_ACCESS_TOKEN') ?? '';
     this.isSandbox = accessToken.startsWith('TEST-');
@@ -75,15 +77,16 @@ export class CheckoutService {
       temp_password_hash,
       payment_method: dto.payment_method,
       status: PendingSubscriptionStatus.PENDING,
+      referred_by_code: dto.referred_by_code,
     });
     const savedPending = await this.pendingRepo.save(pending);
-    // Plan gratuito -> activar directo
-    if (Number(plan.price_monthly) === 0) {
+    // Plan gratuito o Modo Trial -> activar directo
+    if (Number(plan.price_monthly) === 0 || dto.payment_method === 'trial') {
       savedPending.status = PendingSubscriptionStatus.APPROVED;
       await this.pendingRepo.save(savedPending);
-      await this.activateAccount(savedPending, 'free');
+      await this.activateAccount(savedPending, dto.payment_method);
       await this.mailService.sendWelcomeEmail(savedPending.owner_email, savedPending.business_name);
-      return { pending_id: savedPending.id, payment_method: 'free', is_free: true };
+      return { pending_id: savedPending.id, payment_method: dto.payment_method, is_free: Number(plan.price_monthly) === 0 || dto.payment_method === 'trial' };
     }
     if (dto.payment_method === 'mercadopago') {
       return this.createMercadoPagoSubscription(savedPending, plan);
@@ -251,12 +254,32 @@ export class CheckoutService {
       this.logger.warn(`Usuario ${pending.owner_email} ya existe, no se duplica`);
       return;
     }
+    // Generar código de referido único (8 caracteres)
+    const referral_code = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    // Buscar quien refirió
+    let referred_by_id: string | undefined;
+    if (pending.referred_by_code) {
+      const referrer = await this.tenantRepo.findOne({ 
+        where: { referral_code: pending.referred_by_code } 
+      });
+      if (referrer) referred_by_id = referrer.id;
+    }
+
+    // Calcular fin del trial
+    const trialDays = await this.systemSettings.getSetting('trial_days');
+    const trial_ends_at = new Date();
+    trial_ends_at.setDate(trial_ends_at.getDate() + (Number(trialDays) || 3));
+
     const tenant = this.tenantRepo.create({
       business_name: pending.business_name,
       owner_email: pending.owner_email,
       tax_id: pending.tax_id ?? undefined,
       phone: pending.owner_phone ?? undefined,
-      status: TenantStatus.ACTIVE,
+      status: paymentMethod === 'trial' ? TenantStatus.TRIAL : TenantStatus.ACTIVE,
+      referral_code,
+      referred_by_id,
+      trial_ends_at,
     });
     const savedTenant = await this.tenantRepo.save(tenant);
     await this.userRepo.save(this.userRepo.create({
@@ -270,14 +293,50 @@ export class CheckoutService {
     const now = new Date();
     const endDate = new Date(now);
     endDate.setMonth(endDate.getMonth() + 1);
+
+    // Configuración de beneficios por referido
+    const benefitEnabled = await this.systemSettings.getSetting('referral_benefit_enabled');
+    const discountPct = await this.systemSettings.getSetting('referral_discount_percentage');
+    const benefitMonths = await this.systemSettings.getSetting('referral_benefit_months');
+
+    let discount_percentage = 0;
+    let discount_ends_at: Date | undefined;
+
+    if (benefitEnabled === 'true' && referred_by_id) {
+      discount_percentage = Number(discountPct) || 5;
+      discount_ends_at = new Date();
+      discount_ends_at.setMonth(discount_ends_at.getMonth() + (Number(benefitMonths) || 1));
+
+      // Aplicar beneficio al que refirió
+      const referrerSub = await this.subscriptionRepo.findOne({
+        where: { tenant_id: referred_by_id },
+        order: { end_date: 'DESC' }
+      });
+      if (referrerSub) {
+        referrerSub.discount_percentage = Number(discountPct) || 5;
+        const refDiscountEnd = new Date();
+        refDiscountEnd.setMonth(refDiscountEnd.getMonth() + (Number(benefitMonths) || 1));
+        referrerSub.discount_ends_at = refDiscountEnd;
+        await this.subscriptionRepo.save(referrerSub);
+
+        // Notificar en tiempo real al que refirió
+        this.notificationsGateway.sendReferralSuccessAlert(referred_by_id, {
+          newBusinessName: savedTenant.business_name,
+          discountPercentage: Number(discountPct) || 5,
+        });
+      }
+    }
+
     await this.subscriptionRepo.save(this.subscriptionRepo.create({
       tenant_id: savedTenant.id,
       plan_id: pending.plan_id,
       start_date: now,
       end_date: endDate,
       auto_renew: true,
-      last_payment_date: paymentMethod !== 'free' ? now : (undefined as any),
+      last_payment_date: (paymentMethod !== 'free' && paymentMethod !== 'trial') ? now : (undefined as any),
       next_billing_date: endDate,
+      discount_percentage,
+      discount_ends_at,
     }));
     if (paymentMethod !== 'free') {
       await this.billingRepo.save(this.billingRepo.create({

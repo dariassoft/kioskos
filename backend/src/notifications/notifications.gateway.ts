@@ -114,4 +114,32 @@ export class NotificationsGateway
       timestamp: new Date().toISOString(),
     } as never);
   }
+
+  /**
+   * Alerta al usuario que refirió cuando su referido se une.
+   */
+  sendReferralSuccessAlert(
+    referrerTenantId: string,
+    data: { newBusinessName: string; discountPercentage: number },
+  ) {
+    this.server.to(`tenant_${referrerTenantId}`).emit('referral_success_alert', {
+      type: 'referral_success',
+      ...data,
+      message: `¡Buenas noticias! ${data.newBusinessName} se unió gracias a vos. Se te aplicó un ${data.discountPercentage}% de descuento.`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Notificación genérica para un tenant
+   */
+  sendGeneralNotification(
+    tenantId: string,
+    data: { title: string; message: string; variant?: 'info' | 'success' | 'warning' | 'error' },
+  ) {
+    this.server.to(`tenant_${tenantId}`).emit('general_notification', {
+      ...data,
+      timestamp: new Date().toISOString(),
+    });
+  }
 }

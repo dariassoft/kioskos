@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Check, Trash2, Info, AlertTriangle } from 'lucide-react'
+import { Bell, Check, Trash2, Info, AlertTriangle, Gift } from 'lucide-react'
 import { useNotificationStore, Notification } from '@store/notification.store'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -23,6 +23,8 @@ export default function NotificationDropdown() {
     switch (type) {
       case 'low_stock': return <AlertTriangle className="w-4 h-4 text-amber-500" />
       case 'billing': return <Info className="w-4 h-4 text-blue-500" />
+      case 'referral': return <Gift className="w-4 h-4 text-emerald-500" />
+      case 'general': return <Info className="w-4 h-4 text-slate-500" />
       default: return <Bell className="w-4 h-4 text-slate-500" />
     }
   }

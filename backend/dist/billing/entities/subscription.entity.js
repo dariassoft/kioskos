@@ -47,6 +47,14 @@ __decorate([
     __metadata("design:type", Date)
 ], Subscription.prototype, "next_billing_date", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Subscription.prototype, "discount_percentage", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Subscription.prototype, "discount_ends_at", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp' }),
     __metadata("design:type", Date)
 ], Subscription.prototype, "created_at", void 0);

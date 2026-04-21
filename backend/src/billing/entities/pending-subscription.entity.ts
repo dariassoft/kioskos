@@ -83,6 +83,9 @@ export class PendingSubscription {
   @Column({ type: 'varchar', length: 36, nullable: true })
   tenant_id: string; // Populated when account is created
 
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  referred_by_code: string;
+
   // ─── Timestamps ───────────────────────────────────────────────────────────
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;

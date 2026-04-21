@@ -59,6 +59,20 @@ let NotificationsGateway = class NotificationsGateway {
             timestamp: new Date().toISOString(),
         });
     }
+    sendReferralSuccessAlert(referrerTenantId, data) {
+        this.server.to(`tenant_${referrerTenantId}`).emit('referral_success_alert', {
+            type: 'referral_success',
+            ...data,
+            message: `¡Buenas noticias! ${data.newBusinessName} se unió gracias a vos. Se te aplicó un ${data.discountPercentage}% de descuento.`,
+            timestamp: new Date().toISOString(),
+        });
+    }
+    sendGeneralNotification(tenantId, data) {
+        this.server.to(`tenant_${tenantId}`).emit('general_notification', {
+            ...data,
+            timestamp: new Date().toISOString(),
+        });
+    }
 };
 exports.NotificationsGateway = NotificationsGateway;
 __decorate([

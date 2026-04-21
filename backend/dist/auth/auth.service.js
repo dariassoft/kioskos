@@ -19,9 +19,11 @@ const typeorm_2 = require("typeorm");
 const jwt_1 = require("@nestjs/jwt");
 const bcrypt = require("bcryptjs");
 const user_entity_1 = require("../tenants/entities/user.entity");
+const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 let AuthService = class AuthService {
-    constructor(userRepo, jwtService) {
+    constructor(userRepo, tenantRepo, jwtService) {
         this.userRepo = userRepo;
+        this.tenantRepo = tenantRepo;
         this.jwtService = jwtService;
     }
     async login(dto) {
@@ -33,12 +35,14 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Credenciales incorrectas');
         }
+        const tenant = await this.tenantRepo.findOne({ where: { id: user.tenant_id } });
         const payload = {
             sub: user.id,
             email: user.email,
             role: user.role,
             tenant_id: user.tenant_id,
             name: user.name,
+            referral_code: tenant?.referral_code,
         };
         const access_token = this.jwtService.sign(payload);
         return {
@@ -50,6 +54,7 @@ let AuthService = class AuthService {
                 role: user.role,
                 tenant_id: user.tenant_id,
                 branch_id: user.branch_id,
+                referral_code: tenant?.referral_code,
             },
         };
     }
@@ -81,7 +86,9 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(1, (0, typeorm_1.InjectRepository)(tenant_entity_1.Tenant)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         jwt_1.JwtService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

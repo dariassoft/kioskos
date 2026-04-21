@@ -6,6 +6,7 @@ export interface JwtPayload {
     role: string;
     tenant_id: string;
     name: string;
+    referral_code?: string;
 }
 declare const JwtStrategy_base: new (...args: any[]) => Strategy;
 export declare class JwtStrategy extends JwtStrategy_base {
@@ -17,6 +18,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
         role: string;
         tenant_id: string;
         name: string;
+        referral_code: string | undefined;
     }>;
 }
 export {};

@@ -24,6 +24,7 @@ const reports_module_1 = require("./reports/reports.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const settings_module_1 = require("./settings/settings.module");
 const electronic_invoicing_module_1 = require("./electronic-invoicing/electronic-invoicing.module");
+const system_settings_module_1 = require("./system-settings/system-settings.module");
 const tenant_middleware_1 = require("./tenants/tenant.middleware");
 let AppModule = class AppModule {
     configure(consumer) {
@@ -60,6 +61,7 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             settings_module_1.SettingsModule,
             electronic_invoicing_module_1.ElectronicInvoicingModule,
+            system_settings_module_1.SystemSettingsModule,
         ],
     })
 ], AppModule);

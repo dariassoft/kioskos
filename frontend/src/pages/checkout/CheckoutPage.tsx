@@ -114,6 +114,7 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [checkoutResult, setCheckoutResult] = useState<any>(null)
   const [transferConfirmed, setTransferConfirmed] = useState(false)
+  const [isTrialing, setIsTrialing] = useState(false)
 
   const { data: sandboxInfo } = useQuery({
     queryKey: ['sandbox-info'],
@@ -140,8 +141,9 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
     onSuccess: () => setTransferConfirmed(true),
   })
 
-  const handlePay = (m: 'mercadopago' | 'transfer') => {
-    setMethod(m)
+  const handlePay = (m: 'mercadopago' | 'transfer' | 'trial') => {
+    setMethod(m as any)
+    if (m === 'trial') setIsTrialing(true)
     startMutation.mutate({ ...formData, payment_method: m } as StartCheckoutPayload)
   }
 
@@ -218,16 +220,31 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
         </div>
       )}
       <div className="grid gap-4">
+        <button onClick={() => handlePay('trial')} disabled={startMutation.isPending}
+          className="group flex items-center gap-4 p-5 border-2 border-indigo-200 hover:border-indigo-500 dark:border-indigo-800 dark:hover:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl transition-all text-left disabled:opacity-60">
+          <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0"><FlaskConical className="w-6 h-6 text-white" /></div>
+          <div className="flex-1">
+            <p className="font-bold text-indigo-700 dark:text-indigo-300">Empezar Prueba Gratis</p>
+            <p className="text-sm text-indigo-600/80 dark:text-indigo-400/80">Usá todas las funciones por 3 días sin pagar nada hoy.</p>
+          </div>
+          {startMutation.isPending && isTrialing ? <Loader2 className="w-5 h-5 animate-spin text-indigo-500" /> : <ChevronRight className="w-5 h-5 text-indigo-400 group-hover:text-indigo-500 transition-colors" />}
+        </button>
+
+        <div className="relative py-2">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200 dark:border-gray-800"></div></div>
+          <div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-gray-900 px-2 text-gray-500 font-bold">O suscribite ahora</span></div>
+        </div>
+
         <button onClick={() => handlePay('mercadopago')} disabled={startMutation.isPending}
           className="group flex items-center gap-4 p-5 border-2 border-blue-200 hover:border-blue-500 dark:border-blue-800 dark:hover:border-blue-500 bg-white dark:bg-gray-800 rounded-xl transition-all text-left disabled:opacity-60">
           <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0"><QrCode className="w-6 h-6 text-white" /></div>
-          <div className="flex-1"><p className="font-semibold text-gray-900 dark:text-white">Pagar con MercadoPago</p><p className="text-sm text-gray-500">Tarjeta de crédito, débito, QR o saldo MP. Acreditación inmediata.</p></div>
+          <div className="flex-1"><p className="font-semibold text-gray-900 dark:text-white">Pagar con MercadoPago</p><p className="text-sm text-gray-500">Tarjeta de crédito, débito o saldo MP. Activación inmediata.</p></div>
           {startMutation.isPending && method === 'mercadopago' ? <Loader2 className="w-5 h-5 animate-spin text-blue-500" /> : <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />}
         </button>
         <button onClick={() => handlePay('transfer')} disabled={startMutation.isPending}
-          className="group flex items-center gap-4 p-5 border-2 border-amber-200 hover:border-amber-500 dark:border-amber-800 dark:hover:border-amber-500 bg-white dark:bg-gray-800 rounded-xl transition-all text-left disabled:opacity-60">
+          className="group flex items-center gap-4 p-5 border-2 border-amber-200 hover:border-amber-500 dark:border-amber-800 dark:hover:border-amber-500 bg-white dark:bg-gray-900 rounded-xl transition-all text-left disabled:opacity-60">
           <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0"><Banknote className="w-6 h-6 text-white" /></div>
-          <div className="flex-1"><p className="font-semibold text-gray-900 dark:text-white">Transferencia bancaria</p><p className="text-sm text-gray-500">Por alias o CBU (Brubank, Uala, Naranja X, banco). Verificación manual en horas hábiles.</p></div>
+          <div className="flex-1"><p className="font-semibold text-gray-900 dark:text-white">Transferencia bancaria</p><p className="text-sm text-gray-500">Por alias o CBU. Verificación manual (1-2 horas).</p></div>
           {startMutation.isPending && method === 'transfer' ? <Loader2 className="w-5 h-5 animate-spin text-amber-500" /> : <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-amber-500 transition-colors" />}
         </button>
       </div>
@@ -242,8 +259,11 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams()
   const planId = searchParams.get('plan') ?? ''
+  const refCode = searchParams.get('ref') ?? ''
   const [step, setStep] = useState<1 | 2>(1)
-  const [formData, setFormData] = useState<Partial<StartCheckoutPayload>>({})
+  const [formData, setFormData] = useState<Partial<StartCheckoutPayload>>({
+    referred_by_code: refCode || undefined
+  })
 
   const { data: plans = [], isLoading } = useQuery({ queryKey: ['public-plans'], queryFn: checkoutApi.getPlans })
   const selectedPlan = plans.find((p) => p.id === planId)

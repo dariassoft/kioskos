@@ -11,6 +11,7 @@ import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { User } from '../tenants/entities/user.entity';
+import { Tenant } from '../tenants/entities/tenant.entity';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 @Injectable()
@@ -18,6 +19,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Tenant)
+    private readonly tenantRepo: Repository<Tenant>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -36,12 +39,15 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales incorrectas');
     }
 
+    const tenant = await this.tenantRepo.findOne({ where: { id: user.tenant_id } });
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       tenant_id: user.tenant_id,
       name: user.name,
+      referral_code: tenant?.referral_code,
     };
 
     const access_token = this.jwtService.sign(payload);
@@ -55,6 +61,7 @@ export class AuthService {
         role: user.role,
         tenant_id: user.tenant_id,
         branch_id: user.branch_id,
+        referral_code: tenant?.referral_code,
       },
     };
   }

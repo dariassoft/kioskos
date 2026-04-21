@@ -58,6 +58,18 @@ __decorate([
     __metadata("design:type", String)
 ], Tenant.prototype, "address", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 10, unique: true, nullable: true }),
+    __metadata("design:type", String)
+], Tenant.prototype, "referral_code", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Tenant.prototype, "referred_by_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], Tenant.prototype, "trial_ends_at", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'json', nullable: true }),
     __metadata("design:type", Object)
 ], Tenant.prototype, "settings", void 0);

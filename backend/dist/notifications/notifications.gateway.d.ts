@@ -26,4 +26,13 @@ export declare class NotificationsGateway implements OnGatewayConnection, OnGate
         businessName: string;
         paymentMethod: string;
     }): void;
+    sendReferralSuccessAlert(referrerTenantId: string, data: {
+        newBusinessName: string;
+        discountPercentage: number;
+    }): void;
+    sendGeneralNotification(tenantId: string, data: {
+        title: string;
+        message: string;
+        variant?: 'info' | 'success' | 'warning' | 'error';
+    }): void;
 }

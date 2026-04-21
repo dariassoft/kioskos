@@ -32,6 +32,12 @@ export class Subscription {
   @Column({ type: 'date', nullable: true })
   next_billing_date: Date;
 
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  discount_percentage: number;
+
+  @Column({ type: 'date', nullable: true })
+  discount_ends_at: Date;
+
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 

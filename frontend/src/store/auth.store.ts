@@ -8,6 +8,7 @@ export interface AuthUser {
   role: string
   tenant_id: string
   branch_id?: string
+  referral_code?: string
 }
 
 interface AuthState {

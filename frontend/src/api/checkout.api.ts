@@ -18,7 +18,8 @@ export interface StartCheckoutPayload {
   owner_phone?: string
   tax_id?: string
   password: string
-  payment_method: 'mercadopago' | 'transfer'
+  payment_method: 'mercadopago' | 'transfer' | 'trial'
+  referred_by_code?: string
 }
 
 export interface CheckoutResult {

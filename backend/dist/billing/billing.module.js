@@ -21,6 +21,7 @@ const mail_service_1 = require("../common/services/mail.service");
 const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const user_entity_1 = require("../tenants/entities/user.entity");
 const notifications_module_1 = require("../notifications/notifications.module");
+const system_settings_module_1 = require("../system-settings/system-settings.module");
 let BillingModule = class BillingModule {
 };
 exports.BillingModule = BillingModule;
@@ -28,6 +29,7 @@ exports.BillingModule = BillingModule = __decorate([
     (0, common_1.Module)({
         imports: [
             notifications_module_1.NotificationsModule,
+            system_settings_module_1.SystemSettingsModule,
             typeorm_1.TypeOrmModule.forFeature([
                 plan_entity_1.Plan, subscription_entity_1.Subscription, billing_history_entity_1.BillingHistory, pending_subscription_entity_1.PendingSubscription, tenant_entity_1.Tenant, user_entity_1.User,
             ]),

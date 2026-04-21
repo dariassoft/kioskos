@@ -12,10 +12,12 @@ import { MailService } from '@common/services/mail.service';
 import { Tenant } from '@tenants/entities/tenant.entity';
 import { User } from '@tenants/entities/user.entity';
 import { NotificationsModule } from '@notifications/notifications.module';
+import { SystemSettingsModule } from '../system-settings/system-settings.module';
 
 @Module({
   imports: [
     NotificationsModule,
+    SystemSettingsModule,
     TypeOrmModule.forFeature([
       Plan, Subscription, BillingHistory, PendingSubscription, Tenant, User,
     ]),

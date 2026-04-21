@@ -43,9 +43,14 @@ export class CreateCheckoutDto {
   @MinLength(6)
   password: string;
 
-  @ApiProperty({ example: 'mercadopago', enum: ['mercadopago', 'transfer'] })
-  @IsIn(['mercadopago', 'transfer'])
-  payment_method: 'mercadopago' | 'transfer';
+  @ApiProperty({ example: 'mercadopago', enum: ['mercadopago', 'transfer', 'trial'] })
+  @IsIn(['mercadopago', 'transfer', 'trial'])
+  payment_method: 'mercadopago' | 'transfer' | 'trial';
+
+  @ApiPropertyOptional({ example: 'ABC12345' })
+  @IsString()
+  @IsOptional()
+  referred_by_code?: string;
 }
 
 export class ConfirmTransferDto {

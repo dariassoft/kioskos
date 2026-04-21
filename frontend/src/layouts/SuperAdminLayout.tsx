@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@store/auth.store'
-import { LayoutDashboard, Users, CreditCard, LogOut, ShieldCheck, RefreshCw, Layers, Clock3, Bell, BellOff, PlayCircle } from 'lucide-react'
+import { LayoutDashboard, Users, CreditCard, LogOut, ShieldCheck, RefreshCw, Layers, Clock3, Bell, BellOff, PlayCircle, Settings } from 'lucide-react'
 import checkoutApi from '@api/checkout.api'
 import { SuperAdminPendingRealtimeBridge, SUPERADMIN_PENDING_SOUND_STORAGE_KEY, playSoftNotificationSound } from '@hooks/useSuperAdminPendingRealtime'
 
@@ -13,6 +13,7 @@ const superAdminNav = [
   { to: '/superadmin/billing', icon: CreditCard, label: 'Facturación' },
   { to: '/superadmin/pending-payments', icon: Clock3, label: 'Pagos pendientes' },
   { to: '/superadmin/plans', icon: Layers, label: 'Planes' },
+  { to: '/superadmin/settings', icon: Settings, label: 'Ajustes Globales' },
 ]
 
 export default function SuperAdminLayout() {

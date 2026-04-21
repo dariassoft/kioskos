@@ -5,7 +5,7 @@ export interface Notification {
   id: string
   title: string
   message: string
-  type: 'low_stock' | 'system' | 'billing'
+  type: 'low_stock' | 'system' | 'billing' | 'referral' | 'general'
   timestamp: string
   read: boolean
   data?: any

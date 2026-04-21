@@ -44,6 +44,15 @@ export class Tenant {
   @Column({ type: 'text', nullable: true })
   address: string;
 
+  @Column({ type: 'varchar', length: 10, unique: true, nullable: true })
+  referral_code: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  referred_by_id: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  trial_ends_at: Date;
+
   @Column({ type: 'json', nullable: true })
   settings: {
     generate_accounting_on_adjustment?: boolean;
