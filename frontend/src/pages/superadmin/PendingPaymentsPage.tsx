@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@api/client'
-import checkoutApi, { type PendingSubscriptionItem, type PublicPlan } from '@api/checkout.api'
+import checkoutApi, { type PendingSubscriptionItem } from '@api/checkout.api'
 import toast from 'react-hot-toast'
 import {
   AlertCircle,
