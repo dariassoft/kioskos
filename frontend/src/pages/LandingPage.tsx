@@ -4,16 +4,15 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Store, ShoppingCart, Users, BarChart3, BookOpen, Truck,
   CheckCircle2, ArrowRight, Star, Zap, Shield, Globe, ChevronRight,
-  QrCode, CreditCard, Building2, Download, MousePointer2,
+  QrCode, CreditCard, Building2, MousePointer2,
   BellRing, Tags, Layers, Ruler, Share2, Gift
 } from 'lucide-react'
 import checkoutApi, { type PublicPlan } from '@api/checkout.api'
-import { toast } from 'react-hot-toast'
 import { usePWA } from '@hooks/usePWA'
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
+// --- Navbar ---
 function Navbar() {
-  const { isInstallable, isInstalled, installApp } = usePWA()
+  usePWA()
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -51,7 +50,7 @@ function Navbar() {
   )
 }
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
+// --- Hero ---
 function HeroSection() {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-indigo-50/50 via-white to-white dark:from-indigo-950/20 dark:via-gray-950 dark:to-gray-950">
@@ -116,7 +115,7 @@ function HeroSection() {
   )
 }
 
-// ─── Showcase Section ─────────────────────────────────────────────────────────
+// --- Showcase Section ---
 function ShowcaseSection() {
   return (
     <section id="vistas" className="py-24 px-4 bg-white dark:bg-gray-950 overflow-hidden">
@@ -180,7 +179,7 @@ function ShowcaseSection() {
   )
 }
 
-// ─── Funciones ────────────────────────────────────────────────────────────────
+// --- Funciones ---
 const FEATURES = [
   { icon: ShoppingCart, color: 'bg-blue-500', title: 'POS Punto de Venta', desc: 'Cada usuario es una caja registradora. Gestioná cajeros, ventas rápidas y medios de pago.' },
   { icon: Building2, color: 'bg-emerald-500', title: 'Múltiples Sucursales', desc: 'Controlá todos tus locales desde una sola cuenta. Reponé stock y compará ventas entre sedes.' },
@@ -222,7 +221,7 @@ function FeaturesSection() {
   )
 }
 
-// ─── Referral Section ──────────────────────────────────────────────────────────
+// --- Referral Section ---
 function ReferralSection() {
   return (
     <section className="py-24 px-4 bg-indigo-600 relative overflow-hidden">
@@ -266,7 +265,7 @@ function ReferralSection() {
   )
 }
 
-// ─── Planes ───────────────────────────────────────────────────────────────────
+// --- Planes ---
 const FEATURE_LABELS: Record<string, string> = {
   pos_terminal: 'Terminal POS (Punto de Venta)',
   inventory: 'Control de Inventario y Stock',
@@ -433,7 +432,7 @@ function PricingSection({ plans: fetchedPlans }: { plans: PublicPlan[] }) {
     },
   ]
 
-  const plans = fetchedPlans && fetchedPlans.length > 0 ? fetchedPlans : mockPlans
+  const plans: PublicPlan[] = fetchedPlans && fetchedPlans.length > 0 ? fetchedPlans : mockPlans
 
   return (
     <section id="planes" className="py-32 px-4 bg-white dark:bg-gray-950 relative">
@@ -465,7 +464,7 @@ function PricingSection({ plans: fetchedPlans }: { plans: PublicPlan[] }) {
   )
 }
 
-// ─── CTA Final ────────────────────────────────────────────────────────────────
+// --- CTA Final ---
 function CtaSection() {
   return (
     <section className="py-24 px-4 bg-gradient-to-br from-indigo-900 via-indigo-600 to-violet-700 relative overflow-hidden">
@@ -491,7 +490,7 @@ function CtaSection() {
   )
 }
 
-// ─── Footer ───────────────────────────────────────────────────────────────────
+// --- Footer ---
 function Footer() {
   return (
     <footer className="py-20 px-4 bg-gray-950 text-white border-t border-gray-900">
@@ -548,7 +547,7 @@ function Footer() {
   )
 }
 
-// ─── Página principal ─────────────────────────────────────────────────────────
+// --- Pagina principal ---
 export default function LandingPage() {
   const { data: plans = [] } = useQuery({
     queryKey: ['public-plans'],
