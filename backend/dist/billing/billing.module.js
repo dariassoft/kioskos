@@ -17,6 +17,7 @@ const billing_service_1 = require("./billing.service");
 const billing_controller_1 = require("./billing.controller");
 const checkout_service_1 = require("./checkout.service");
 const checkout_controller_1 = require("./checkout.controller");
+const mail_service_1 = require("../common/services/mail.service");
 const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const user_entity_1 = require("../tenants/entities/user.entity");
 const notifications_module_1 = require("../notifications/notifications.module");
@@ -32,7 +33,7 @@ exports.BillingModule = BillingModule = __decorate([
             ]),
         ],
         controllers: [billing_controller_1.BillingController, checkout_controller_1.CheckoutController],
-        providers: [billing_service_1.BillingService, checkout_service_1.CheckoutService],
+        providers: [billing_service_1.BillingService, checkout_service_1.CheckoutService, mail_service_1.MailService],
         exports: [billing_service_1.BillingService, checkout_service_1.CheckoutService],
     })
 ], BillingModule);

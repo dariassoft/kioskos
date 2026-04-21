@@ -5,8 +5,9 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCheckoutDto {
-  @ApiProperty({ example: 'uuid-del-plan' })
-  @IsUUID('all')
+  @ApiProperty({ example: 'plan-negocio-001' })
+  @IsString()
+  @IsNotEmpty()
   plan_id: string;
 
   @ApiProperty({ example: 'Kiosko Don Pedro' })

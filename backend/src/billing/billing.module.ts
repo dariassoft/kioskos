@@ -8,6 +8,7 @@ import { BillingService } from '@billing/billing.service';
 import { BillingController } from '@billing/billing.controller';
 import { CheckoutService } from '@billing/checkout.service';
 import { CheckoutController } from '@billing/checkout.controller';
+import { MailService } from '@common/services/mail.service';
 import { Tenant } from '@tenants/entities/tenant.entity';
 import { User } from '@tenants/entities/user.entity';
 import { NotificationsModule } from '@notifications/notifications.module';
@@ -20,7 +21,7 @@ import { NotificationsModule } from '@notifications/notifications.module';
     ]),
   ],
   controllers: [BillingController, CheckoutController],
-  providers: [BillingService, CheckoutService],
+  providers: [BillingService, CheckoutService, MailService],
   exports: [BillingService, CheckoutService],
 })
 export class BillingModule {}

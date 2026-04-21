@@ -15,10 +15,11 @@ export function useNotificationsRealtime() {
     if (!user?.tenant_id) return
 
     // Determinar la URL del WebSocket:
-    // Si VITE_API_URL está presente, la usamos (quitando /api/v1 si existe)
-    // De lo contrario, usamos el origen actual (window.location.origin)
-    let socketUrl = import.meta.env.VITE_API_URL || window.location.origin
-    socketUrl = socketUrl.replace(/\/api\/v1$/, '') // Asegurar que sea el base, no el endpoint rest
+    // 1. Usar VITE_WS_URL si existe
+    // 2. Fallback a VITE_API_URL (quitando /api/v1)
+    // 3. Fallback a origin actual
+    let socketUrl = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || window.location.origin
+    socketUrl = socketUrl.replace(/\/api\/v1$/, '') // Asegurar que sea el base
 
     const socket: Socket = io(socketUrl, {
       transports: ['websocket'],

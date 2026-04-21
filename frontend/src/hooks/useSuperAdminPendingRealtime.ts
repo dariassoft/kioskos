@@ -74,13 +74,16 @@ export function useSuperAdminPendingRealtime() {
   useEffect(() => {
 	if (!token || user?.role !== 'superadmin') return
 
-	const socket: Socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
-	  transports: ['websocket'],
-	  auth: { token },
-	  reconnection: true,
-	  reconnectionAttempts: 5,
-	  timeout: 10000,
-	})
+    let socketUrl = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    socketUrl = socketUrl.replace(/\/api\/v1$/, '')
+
+    const socket: Socket = io(socketUrl, {
+      transports: ['websocket'],
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      timeout: 10000,
+    })
 
 	const refreshQueries = () => {
 	  queryClient.invalidateQueries({ queryKey: ['checkout', 'manual-pending'] })

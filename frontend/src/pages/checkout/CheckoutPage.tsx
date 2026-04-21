@@ -124,7 +124,13 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
     mutationFn: (payload: StartCheckoutPayload) => checkoutApi.startCheckout(payload),
     onSuccess: (data) => {
       setCheckoutResult(data)
-      if (data.mp_init_point) window.location.href = data.mp_init_point
+      if (data.is_free) {
+        // Redirigir a página de éxito para planes gratuitos
+        navigate(`/checkout/success?pending=${data.pending_id}`);
+      } else if (data.mp_init_point) {
+        // Redirigir a MercadoPago para planes pagos
+        window.location.href = data.mp_init_point;
+      }
     },
   })
 
@@ -169,6 +175,13 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
             </div>
           ))}
           <p className="text-xs text-amber-700 dark:text-amber-400">⚠️ Incluí la referencia <strong>{td.reference}</strong> en el concepto de la transferencia.</p>
+          <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-amber-200/50 dark:border-amber-700/30">
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <strong>Nota:</strong> La verificación del pago se realiza manualmente por nuestro equipo. 
+              Este proceso puede demorar un par de horas. Una vez verificado, te enviaremos un email 
+              a <strong>{formData.owner_email}</strong> con tus credenciales de acceso.
+            </p>
+          </div>
         </div>
         <div className="space-y-3">
           <h4 className="font-medium text-gray-900 dark:text-white">Una vez realizada la transferencia:</h4>

@@ -14,6 +14,7 @@ import { Tenant, TenantStatus } from '@tenants/entities/tenant.entity';
 import { User } from '@tenants/entities/user.entity';
 import { CreateCheckoutDto, ConfirmTransferDto } from './dto/checkout.dto';
 import { NotificationsGateway } from '@notifications/notifications.gateway';
+import { MailService } from '@common/services/mail.service';
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
@@ -33,6 +34,7 @@ export class CheckoutService {
     @InjectRepository(BillingHistory)
     private readonly billingRepo: Repository<BillingHistory>,
     private readonly notificationsGateway: NotificationsGateway,
+    private readonly mailService: MailService,
     private readonly config: ConfigService,
   ) {
     const accessToken = this.config.get<string>('MP_ACCESS_TOKEN') ?? '';
@@ -80,6 +82,7 @@ export class CheckoutService {
       savedPending.status = PendingSubscriptionStatus.APPROVED;
       await this.pendingRepo.save(savedPending);
       await this.activateAccount(savedPending, 'free');
+      await this.mailService.sendWelcomeEmail(savedPending.owner_email, savedPending.business_name);
       return { pending_id: savedPending.id, payment_method: 'free', is_free: true };
     }
     if (dto.payment_method === 'mercadopago') {
@@ -117,11 +120,10 @@ export class CheckoutService {
       sandbox: this.isSandbox,
     };
   }
-  // ─── Transferencia: instrucciones ────────────────────────────────────────
   private async createTransferInstructions(pending: PendingSubscription): Promise<any> {
     const alias = this.config.get<string>('TRANSFER_ALIAS') ?? 'kioskos.despenzas';
     const cbu = this.config.get<string>('TRANSFER_CBU') ?? '0000000000000000000000';
-    return {
+    const instructions = {
       pending_id: pending.id,
       payment_method: 'transfer',
       transfer_data: {
@@ -131,6 +133,8 @@ export class CheckoutService {
         reference: `KD-${pending.id.split('-')[0].toUpperCase()}`,
       },
     };
+    await this.mailService.sendTransferInstructions(pending.owner_email, pending.business_name, Number(pending.amount), `KD-${pending.id.split('-')[0].toUpperCase()}`);
+    return instructions;
   }
   // ==========================================
   // WEBHOOK DE MERCADOPAGO
@@ -163,6 +167,7 @@ export class CheckoutService {
       pending.status = PendingSubscriptionStatus.APPROVED;
       await this.pendingRepo.save(pending);
       await this.activateAccount(pending, 'mercadopago');
+      await this.mailService.sendWelcomeEmail(pending.owner_email, pending.business_name);
       this.logger.log(`Suscripcion autorizada -> cuenta activada: ${pending.owner_email}`);
     } catch (err) {
       this.logger.error('Error procesando webhook preapproval:', err);
@@ -302,6 +307,7 @@ export class CheckoutService {
     pending.status = PendingSubscriptionStatus.MANUAL_APPROVED;
     await this.pendingRepo.save(pending);
     await this.activateAccount(pending, 'transfer');
+    await this.mailService.sendManualActivationEmail(pending.owner_email, pending.business_name);
     this.notificationsGateway.sendPendingPaymentResolved({
       pendingId: pending.id,
       businessName: pending.business_name,
