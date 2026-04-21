@@ -10,7 +10,7 @@ import {
 import {
   useProducts, useCreateProduct, useUpdateProduct,
   useDeleteProduct, useCategories, useUnits,
-  useBrands, useCreateBrand,
+  useBrands, useCreateBrand, useCreateCategory,
   useUploadProductImage,
 } from '@hooks/useInventory'
 import { useSuppliers, useCreateSupplier } from '@hooks/usePurchases'
@@ -55,6 +55,7 @@ function ProductModal({
   const updateProduct = useUpdateProduct()
   const createSupplier = useCreateSupplier()
   const createBrand = useCreateBrand()
+  const createCategory = useCreateCategory()
   const uploadImage = useUploadProductImage()
 
   const {
@@ -96,6 +97,8 @@ function ProductModal({
   const [newSupplierName, setNewSupplierName] = useState('')
   const [showQuickBrand, setShowQuickBrand] = useState(false)
   const [newBrandName, setNewBrandName] = useState('')
+  const [showQuickCategory, setShowQuickCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image_url ?? null)
@@ -134,6 +137,20 @@ function ProductModal({
         setValue('brand_id', res.id)
         setShowQuickBrand(false)
         setNewBrandName('')
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleQuickCategory = async () => {
+    if (!newCategoryName.trim()) return
+    try {
+      const res = await createCategory.mutateAsync({ name: newCategoryName })
+      if (res?.id) {
+        setValue('category_id', res.id)
+        setShowQuickCategory(false)
+        setNewCategoryName('')
       }
     } catch (err) {
       console.error(err)
@@ -189,22 +206,36 @@ function ProductModal({
           {/* Imagen */}
           <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-border rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors relative group">
             {previewUrl ? (
-              <img
-                src={previewUrl.startsWith('http') || previewUrl.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL}${previewUrl}` : previewUrl}
-                alt="Vista previa"
-                className="w-32 h-32 object-cover rounded-lg shadow-md"
-              />
+              previewUrl.includes('video') || (selectedFile && selectedFile.type.startsWith('video')) ? (
+                <video
+                  src={previewUrl.startsWith('http') || previewUrl.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL}${previewUrl}` : previewUrl}
+                  className="w-32 h-32 object-cover rounded-lg shadow-md"
+                  controls
+                />
+              ) : (
+                <img
+                  src={previewUrl.startsWith('http') || previewUrl.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL}${previewUrl}` : previewUrl}
+                  alt="Vista previa"
+                  className="w-32 h-32 object-cover rounded-lg shadow-md"
+                />
+              )
             ) : (
               <div className="w-32 h-32 bg-background rounded-lg flex flex-col items-center justify-center text-muted-foreground">
                 <Camera className="w-8 h-8 mb-2 opacity-20" />
-                <span className="text-[10px]">Sin foto</span>
+                <span className="text-[10px]">Sin foto/video</span>
               </div>
             )}
             <label className="absolute inset-0 cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 rounded-xl transition-opacity">
               <span className="text-white text-xs font-medium bg-primary px-3 py-1.5 rounded-full shadow-lg">
                 {previewUrl ? 'Cambiar foto' : 'Subir foto'}
               </span>
-              <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              <input 
+                type="file" 
+                accept="image/*,video/*" 
+                capture="environment"
+                className="hidden" 
+                onChange={handleFileChange} 
+              />
             </label>
             <p className="mt-2 text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Imagen del producto</p>
           </div>
@@ -309,11 +340,29 @@ function ProductModal({
             {/* Categoría y Unidad */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Categoría</label>
-                <select {...register('category_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
-                  <option value="">Sin categoría</option>
-                  {categories.map((c: Category) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest">Categoría</label>
+                  <button type="button" onClick={() => setShowQuickCategory(!showQuickCategory)} className="text-[10px] text-primary hover:underline font-bold uppercase tracking-tighter">
+                    {showQuickCategory ? 'Cerrar' : '+ Nueva'}
+                  </button>
+                </div>
+                {showQuickCategory ? (
+                  <div className="flex gap-1 animate-scale-in">
+                    <input
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="flex-1 min-w-0 px-2.5 py-2 bg-background border border-primary/50 rounded-xl text-xs focus:ring-2 focus:ring-primary/20"
+                      placeholder="Nombre..."
+                      autoFocus
+                    />
+                    <button type="button" onClick={handleQuickCategory} className="px-3 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">OK</button>
+                  </div>
+                ) : (
+                  <select {...register('category_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
+                    <option value="">Sin categoría</option>
+                    {categories.map((c: Category) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Unidad</label>
