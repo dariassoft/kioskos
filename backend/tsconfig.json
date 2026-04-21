@@ -27,7 +27,8 @@
       "@accounting/*": ["src/accounting/*"],
       "@purchases/*": ["src/purchases/*"],
       "@reports/*": ["src/reports/*"],
-      "@notifications/*": ["src/notifications/*"]
+      "@notifications/*": ["src/notifications/*"],
+      "@electronic-invoicing/*": ["src/electronic-invoicing/*"]
     }
   }
 }

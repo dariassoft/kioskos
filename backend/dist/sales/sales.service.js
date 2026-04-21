@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SalesService = void 0;
 const common_1 = require("@nestjs/common");
@@ -25,7 +24,7 @@ const customer_entity_1 = require("./entities/customer.entity");
 const payment_account_entity_1 = require("./entities/payment-account.entity");
 const branch_entity_1 = require("../inventory/entities/branch.entity");
 const inventory_service_1 = require("../inventory/inventory.service");
-const electronic_invoicing_service_1 = require("@electronic-invoicing/electronic-invoicing.service");
+const electronic_invoicing_service_1 = require("../electronic-invoicing/electronic-invoicing.service");
 const sale_completed_event_1 = require("./events/sale-completed.event");
 let SalesService = class SalesService {
     constructor(saleRepo, saleItemRepo, cashRegisterRepo, customerRepo, branchRepo, paymentAccountRepo, inventoryService, electronicInvoicingService, eventEmitter) {
@@ -340,6 +339,8 @@ exports.SalesService = SalesService = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        inventory_service_1.InventoryService, typeof (_a = typeof electronic_invoicing_service_1.ElectronicInvoicingService !== "undefined" && electronic_invoicing_service_1.ElectronicInvoicingService) === "function" ? _a : Object, event_emitter_1.EventEmitter2])
+        inventory_service_1.InventoryService,
+        electronic_invoicing_service_1.ElectronicInvoicingService,
+        event_emitter_1.EventEmitter2])
 ], SalesService);
 //# sourceMappingURL=sales.service.js.map
