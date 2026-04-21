@@ -2,9 +2,9 @@ import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Store, Package, ShoppingCart, Users, BarChart3, BookOpen, Truck,
+  Store, ShoppingCart, Users, BarChart3, BookOpen, Truck,
   CheckCircle2, ArrowRight, Star, Zap, Shield, Globe, ChevronRight,
-  QrCode, Banknote, CreditCard, Building2, Download, MousePointer2,
+  QrCode, CreditCard, Building2, Download, MousePointer2,
   BellRing, Tags, Layers, Ruler, Share2, Gift
 } from 'lucide-react'
 import checkoutApi, { type PublicPlan } from '@api/checkout.api'

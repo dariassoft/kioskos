@@ -26,6 +26,22 @@ export function useNotificationsRealtime() {
       query: { tenantId: user.tenant_id }
     })
 
+    const handleLowStock = (data: { productName: string; currentStock: number; minAlert: number }) => {
+      addNotification({
+        title: 'Stock Bajo Detectado',
+        message: `El producto "${data.productName}" tiene ${data.currentStock} unidades (Mínimo: ${data.minAlert})`,
+        type: 'low_stock',
+        data
+      })
+      
+      // Intentar emitir un sonido sutil si es posible
+      try {
+        const audio = new Audio('/assets/notification.mp3')
+        audio.volume = 0.4
+        audio.play().catch(() => {}) // Ignorar si el navegador bloquea el auto-play
+      } catch (e) {}
+    }
+
     const handleReferralSuccess = (data: { newBusinessName: string; discountPercentage: number; message: string }) => {
       addNotification({
         title: '¡Nueva Referencia Exitosa!',

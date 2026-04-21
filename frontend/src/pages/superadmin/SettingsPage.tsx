@@ -1,27 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import systemSettingsApi from '@api/system-settings.api'
+import systemSettingsApi, { SystemSetting } from '@api/system-settings.api'
 import { 
   Settings, Save, Loader2, Info, Gift, Clock, ShieldCheck, 
-  ToggleLeft, ToggleRight, Percent, Calendar
+  Percent, Calendar
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { toast } from 'sonner'
+import { toast } from 'react-hot-toast'
 
 export default function SuperAdminSettingsPage() {
   const queryClient = useQueryClient()
   const [localSettings, setLocalSettings] = useState<Record<string, string>>({})
 
-  const { data: settings = [], isLoading } = useQuery({
+  const { data: settings = [], isLoading } = useQuery<SystemSetting[]>({
     queryKey: ['system-settings'],
-    queryFn: systemSettingsApi.getSettings,
-    onSuccess: (data) => {
-      const dict = data.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {})
+    queryFn: systemSettingsApi.getSettings
+  })
+
+  // Sincronizar settings iniciales con estado local (Reemplaza onSuccess de v4)
+  useEffect(() => {
+    if (settings && settings.length > 0) {
+      const dict = settings.reduce((acc: Record<string, string>, s: SystemSetting) => ({ ...acc, [s.key]: s.value }), {})
       setLocalSettings(dict)
     }
-  })
+  }, [settings])
 
   const updateMutation = useMutation({
     mutationFn: ({ key, value }: { key: string, value: string }) => 
@@ -50,7 +51,7 @@ export default function SuperAdminSettingsPage() {
     </div>
   )
 
-  const getS = (key: string) => localSettings[key] || settings.find(s => s.key === key)?.value || ''
+  const getS = (key: string) => localSettings[key] || settings.find((s: SystemSetting) => s.key === key)?.value || ''
 
   return (
     <div className="space-y-10 pb-20">
@@ -78,20 +79,23 @@ export default function SuperAdminSettingsPage() {
             </div>
           </div>
 
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4 pt-4 text-left">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">CANTIDAD DE DÍAS</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">CANTIDAD DE DÍAS</label>
                 <div className="flex gap-2 mt-1">
-                  <Input 
+                  <input 
                     type="number"
                     value={getS('trial_days')}
-                    onChange={(e) => setLocalSettings(p => ({ ...p, trial_days: e.target.value }))}
-                    className="h-12 bg-slate-50 dark:bg-slate-800 border-none font-bold text-lg rounded-xl"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalSettings(p => ({ ...p, trial_days: e.target.value }))}
+                    className="flex-1 h-12 px-4 bg-slate-50 dark:bg-slate-800 border-none font-bold text-lg rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                   />
-                  <Button onClick={() => handleSave('trial_days')} className="h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6">
-                    <Save className="w-4 h-4 mr-2" /> Guardar
-                  </Button>
+                  <button 
+                    onClick={() => handleSave('trial_days')} 
+                    className="h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold flex items-center gap-2 transition-colors"
+                  >
+                    <Save className="w-4 h-4" /> Guardar
+                  </button>
                 </div>
               </div>
             </div>
@@ -116,22 +120,25 @@ export default function SuperAdminSettingsPage() {
                 <p className="text-sm text-slate-500 font-medium">Incentiva el crecimiento viral de la plataforma.</p>
               </div>
             </div>
-            <Switch 
-              checked={getS('referral_benefit_enabled') === 'true'}
-              onCheckedChange={() => handleToggle('referral_benefit_enabled', getS('referral_benefit_enabled'))}
-            />
+            {/* Toggle switch simple con HTML/Tailwind */}
+            <button 
+              onClick={() => handleToggle('referral_benefit_enabled', getS('referral_benefit_enabled'))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${getS('referral_benefit_enabled') === 'true' ? 'bg-emerald-600' : 'bg-slate-300'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${getS('referral_benefit_enabled') === 'true' ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
           </div>
 
           <div className={`space-y-6 transition-opacity ${getS('referral_benefit_enabled') === 'true' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 text-left">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">DESCUENTO (%)</label>
                 <div className="relative">
-                  <Input 
+                  <input 
                     type="number"
                     value={getS('referral_discount_percentage')}
-                    onChange={(e) => setLocalSettings(p => ({ ...p, referral_discount_percentage: e.target.value }))}
-                    className="h-12 bg-slate-50 dark:bg-slate-800 border-none font-bold text-lg rounded-xl pl-10"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalSettings(p => ({ ...p, referral_discount_percentage: e.target.value }))}
+                    className="w-full h-12 px-10 bg-slate-50 dark:bg-slate-800 border-none font-bold text-lg rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                   <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 </div>
@@ -139,19 +146,22 @@ export default function SuperAdminSettingsPage() {
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">DURACIÓN (MESES)</label>
                 <div className="relative">
-                  <Input 
+                  <input 
                     type="number"
                     value={getS('referral_benefit_months')}
-                    onChange={(e) => setLocalSettings(p => ({ ...p, referral_benefit_months: e.target.value }))}
-                    className="h-12 bg-slate-50 dark:bg-slate-800 border-none font-bold text-lg rounded-xl pl-10"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalSettings(p => ({ ...p, referral_benefit_months: e.target.value }))}
+                    className="w-full h-12 px-10 bg-slate-50 dark:bg-slate-800 border-none font-bold text-lg rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 </div>
               </div>
             </div>
-            <Button onClick={() => { handleSave('referral_discount_percentage'); handleSave('referral_benefit_months'); }} className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold">
-              <Save className="w-4 h-4 mr-2" /> ACTUALIZAR REGLAS DE REFERIDOS
-            </Button>
+            <button 
+              onClick={() => { handleSave('referral_discount_percentage'); handleSave('referral_benefit_months'); }} 
+              className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+            >
+              <Save className="w-4 h-4" /> ACTUALIZAR REGLAS DE REFERIDOS
+            </button>
           </div>
         </div>
 
@@ -167,20 +177,24 @@ export default function SuperAdminSettingsPage() {
             </div>
           </div>
           
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4 pt-4 text-left">
             <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
               <div>
                 <p className="font-bold text-slate-900 dark:text-white">Nuevos Registros</p>
                 <p className="text-xs text-slate-500">Permitir que nuevos negocios se registren en la plataforma.</p>
               </div>
-              <Switch checked={true} disabled />
+              <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-emerald-600 opacity-50 cursor-not-allowed">
+                <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+              </div>
             </div>
             <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
               <div>
                 <p className="font-bold text-slate-900 dark:text-white">Modo Mantenimiento</p>
                 <p className="text-xs text-slate-500 text-red-500">Bloquea el acceso a todos los usuarios (Excepto SuperAdmin).</p>
               </div>
-              <Switch checked={false} disabled />
+              <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-300 opacity-50 cursor-not-allowed">
+                <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-1" />
+              </div>
             </div>
           </div>
         </div>
