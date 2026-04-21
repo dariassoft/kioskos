@@ -167,6 +167,17 @@ export const useCreateCategory = () => {
   })
 }
 
+export const useCreateUnit = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: inventoryApi.createUnit,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['units'] })
+      toast.success('Unidad creada')
+    },
+  })
+}
+
 export const useBulkUpdatePrices = () => {
   const qc = useQueryClient()
   return useMutation({

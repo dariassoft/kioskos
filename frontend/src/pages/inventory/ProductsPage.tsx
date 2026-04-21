@@ -11,7 +11,7 @@ import {
   useProducts, useCreateProduct, useUpdateProduct,
   useDeleteProduct, useCategories, useUnits,
   useBrands, useCreateBrand, useCreateCategory,
-  useUploadProductImage,
+  useCreateUnit, useUploadProductImage,
 } from '@hooks/useInventory'
 import { useSuppliers, useCreateSupplier } from '@hooks/usePurchases'
 import type { Product, Brand, Category, Unit } from '@api/inventory.types'
@@ -56,6 +56,7 @@ function ProductModal({
   const createSupplier = useCreateSupplier()
   const createBrand = useCreateBrand()
   const createCategory = useCreateCategory()
+  const createUnit = useCreateUnit()
   const uploadImage = useUploadProductImage()
 
   const {
@@ -99,6 +100,9 @@ function ProductModal({
   const [newBrandName, setNewBrandName] = useState('')
   const [showQuickCategory, setShowQuickCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [showQuickUnit, setShowQuickUnit] = useState(false)
+  const [newUnitName, setNewUnitName] = useState('')
+  const [newUnitAbbreviation, setNewUnitAbbreviation] = useState('')
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(product?.image_url ?? null)
@@ -151,6 +155,24 @@ function ProductModal({
         setValue('category_id', res.id)
         setShowQuickCategory(false)
         setNewCategoryName('')
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleQuickUnit = async () => {
+    if (!newUnitName.trim()) return
+    try {
+      const res = await createUnit.mutateAsync({ 
+        name: newUnitName, 
+        abbreviation: newUnitAbbreviation || newUnitName.substring(0, 2) 
+      })
+      if (res?.id) {
+        setValue('unit_id', res.id)
+        setShowQuickUnit(false)
+        setNewUnitName('')
+        setNewUnitAbbreviation('')
       }
     } catch (err) {
       console.error(err)
@@ -365,10 +387,34 @@ function ProductModal({
                 )}
               </div>
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Unidad</label>
-                <select {...register('unit_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
-                  {units.map((u: Unit) => <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>)}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest">Unidad</label>
+                  <button type="button" onClick={() => setShowQuickUnit(!showQuickUnit)} className="text-[10px] text-primary hover:underline font-bold uppercase tracking-tighter">
+                    {showQuickUnit ? 'Cerrar' : '+ Nueva'}
+                  </button>
+                </div>
+                {showQuickUnit ? (
+                  <div className="flex gap-1 animate-scale-in">
+                    <input
+                      value={newUnitName}
+                      onChange={(e) => setNewUnitName(e.target.value)}
+                      className="flex-[2] min-w-0 px-2.5 py-2 bg-background border border-primary/50 rounded-xl text-xs focus:ring-2 focus:ring-primary/20"
+                      placeholder="Nombre (ej: Litro)"
+                      autoFocus
+                    />
+                    <input
+                      value={newUnitAbbreviation}
+                      onChange={(e) => setNewUnitAbbreviation(e.target.value)}
+                      className="flex-1 min-w-0 px-2.5 py-2 bg-background border border-primary/50 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 uppercase"
+                      placeholder="Abr (L)"
+                    />
+                    <button type="button" onClick={handleQuickUnit} className="px-3 bg-primary text-white rounded-xl text-xs font-bold shadow-sm">OK</button>
+                  </div>
+                ) : (
+                  <select {...register('unit_id')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
+                    {units.map((u: Unit) => <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>)}
+                  </select>
+                )}
               </div>
             </div>
 

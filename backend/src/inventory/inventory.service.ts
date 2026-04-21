@@ -111,7 +111,7 @@ export class InventoryService {
       }
     }
     // Limpiar strings vacíos de relaciones opcionales (evita errores de UUID en DB)
-    const cleanedData = { ...productData };
+    const cleanedData: any = { ...productData };
     ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
       if (cleanedData[key] === '') cleanedData[key] = null;
     });
@@ -145,7 +145,7 @@ export class InventoryService {
 
   async updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<Product> {
     await this.findOneProduct(id, tenantId);
-    const cleanedDto = { ...dto };
+    const cleanedDto: any = { ...dto };
     ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
       if (cleanedDto[key] === '') cleanedDto[key] = null;
     });

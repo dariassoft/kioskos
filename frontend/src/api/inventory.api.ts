@@ -98,6 +98,11 @@ export const inventoryApi = {
     return Array.isArray(res.data) ? res.data : []
   },
 
+  createUnit: async (data: { name: string; abbreviation?: string }): Promise<Unit> => {
+    const res = await apiClient.post('/inventory/units', data)
+    return res.data
+  },
+
   // Listas de precios
   getPriceLists: async (): Promise<PriceList[]> => {
     const res = await apiClient.get('/inventory/price-lists')
