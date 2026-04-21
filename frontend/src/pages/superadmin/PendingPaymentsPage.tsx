@@ -41,7 +41,15 @@ export default function PendingPaymentsPage() {
 
   const { data: plans = [] } = useQuery({
     queryKey: ['billing-plans'],
-    queryFn: async () => (await apiClient.get('/billing/plans')).data as PublicPlan[],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/billing/plans')
+        return Array.isArray(response.data) ? response.data : []
+      } catch (err) {
+        console.error('Error fetching plans:', err)
+        return []
+      }
+    },
   })
 
   const approveMutation = useMutation({
@@ -58,10 +66,15 @@ export default function PendingPaymentsPage() {
     onError: () => toast.error('No se pudo aprobar el pago pendiente'),
   })
 
-  const planMap = useMemo(
-    () => new Map(plans.map((plan) => [plan.id, plan.name])),
-    [plans],
-  )
+  const planMap = useMemo(() => {
+    const map = new Map<string, string>()
+    if (Array.isArray(plans)) {
+      plans.forEach((plan) => {
+        if (plan && plan.id) map.set(plan.id, plan.name)
+      })
+    }
+    return map
+  }, [plans])
 
   const filteredPending = useMemo(() => {
     if (!Array.isArray(pending)) return []
@@ -85,9 +98,20 @@ export default function PendingPaymentsPage() {
     })
   }, [pending, search])
 
-  const totalAmount = Array.isArray(filteredPending) ? filteredPending.reduce((sum, item) => sum + Number(item.amount), 0) : 0
-  const transferCount = Array.isArray(filteredPending) ? filteredPending.filter((item) => item.payment_method === 'transfer').length : 0
-  const mpCount = Array.isArray(filteredPending) ? filteredPending.filter((item) => item.payment_method === 'mercadopago').length : 0
+  const totalAmount = useMemo(() => {
+    const list = Array.isArray(filteredPending) ? filteredPending : []
+    return list.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  }, [filteredPending])
+
+  const transferCount = useMemo(() => {
+    const list = Array.isArray(filteredPending) ? filteredPending : []
+    return list.filter((item) => item.payment_method === 'transfer').length
+  }, [filteredPending])
+
+  const mpCount = useMemo(() => {
+    const list = Array.isArray(filteredPending) ? filteredPending : []
+    return list.filter((item) => item.payment_method === 'mercadopago').length
+  }, [filteredPending])
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-AR', {

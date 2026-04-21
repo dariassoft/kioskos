@@ -16,6 +16,16 @@ export class SystemSettingsService implements OnModuleInit {
     await this.ensureSetting('referral_benefit_enabled', 'true');
     await this.ensureSetting('referral_discount_percentage', '5');
     await this.ensureSetting('referral_benefit_months', '1');
+    await this.ensureSetting('allow_registrations', 'true');
+    await this.ensureSetting('maintenance_mode', 'false');
+    
+    // Módulos Globales
+    await this.ensureSetting('feature_afip', 'true');
+    await this.ensureSetting('feature_accounting', 'true');
+    await this.ensureSetting('feature_multi_branch', 'true');
+    await this.ensureSetting('feature_reports_history', 'true');
+    await this.ensureSetting('feature_export', 'true');
+    await this.ensureSetting('feature_email_alerts', 'true');
   }
 
   private async ensureSetting(key: string, defaultValue: string) {
@@ -31,11 +41,7 @@ export class SystemSettingsService implements OnModuleInit {
   }
 
   async getAllSettings() {
-    const settings = await this.settingRepo.find();
-    return settings.reduce((acc: Record<string, string>, curr) => {
-      acc[curr.key] = curr.value;
-      return acc;
-    }, {});
+    return this.settingRepo.find();
   }
 
   async updateSetting(key: string, value: string) {

@@ -192,24 +192,31 @@ let BillingService = class BillingService {
             const totalTenants = await this.tenantRepo.count();
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-            const revenueRaw = await this.billingRepo
-                .createQueryBuilder('bh')
-                .select("DATE_FORMAT(bh.created_at, '%Y-%m') AS month")
-                .addSelect('SUM(bh.amount) AS revenue')
-                .where('bh.created_at >= :from', { from: sixMonthsAgo })
-                .andWhere('bh.payment_status = :status', { status: billing_history_entity_1.PaymentStatus.PAID })
-                .groupBy("DATE_FORMAT(bh.created_at, '%Y-%m')")
-                .orderBy('month', 'ASC')
-                .getRawMany();
+            sixMonthsAgo.setDate(1);
+            sixMonthsAgo.setHours(0, 0, 0, 0);
+            const recentPayments = await this.billingRepo.find({
+                where: {
+                    created_at: (0, typeorm_2.MoreThan)(sixMonthsAgo),
+                    payment_status: billing_history_entity_1.PaymentStatus.PAID,
+                },
+                order: { created_at: 'ASC' },
+            });
+            const revenueMap = new Map();
+            recentPayments.forEach((p) => {
+                const date = new Date(p.created_at);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                revenueMap.set(monthKey, (revenueMap.get(monthKey) || 0) + Number(p.amount));
+            });
+            const monthly_revenue = Array.from(revenueMap.entries()).map(([month, revenue]) => ({
+                month,
+                revenue,
+            }));
             return {
                 mrr,
                 total_active: activeSubscriptions.length,
                 total_tenants: totalTenants,
                 expiring_soon: expiringSoon,
-                monthly_revenue: revenueRaw.map((r) => ({
-                    month: r.month,
-                    revenue: Number(r.revenue),
-                })),
+                monthly_revenue,
             };
         }
         catch (error) {
@@ -227,15 +234,21 @@ let BillingService = class BillingService {
         const today = new Date();
         const limit = new Date();
         limit.setDate(limit.getDate() + days);
-        const subs = await this.subscriptionRepo.find({
-            where: { end_date: (0, typeorm_2.Between)(today, limit) },
-        });
-        return Promise.all(subs.map(async (sub) => {
-            const tenant = await this.tenantRepo.findOne({ where: { id: sub.tenant_id } });
-            const plan = await this.planRepo.findOne({ where: { id: sub.plan_id } });
-            const daysLeft = Math.ceil((new Date(sub.end_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            return { ...sub, tenant, plan, days_left: daysLeft };
-        }));
+        try {
+            const subs = await this.subscriptionRepo.find({
+                where: { end_date: (0, typeorm_2.Between)(today, limit) },
+            });
+            return Promise.all(subs.map(async (sub) => {
+                const tenant = await this.tenantRepo.findOne({ where: { id: sub.tenant_id } });
+                const plan = await this.planRepo.findOne({ where: { id: sub.plan_id } });
+                const daysLeft = Math.ceil((new Date(sub.end_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                return { ...sub, tenant, plan, days_left: daysLeft };
+            }));
+        }
+        catch (error) {
+            console.error('[BillingService] Error fetching expiring subscriptions:', error);
+            return [];
+        }
     }
     async checkExpiringSubscriptions() {
         const expiring = await this.getExpiringSubscriptions(5);

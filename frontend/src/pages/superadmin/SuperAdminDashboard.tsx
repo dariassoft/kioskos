@@ -12,22 +12,54 @@ import {
 export default function SuperAdminDashboard() {
   const { data: tenantMetrics } = useQuery({
     queryKey: ['tenant-metrics'],
-    queryFn: async () => (await apiClient.get('/tenants/metrics')).data,
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/tenants/metrics')
+        return response.data || {}
+      } catch (err) {
+        console.error('Error fetching tenant metrics:', err)
+        return {}
+      }
+    },
   })
 
   const { data: mrrData } = useQuery({
     queryKey: ['billing-mrr'],
-    queryFn: async () => (await apiClient.get('/billing/metrics/mrr')).data,
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/billing/metrics/mrr')
+        return response.data || {}
+      } catch (err) {
+        console.error('Error fetching MRR data:', err)
+        return {}
+      }
+    },
   })
 
   const { data: expiring = [] } = useQuery({
     queryKey: ['billing-expiring'],
-    queryFn: async () => (await apiClient.get('/billing/metrics/expiring?days=7')).data,
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/billing/metrics/expiring?days=7')
+        return Array.isArray(response.data) ? response.data : []
+      } catch (err) {
+        console.error('Error fetching expiring subscriptions:', err)
+        return []
+      }
+    },
   })
 
   const { data: pendingPaymentsCount = 0 } = useQuery({
     queryKey: ['checkout', 'manual-pending'],
-    queryFn: async () => (await apiClient.get('/checkout/admin/manual-pending')).data.length,
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/checkout/admin/manual-pending')
+        return Array.isArray(response.data) ? response.data.length : 0
+      } catch (err) {
+        console.error('Error fetching pending payments:', err)
+        return 0
+      }
+    },
     staleTime: 1000 * 30,
   })
 

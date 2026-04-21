@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SystemSettingsService } from './system-settings.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -17,9 +17,9 @@ export class SystemSettingsController {
     return this.settingsService.getAllSettings();
   }
 
-  @Patch()
+  @Patch(':key')
   @ApiOperation({ summary: '[SuperAdmin] Actualizar una configuración global' })
-  update(@Body() body: { key: string; value: string }) {
-    return this.settingsService.updateSetting(body.key, body.value);
+  update(@Param('key') key: string, @Body() body: { value: string }) {
+    return this.settingsService.updateSetting(key, body.value);
   }
 }
