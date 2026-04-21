@@ -290,7 +290,7 @@ export class SalesService {
           sale_id: savedSale.id,
           concepto: 1, // Productos
           doc_tipo_receptor: dto.invoice_doc_tipo || 99, // Consumidor Final por defecto
-          doc_nro_receptor: dto.invoice_doc_nro || '0',
+          doc_nro_receptor: Number(dto.invoice_doc_nro || 0),
           nombre_receptor: customer?.name || 'Consumidor Final',
           importe_total: total,
           // El desglose de IVA se podría mejorar extrayendo info de los productos

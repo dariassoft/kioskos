@@ -81,7 +81,12 @@ let InventoryService = class InventoryService {
                 throw new common_1.ConflictException(`Ya existe un producto con el código de barras: ${dto.barcode}`);
             }
         }
-        const product = this.productRepo.create({ ...productData, tenant_id: tenantId });
+        const cleanedData = { ...productData };
+        ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
+            if (cleanedData[key] === '')
+                cleanedData[key] = null;
+        });
+        const product = this.productRepo.create({ ...cleanedData, tenant_id: tenantId });
         const saved = await this.productRepo.save(product);
         let finalPrice = Number(sale_price || 0);
         if (!finalPrice && sale_margin && dto.cost_price) {
@@ -102,7 +107,12 @@ let InventoryService = class InventoryService {
     }
     async updateProduct(id, dto, tenantId) {
         await this.findOneProduct(id, tenantId);
-        await this.productRepo.update({ id, tenant_id: tenantId }, dto);
+        const cleanedDto = { ...dto };
+        ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
+            if (cleanedDto[key] === '')
+                cleanedDto[key] = null;
+        });
+        await this.productRepo.update({ id, tenant_id: tenantId }, cleanedDto);
         return this.findOneProduct(id, tenantId);
     }
     async deleteProduct(id, tenantId) {

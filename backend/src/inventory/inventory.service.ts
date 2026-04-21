@@ -110,7 +110,13 @@ export class InventoryService {
         throw new ConflictException(`Ya existe un producto con el código de barras: ${dto.barcode}`);
       }
     }
-    const product = this.productRepo.create({ ...productData, tenant_id: tenantId });
+    // Limpiar strings vacíos de relaciones opcionales (evita errores de UUID en DB)
+    const cleanedData = { ...productData };
+    ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
+      if (cleanedData[key] === '') cleanedData[key] = null;
+    });
+
+    const product = this.productRepo.create({ ...cleanedData, tenant_id: tenantId });
     const saved = await this.productRepo.save(product);
 
     // Si se envió precio de venta o margen, asignar a la lista de precios DEFAULT
@@ -139,7 +145,12 @@ export class InventoryService {
 
   async updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<Product> {
     await this.findOneProduct(id, tenantId);
-    await this.productRepo.update({ id, tenant_id: tenantId }, dto as any);
+    const cleanedDto = { ...dto };
+    ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
+      if (cleanedDto[key] === '') cleanedDto[key] = null;
+    });
+
+    await this.productRepo.update({ id, tenant_id: tenantId }, cleanedDto as any);
     return this.findOneProduct(id, tenantId);
   }
 

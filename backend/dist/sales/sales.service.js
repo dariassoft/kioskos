@@ -199,7 +199,7 @@ let SalesService = class SalesService {
                     sale_id: savedSale.id,
                     concepto: 1,
                     doc_tipo_receptor: dto.invoice_doc_tipo || 99,
-                    doc_nro_receptor: dto.invoice_doc_nro || '0',
+                    doc_nro_receptor: Number(dto.invoice_doc_nro || 0),
                     nombre_receptor: customer?.name || 'Consumidor Final',
                     importe_total: total,
                 }, tenantId);
