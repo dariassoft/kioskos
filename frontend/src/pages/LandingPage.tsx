@@ -7,7 +7,7 @@ import {
   QrCode, CreditCard, Building2, MousePointer2,
   BellRing, Tags, Layers, Ruler, Share2, Gift
 } from 'lucide-react'
-import checkoutApi, { type PublicPlan } from '@api/checkout.api'
+import checkoutApi, { type PublicPlan, FEATURE_LABELS } from '@api/checkout.api'
 import { usePWA } from '@hooks/usePWA'
 
 // --- Navbar ---
@@ -265,24 +265,7 @@ function ReferralSection() {
   )
 }
 
-// --- Planes ---
-const FEATURE_LABELS: Record<string, string> = {
-  pos_terminal: 'Terminal POS (Punto de Venta)',
-  inventory: 'Control de Inventario y Stock',
-  barcode_scanner: 'Soporte para Código de Barras',
-  categories_brands: 'Categorías y Marcas',
-  customers_credit: 'Clientes y Cuentas Corrientes',
-  purchases_suppliers: 'Compras y Proveedores',
-  automated_accounting: 'Contabilidad',
-  reports_bi: 'Historial de Reportes',
-  export_pdf_excel: 'Exportación PDF/Excel',
-  multi_branch: 'Multisucursal',
-  electronic_invoicing: 'Facturación Electrónica AFIP',
-  email_notifications: 'Alertas por Email',
-  priority_support: 'Soporte Prioritario',
-  daily_backups: 'Backups Diarios en la Nube',
-  ai_assistant: 'Asistente de Compras con IA'
-}
+// El objeto FEATURE_LABELS ahora se importa de @api/checkout.api para uso global
 
 function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean }) {
   const navigate = useNavigate()
@@ -338,12 +321,21 @@ function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean })
         <div className="space-y-3">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Características</p>
           <ul className="space-y-4">
-            {plan.features ? Object.entries(plan.features).map(([key, enabled]) => (
+            {plan.features ? Object.entries(plan.features)
+              .reduce((acc, [key, enabled]) => {
+                const label = FEATURE_LABELS[key] || key.replace(/_/g, ' ')
+                // Solo agregar si la etiqueta no está ya presente (evita duplicados de alias)
+                if (!acc.some(item => item.label === label)) {
+                  acc.push({ key, label, enabled })
+                }
+                return acc
+              }, [] as any[])
+              .map(({ key, label, enabled }) => (
               <li key={key} className={`flex items-start gap-3 text-sm font-bold ${enabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600 line-through opacity-50'}`}>
                 <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${enabled ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
                   <CheckCircle2 className={`w-3 h-3 ${enabled ? 'text-emerald-600' : 'text-gray-400'}`} />
                 </div>
-                <span className="leading-tight">{FEATURE_LABELS[key] ?? key.replace(/_/g, ' ')}</span>
+                <span className="leading-tight">{label}</span>
               </li>
             )) : (
               <li className="text-xs text-muted-foreground italic">Sin características detalladas</li>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { settingsBusinessApi } from '@/api/settings.api'
 import type { UpdateBusinessProfileDto } from '@/api/settings.types'
+import { FEATURE_LABELS } from '@/api/checkout.api'
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   active: { label: 'Activo', cls: 'bg-emerald-500/10 text-emerald-600' },
   trial: { label: 'Período de prueba', cls: 'bg-blue-500/10 text-blue-600' },
@@ -193,10 +194,18 @@ export default function BusinessTab() {
               </div>
               {profile.current_plan.features && (
                 <ul className="space-y-1 text-xs text-muted-foreground pt-1">
-                  {Object.entries(profile.current_plan.features).map(([key, val]) => (
+                  {Object.entries(profile.current_plan.features)
+                    .reduce((acc, [key, val]) => {
+                      const label = FEATURE_LABELS[key] || key.replace(/_/g, ' ')
+                      if (!acc.some(item => item.label === label)) {
+                        acc.push({ key, label, val })
+                      }
+                      return acc
+                    }, [] as any[])
+                    .map(({ key, label, val }) => (
                     <li key={key} className={`flex items-center gap-1.5 ${val ? 'text-foreground' : 'line-through opacity-50'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${val ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
-                      {key.replace(/_/g, ' ')}
+                      {label}
                     </li>
                   ))}
                 </ul>

@@ -10,6 +10,36 @@ export interface PublicPlan {
   features: Record<string, boolean>
 }
 
+export const FEATURE_LABELS: Record<string, string> = {
+  // Claves base y variantes
+  pos_terminal: 'Terminal POS (Punto de Venta)',
+  inventory: 'Control de Inventario y Stock',
+  barcode_scanner: 'Soporte para Código de Barras',
+  categories_brands: 'Categorías y Marcas',
+  customers_credit: 'Clientes y Cuentas Corrientes',
+  purchases_suppliers: 'Compras y Proveedores',
+  automated_accounting: 'Contabilidad',
+  accounting: 'Contabilidad',
+  reports_bi: 'Historial de Reportes',
+  reports_history: 'Historial de Reportes',
+  export_pdf_excel: 'Exportación PDF/Excel',
+  pdf_export: 'Exportación PDF/Excel',
+  multi_branch: 'Multisucursal',
+  multisite: 'Multisucursal',
+  electronic_invoicing: 'Facturación Electrónica AFIP',
+  email_notifications: 'Alertas por Email',
+  email_alerts: 'Alertas por Email',
+  priority_support: 'Soporte Prioritario',
+  daily_backups: 'Backups Diarios en la Nube',
+  ai_assistant: 'Asistente de Compras con IA',
+  // Alias literales (para casos de replace o keys en ingles puro)
+  'multisite': 'Multisucursal',
+  'accounting': 'Contabilidad',
+  'pdf export': 'Exportación PDF/Excel',
+  'email alerts': 'Alertas por Email',
+  'reports history': 'Historial de Reportes',
+}
+
 export interface StartCheckoutPayload {
   plan_id: string
   business_name: string
