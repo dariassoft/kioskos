@@ -324,20 +324,23 @@ function PlanCard({ plan, isPopular }: { plan: PublicPlan; isPopular: boolean })
             {plan.features ? Object.entries(plan.features)
               .reduce((acc, [key, enabled]) => {
                 const label = FEATURE_LABELS[key] || key.replace(/_/g, ' ')
-                // Solo agregar si la etiqueta no está ya presente (evita duplicados de alias)
-                if (!acc.some(item => item.label === label)) {
+                // Si la etiqueta ya existe en el acumulador, solo la sobreescribimos si el nuevo valor es 'true'
+                const existingIndex = acc.findIndex(item => item.label === label)
+                if (existingIndex > -1) {
+                  if (enabled) acc[existingIndex].enabled = true
+                } else {
                   acc.push({ key, label, enabled })
                 }
                 return acc
               }, [] as any[])
               .map(({ key, label, enabled }) => (
-              <li key={key} className={`flex items-start gap-3 text-sm font-bold ${enabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600 line-through opacity-50'}`}>
-                <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${enabled ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                  <CheckCircle2 className={`w-3 h-3 ${enabled ? 'text-emerald-600' : 'text-gray-400'}`} />
-                </div>
-                <span className="leading-tight">{label}</span>
-              </li>
-            )) : (
+                <li key={key} className={`flex items-start gap-3 text-sm font-bold ${enabled ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600 line-through opacity-50'}`}>
+                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${enabled ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                    <CheckCircle2 className={`w-3 h-3 ${enabled ? 'text-emerald-600' : 'text-gray-400'}`} />
+                  </div>
+                  <span className="leading-tight">{label}</span>
+                </li>
+              )) : (
               <li className="text-xs text-muted-foreground italic">Sin características detalladas</li>
             )}
           </ul>

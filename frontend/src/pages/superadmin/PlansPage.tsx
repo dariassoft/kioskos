@@ -6,16 +6,16 @@ import { Plus, X, Edit2, ToggleLeft, ToggleRight, Users, GitBranch, Check } from
 import { FEATURE_LABELS } from '@/api/checkout.api'
 
 const FEATURES_LIST = [
-  { key: 'pos_terminal', label: FEATURE_LABELS.pos_terminal },
-  { key: 'inventory', label: FEATURE_LABELS.inventory },
-  { key: 'barcode_scanner', label: FEATURE_LABELS.barcode_scanner },
-  { key: 'customers_credit', label: FEATURE_LABELS.customers_credit },
-  { key: 'automated_accounting', label: FEATURE_LABELS.automated_accounting },
-  { key: 'multi_branch', label: FEATURE_LABELS.multi_branch },
-  { key: 'reports_bi', label: FEATURE_LABELS.reports_bi },
-  { key: 'export_pdf_excel', label: FEATURE_LABELS.export_pdf_excel },
-  { key: 'email_notifications', label: FEATURE_LABELS.email_notifications },
-  { key: 'electronic_invoicing', label: FEATURE_LABELS.electronic_invoicing },
+  { key: 'pos_terminal', label: FEATURE_LABELS['pos_terminal'] },
+  { key: 'inventory', label: FEATURE_LABELS['inventory'] },
+  { key: 'barcode_scanner', label: FEATURE_LABELS['barcode_scanner'] },
+  { key: 'customers_credit', label: FEATURE_LABELS['customers_credit'] },
+  { key: 'automated_accounting', label: FEATURE_LABELS['automated_accounting'] },
+  { key: 'multi_branch', label: FEATURE_LABELS['multi_branch'] },
+  { key: 'reports_bi', label: FEATURE_LABELS['reports_bi'] },
+  { key: 'export_pdf_excel', label: FEATURE_LABELS['export_pdf_excel'] },
+  { key: 'email_notifications', label: FEATURE_LABELS['email_notifications'] },
+  { key: 'electronic_invoicing', label: FEATURE_LABELS['electronic_invoicing'] },
 ]
 
 const emptyForm = {
