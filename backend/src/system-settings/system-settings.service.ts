@@ -25,14 +25,14 @@ export class SystemSettingsService implements OnModuleInit {
     }
   }
 
-  async getSetting(key: string): Promise<string> {
+  async getSetting(key: string): Promise<string | null> {
     const setting = await this.settingRepo.findOne({ where: { key } });
     return setting ? setting.value : null;
   }
 
   async getAllSettings() {
     const settings = await this.settingRepo.find();
-    return settings.reduce((acc, curr) => {
+    return settings.reduce((acc: Record<string, string>, curr) => {
       acc[curr.key] = curr.value;
       return acc;
     }, {});
