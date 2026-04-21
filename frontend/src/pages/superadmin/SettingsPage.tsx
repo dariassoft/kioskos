@@ -180,8 +180,8 @@ export default function SuperAdminSettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
             {[
               { key: 'feature_afip', label: 'Facturación Electrónica AFIP', desc: 'Conexión con WSFEv1', icon: ShieldCheck },
-              { key: 'feature_accounting', label: 'Contabilidad Automática', desc: 'Generación de Libro Diario', icon: BookOpen },
-              { key: 'feature_multi_branch', label: 'Multi-sucursal', desc: 'Gestión de múltiples sedes', icon: Building2 },
+              { key: 'feature_accounting', label: 'Contabilidad', desc: 'Generación de Libro Diario', icon: BookOpen },
+              { key: 'feature_multi_branch', label: 'Multisucursal', desc: 'Gestión de múltiples sedes', icon: Building2 },
               { key: 'feature_reports_history', label: 'Historial de Reportes', desc: 'BI y Analytics avanzado', icon: BarChart3 },
               { key: 'feature_export', label: 'Exportación PDF/Excel', desc: 'Descarga de datos y tablas', icon: Download },
               { key: 'feature_email_alerts', label: 'Alertas por Email', desc: 'Vencimientos y stock bajo', icon: BellRing },

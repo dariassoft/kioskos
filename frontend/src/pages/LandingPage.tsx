@@ -182,14 +182,14 @@ function ShowcaseSection() {
 // --- Funciones ---
 const FEATURES = [
   { icon: ShoppingCart, color: 'bg-blue-500', title: 'POS Punto de Venta', desc: 'Cada usuario es una caja registradora. Gestioná cajeros, ventas rápidas y medios de pago.' },
-  { icon: Building2, color: 'bg-emerald-500', title: 'Múltiples Sucursales', desc: 'Controlá todos tus locales desde una sola cuenta. Reponé stock y compará ventas entre sedes.' },
+  { icon: Building2, color: 'bg-emerald-500', title: 'Multisucursal', desc: 'Controlá todos tus locales desde una sola cuenta. Reponé stock y compará ventas entre sedes.' },
   { icon: Users, color: 'bg-purple-500', title: 'Fiados y Clientes', desc: 'Llevá la cuenta corriente de tus vecinos. Registrá deudas y pagos sin perder un solo peso.' },
-  { icon: Globe, color: 'bg-amber-500', title: 'Factura Electrónica (AFIP)', desc: 'Emití facturas C, A o B con validez fiscal de forma automática al cerrar una venta.' },
+  { icon: Globe, color: 'bg-amber-500', title: 'Facturación Electrónica AFIP', desc: 'Emití facturas C, A o B con validez fiscal de forma automática al cerrar una venta.' },
   { icon: Tags, color: 'bg-orange-500', title: 'Marcas y Categorías', desc: 'Organizá tu catálogo. Creá marcas y categorías dinámicas para un orden profesional.' },
   { icon: Layers, color: 'bg-rose-500', title: 'Gestión de Stock Mínimo', desc: 'Definí alertas por cada producto. El sistema te avisa antes de que te quedes sin stock.' },
-  { icon: BarChart3, color: 'bg-cyan-500', title: 'Márgenes de Ganancia', desc: 'Ajustá precios por monto o porcentaje masivamente. Controlá tu rentabilidad real.' },
+  { icon: BarChart3, color: 'bg-cyan-500', title: 'Historial de Reportes', desc: 'Ajustá precios por monto o porcentaje masivamente. Controlá tu rentabilidad real.' },
   { icon: Truck, color: 'bg-indigo-500', title: 'Compras y Proveedores', desc: 'Registrá facturas de compra y actualizá costos y stock automáticamente.' },
-  { icon: BookOpen, color: 'bg-emerald-600', title: 'Contabilidad Automática', desc: 'No necesitás ser contador. El sistema genera los asientos contables de cada movimiento.' },
+  { icon: BookOpen, color: 'bg-emerald-600', title: 'Contabilidad', desc: 'No necesitás ser contador. El sistema genera los asientos contables de cada movimiento.' },
   { icon: Ruler, color: 'bg-pink-500', title: 'Unidades de Medida', desc: 'Vendé por unidad, kilo, litro o pack. El sistema maneja cualquier tipo de presentación.' },
   { icon: Shield, color: 'bg-gray-800', title: 'Roles y Seguridad', desc: 'Cajeros, Encargados y Dueños. Controlá qué puede ver y hacer cada integrante del equipo.' },
   { icon: CreditCard, color: 'bg-blue-600', title: 'Control de Caja', desc: 'Aperturas y cierres de caja detallados. Conciliá efectivo, tarjetas y transferencias.' },
@@ -273,10 +273,10 @@ const FEATURE_LABELS: Record<string, string> = {
   categories_brands: 'Categorías y Marcas',
   customers_credit: 'Clientes y Cuentas Corrientes',
   purchases_suppliers: 'Compras y Proveedores',
-  automated_accounting: 'Contabilidad Automática',
-  reports_bi: 'Reportes Avanzados y BI',
+  automated_accounting: 'Contabilidad',
+  reports_bi: 'Historial de Reportes',
   export_pdf_excel: 'Exportación PDF/Excel',
-  multi_branch: 'Gestión Multi-sucursal',
+  multi_branch: 'Multisucursal',
   electronic_invoicing: 'Facturación Electrónica AFIP',
   email_notifications: 'Alertas por Email',
   priority_support: 'Soporte Prioritario',
@@ -536,7 +536,7 @@ function Footer() {
         </div>
         <div className="pt-10 border-t border-gray-900 flex flex-col md:flex-row items-center justify-between gap-6">
           <p className="text-sm font-bold text-gray-600">
-            © {new Date().getFullYear()} Kioskos & Despenzas. Hecho con ❤️ en Argentina.
+            © {new Date().getFullYear()} Kioskos & Despenzas. Desarrollado por Dariassoft.
           </p>
           <div className="flex items-center gap-6">
             <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/Data_fiscal_argentina.png" alt="Data Fiscal" className="h-10 opacity-30 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 cursor-pointer" />
