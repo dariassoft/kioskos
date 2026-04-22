@@ -13,10 +13,12 @@ const plan_entity_1 = require("./entities/plan.entity");
 const subscription_entity_1 = require("./entities/subscription.entity");
 const billing_history_entity_1 = require("./entities/billing-history.entity");
 const pending_subscription_entity_1 = require("./entities/pending-subscription.entity");
+const promotion_entity_1 = require("./entities/promotion.entity");
 const billing_service_1 = require("./billing.service");
 const billing_controller_1 = require("./billing.controller");
 const checkout_service_1 = require("./checkout.service");
 const checkout_controller_1 = require("./checkout.controller");
+const promotion_service_1 = require("./promotion.service");
 const mail_service_1 = require("../common/services/mail.service");
 const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const user_entity_1 = require("../tenants/entities/user.entity");
@@ -31,12 +33,12 @@ exports.BillingModule = BillingModule = __decorate([
             notifications_module_1.NotificationsModule,
             system_settings_module_1.SystemSettingsModule,
             typeorm_1.TypeOrmModule.forFeature([
-                plan_entity_1.Plan, subscription_entity_1.Subscription, billing_history_entity_1.BillingHistory, pending_subscription_entity_1.PendingSubscription, tenant_entity_1.Tenant, user_entity_1.User,
+                plan_entity_1.Plan, subscription_entity_1.Subscription, billing_history_entity_1.BillingHistory, pending_subscription_entity_1.PendingSubscription, promotion_entity_1.Promotion, tenant_entity_1.Tenant, user_entity_1.User,
             ]),
         ],
         controllers: [billing_controller_1.BillingController, checkout_controller_1.CheckoutController],
-        providers: [billing_service_1.BillingService, checkout_service_1.CheckoutService, mail_service_1.MailService],
-        exports: [billing_service_1.BillingService, checkout_service_1.CheckoutService],
+        providers: [billing_service_1.BillingService, checkout_service_1.CheckoutService, promotion_service_1.PromotionService, mail_service_1.MailService],
+        exports: [billing_service_1.BillingService, checkout_service_1.CheckoutService, promotion_service_1.PromotionService],
     })
 ], BillingModule);
 //# sourceMappingURL=billing.module.js.map

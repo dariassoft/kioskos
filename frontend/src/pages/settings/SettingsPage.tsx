@@ -2,7 +2,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { 
   Settings, GitBranch, Users, Building2, FileText, CreditCard,
-  LayoutGrid, List, ChevronRight, ArrowLeft 
+  LayoutGrid, List, ChevronRight, ArrowLeft, ShieldAlert
 } from 'lucide-react'
 
 // Tabs / Sub-páginas
@@ -12,6 +12,7 @@ import BusinessTab from './tabs/BusinessTab'
 import AfipTab from './tabs/AfipTab'
 import MercadopagoTab from './tabs/MercadopagoTab'
 import PaymentAccountsTab from './tabs/PaymentAccountsTab'
+import SubscriptionTab from './tabs/SubscriptionTab'
 
 const settingsTools = [
   { 
@@ -61,6 +62,14 @@ const settingsTools = [
     description: 'Configura Aliases y CBUs para transferencias',
     icon: Building2, 
     color: 'bg-emerald-500' 
+  },
+  { 
+    id: 'subscription',
+    to: '/settings/subscription', 
+    label: 'Mi Suscripción', 
+    description: 'Plan actual, historial de pagos y cancelación',
+    icon: ShieldAlert, 
+    color: 'bg-red-600' 
   },
 ]
 
@@ -171,6 +180,7 @@ export default function SettingsPage() {
               <Route path="afip" element={<AfipTab />} />
               <Route path="mercadopago" element={<MercadopagoTab />} />
               <Route path="payment-accounts" element={<PaymentAccountsTab />} />
+              <Route path="subscription" element={<SubscriptionTab />} />
             </Routes>
           </div>
         )}

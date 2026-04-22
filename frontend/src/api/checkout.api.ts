@@ -38,6 +38,8 @@ export const FEATURE_LABELS: Record<string, string> = {
   feature_reports_history: 'Historial de Reportes',
   feature_multi_branch: 'Multisucursal',
   feature_accounting: 'Contabilidad',
+  expenses_management: 'Gestión de Gastos',
+  feature_expenses: 'Gestión de Gastos',
   // Alias literales (para casos de replace o keys en ingles puro con espacios)
   'pdf export': 'Exportación PDF/Excel',
   'email alerts': 'Alertas por Email',

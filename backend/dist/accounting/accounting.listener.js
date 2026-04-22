@@ -47,6 +47,20 @@ let AccountingListener = AccountingListener_1 = class AccountingListener {
         entries.push({ account_name: 'Caja/Banco', debit: 0, credit: event.total });
         await this.accountingService.createEntry(event.tenantId, `Compra de mercadería reabastecida en sucursal ${event.branchId}`, entries, event.purchaseOrderId);
     }
+    async handleExpenseCreatedEvent(event) {
+        this.logger.log(`Registrando asiento contable para Gasto ${event.expenseId}`);
+        const methodLabels = {
+            cash: 'Caja',
+            card: 'Tarjetas',
+            transfer: 'Bancos',
+        };
+        const creditAccount = methodLabels[event.paymentMethod] || 'Caja/Banco';
+        const entries = [
+            { account_name: `Gastos - ${event.categoryName}`, debit: event.amount, credit: 0 },
+            { account_name: creditAccount, debit: 0, credit: event.amount },
+        ];
+        await this.accountingService.createEntry(event.tenantId, `Gasto registrado: ${event.categoryName}${event.branchId ? ` (sucursal ${event.branchId})` : ''}`, entries, event.expenseId);
+    }
     async handleStockAdjustedEvent(event) {
         this.logger.log(`Procesando ajuste de stock para Auditoría/Contabilidad: ${event.reason}`);
         const tenant = await this.tenantRepo.findOne({ where: { id: event.tenantId } });
@@ -102,6 +116,12 @@ __decorate([
     __metadata("design:paramtypes", [purchase_received_event_1.PurchaseReceivedEvent]),
     __metadata("design:returntype", Promise)
 ], AccountingListener.prototype, "handlePurchaseReceivedEvent", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('expense.created'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AccountingListener.prototype, "handleExpenseCreatedEvent", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('stock.adjusted'),
     __metadata("design:type", Function),

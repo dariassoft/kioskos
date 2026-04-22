@@ -62,6 +62,38 @@ export class AccountingListener {
     );
   }
 
+  @OnEvent('expense.created')
+  async handleExpenseCreatedEvent(event: {
+    tenantId: string;
+    expenseId: string;
+    amount: number;
+    categoryName: string;
+    paymentMethod: string;
+    branchId: string | null;
+  }) {
+    this.logger.log(`Registrando asiento contable para Gasto ${event.expenseId}`);
+
+    const methodLabels: Record<string, string> = {
+      cash: 'Caja',
+      card: 'Tarjetas',
+      transfer: 'Bancos',
+    };
+
+    const creditAccount = methodLabels[event.paymentMethod] || 'Caja/Banco';
+
+    const entries: { account_name: string; debit?: number; credit?: number }[] = [
+      { account_name: `Gastos - ${event.categoryName}`, debit: event.amount, credit: 0 },
+      { account_name: creditAccount, debit: 0, credit: event.amount },
+    ];
+
+    await this.accountingService.createEntry(
+      event.tenantId,
+      `Gasto registrado: ${event.categoryName}${event.branchId ? ` (sucursal ${event.branchId})` : ''}`,
+      entries,
+      event.expenseId,
+    );
+  }
+
   @OnEvent('stock.adjusted')
   async handleStockAdjustedEvent(event: { 
     tenantId: string; 

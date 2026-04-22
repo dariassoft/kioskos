@@ -26,6 +26,7 @@ export class SystemSettingsService implements OnModuleInit {
     await this.ensureSetting('feature_reports_history', 'true');
     await this.ensureSetting('feature_export', 'true');
     await this.ensureSetting('feature_email_alerts', 'true');
+    await this.ensureSetting('feature_expenses', 'true');
   }
 
   private async ensureSetting(key: string, defaultValue: string) {

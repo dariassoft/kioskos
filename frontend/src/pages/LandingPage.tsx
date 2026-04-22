@@ -5,7 +5,7 @@ import {
   Store, ShoppingCart, Users, BarChart3, BookOpen, Truck,
   CheckCircle2, ArrowRight, Star, Zap, Shield, Globe, ChevronRight,
   QrCode, CreditCard, Building2, MousePointer2,
-  BellRing, Tags, Layers, Ruler, Share2, Gift
+  BellRing, Tags, Layers, Ruler, Share2, Gift, Receipt
 } from 'lucide-react'
 import checkoutApi, { type PublicPlan, FEATURE_LABELS } from '@api/checkout.api'
 import systemSettingsApi from '@api/system-settings.api'
@@ -194,6 +194,7 @@ const FEATURES = [
   { icon: Ruler, color: 'bg-pink-500', title: 'Unidades de Medida', desc: 'Vendé por unidad, kilo, litro o pack. El sistema maneja cualquier tipo de presentación.' },
   { icon: Shield, color: 'bg-gray-800', title: 'Roles y Seguridad', desc: 'Cajeros, Encargados y Dueños. Controlá qué puede ver y hacer cada integrante del equipo.' },
   { icon: CreditCard, color: 'bg-blue-600', title: 'Control de Caja', desc: 'Aperturas y cierres de caja detallados. Conciliá efectivo, tarjetas y transferencias.' },
+  { icon: Receipt, color: 'bg-red-500', title: 'Gestión de Gastos', desc: 'Registrá alquileres, servicios, sueldos y cualquier gasto operativo. Con comprobantes y categorías.' },
 ]
 
 function FeaturesSection() {
@@ -385,7 +386,8 @@ function PricingSection({ plans: fetchedPlans, trialDays }: { plans: PublicPlan[
         reports_bi: true,
         automated_accounting: false,
         electronic_invoicing: false,
-        email_notifications: true
+        email_notifications: true,
+        expenses_management: false,
       } 
     },
     { 
@@ -405,7 +407,8 @@ function PricingSection({ plans: fetchedPlans, trialDays }: { plans: PublicPlan[
         electronic_invoicing: true,
         multi_branch: true,
         export_pdf_excel: true,
-        email_notifications: true
+        email_notifications: true,
+        expenses_management: true,
       } 
     },
     { 
@@ -428,7 +431,8 @@ function PricingSection({ plans: fetchedPlans, trialDays }: { plans: PublicPlan[
         ai_assistant: true,
         daily_backups: true,
         email_notifications: true,
-        priority_support: true
+        priority_support: true,
+        expenses_management: true,
       } 
     },
   ]

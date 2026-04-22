@@ -185,6 +185,7 @@ export default function SuperAdminSettingsPage() {
               { key: 'feature_reports_history', label: 'Historial de Reportes', desc: 'BI y Analytics avanzado', icon: BarChart3 },
               { key: 'feature_export', label: 'Exportación PDF/Excel', desc: 'Descarga de datos y tablas', icon: Download },
               { key: 'feature_email_alerts', label: 'Alertas por Email', desc: 'Vencimientos y stock bajo', icon: BellRing },
+              { key: 'feature_expenses', label: 'Gestión de Gastos', desc: 'Registro de gastos operativos', icon: Layers },
             ].map((f) => (
               <div key={f.key} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">

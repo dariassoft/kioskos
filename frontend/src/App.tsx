@@ -38,6 +38,9 @@ import SettingsPage from '@pages/settings/SettingsPage'
 // ARCA Electronic Invoicing (Fase 9)
 import AfipInvoicesPage from '@pages/afip/AfipInvoicesPage'
 
+// Expenses (Gastos)
+import ExpensesPage from '@pages/expenses/ExpensesPage'
+
 // Sales - POS (Fase 3)
 import PosPage from '@pages/pos/PosPage'
 
@@ -49,6 +52,8 @@ import SubscriptionsPage from '@pages/superadmin/SubscriptionsPage'
 import PlansPage from '@pages/superadmin/PlansPage'
 import PendingPaymentsPage from '@pages/superadmin/PendingPaymentsPage'
 import SuperAdminSettingsPage from '@pages/superadmin/SettingsPage'
+import PromotionsPage from '@pages/superadmin/PromotionsPage'
+import UpcomingChargesPage from '@pages/superadmin/UpcomingChargesPage'
 
 // Rutas protegidas
 function PrivateRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -160,6 +165,7 @@ export default function App() {
           <Route path="/accounting/*" element={<AccountingPage />} />
           <Route path="/settings/*" element={<SettingsPage />} />
           <Route path="/afip/invoices" element={<AfipInvoicesPage />} />
+          <Route path="/expenses/*" element={<ExpensesPage />} />
         </Route>
 
         {/* ====================================
@@ -192,6 +198,8 @@ export default function App() {
           <Route path="/superadmin/pending-payments" element={<PendingPaymentsPage />} />
           <Route path="/superadmin/subscriptions" element={<SubscriptionsPage />} />
           <Route path="/superadmin/plans" element={<PlansPage />} />
+          <Route path="/superadmin/promotions" element={<PromotionsPage />} />
+          <Route path="/superadmin/upcoming-charges" element={<UpcomingChargesPage />} />
           <Route path="/superadmin/settings" element={<SuperAdminSettingsPage />} />
         </Route>
 

@@ -11,6 +11,14 @@ export declare class AccountingListener {
     constructor(accountingService: AccountingService, saleRepo: Repository<Sale>, tenantRepo: Repository<any>);
     handleSaleCompletedEvent(event: SaleCompletedEvent): Promise<void>;
     handlePurchaseReceivedEvent(event: PurchaseReceivedEvent): Promise<void>;
+    handleExpenseCreatedEvent(event: {
+        tenantId: string;
+        expenseId: string;
+        amount: number;
+        categoryName: string;
+        paymentMethod: string;
+        branchId: string | null;
+    }): Promise<void>;
     handleStockAdjustedEvent(event: {
         tenantId: string;
         productId: string;

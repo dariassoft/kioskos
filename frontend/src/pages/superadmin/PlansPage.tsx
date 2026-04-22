@@ -16,6 +16,7 @@ const FEATURES_LIST = [
   { key: 'export_pdf_excel', label: FEATURE_LABELS['export_pdf_excel'] },
   { key: 'email_notifications', label: FEATURE_LABELS['email_notifications'] },
   { key: 'electronic_invoicing', label: FEATURE_LABELS['electronic_invoicing'] },
+  { key: 'expenses_management', label: FEATURE_LABELS['expenses_management'] },
 ]
 
 const emptyForm = {

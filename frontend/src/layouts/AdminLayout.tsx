@@ -7,7 +7,7 @@ import { usePWA } from '@hooks/usePWA'
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Truck,
   BookOpen, ChevronLeft, ChevronRight,
-  LogOut, Store, Menu, UserCircle, Moon, Sun, Settings, FileText, Download
+  LogOut, Store, Menu, UserCircle, Moon, Sun, Settings, FileText, Download, Receipt
 } from 'lucide-react'
 import NotificationDropdown from '@components/NotificationDropdown'
 import { useNotificationsRealtime } from '@hooks/useNotificationsRealtime'
@@ -21,6 +21,7 @@ const navItems = [
   { to: '/customers', icon: Users, label: 'Clientes / Fiados' },
   { to: '/purchases', icon: Truck, label: 'Compras' },
   { to: '/accounting', icon: BookOpen, label: 'Contabilidad' },
+  { to: '/expenses', icon: Receipt, label: 'Gastos' },
   { to: '/afip/invoices', icon: FileText, label: 'Facturas ARCA' },
   { to: '/settings', icon: Settings, label: 'Configuración' },
 ]

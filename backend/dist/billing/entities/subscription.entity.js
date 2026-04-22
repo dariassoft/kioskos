@@ -9,8 +9,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Subscription = void 0;
+exports.Subscription = exports.SubscriptionStatus = void 0;
 const typeorm_1 = require("typeorm");
+var SubscriptionStatus;
+(function (SubscriptionStatus) {
+    SubscriptionStatus["ACTIVE"] = "active";
+    SubscriptionStatus["CANCELLED"] = "cancelled";
+    SubscriptionStatus["SUSPENDED"] = "suspended";
+    SubscriptionStatus["PAST_DUE"] = "past_due";
+})(SubscriptionStatus || (exports.SubscriptionStatus = SubscriptionStatus = {}));
 let Subscription = class Subscription {
 };
 exports.Subscription = Subscription;
@@ -52,8 +59,48 @@ __decorate([
 ], Subscription.prototype, "discount_percentage", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'discount_ends_at', type: 'date', nullable: true }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], Subscription.prototype, "discount_ends_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2, nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "locked_price", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "locked_plan_name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 10 }),
+    __metadata("design:type", Number)
+], Subscription.prototype, "billing_day", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'enum', enum: SubscriptionStatus, default: SubscriptionStatus.ACTIVE }),
+    __metadata("design:type", String)
+], Subscription.prototype, "status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "cancelled_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "cancellation_reason", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "promotion_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 12, scale: 2, nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "price_after_promo", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "promo_ends_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", Object)
+], Subscription.prototype, "mp_preapproval_id", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ type: 'timestamp' }),
     __metadata("design:type", Date)
