@@ -60,7 +60,7 @@ export class InventoryService {
   // ==========================================
 
   async findAllProducts(tenantId: string, query: ProductQueryDto) {
-    const { search, category_id, page = 1, limit = 25 } = query;
+    const { search, category_id, product_type, page = 1, limit = 25 } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.productRepo.createQueryBuilder('p')
@@ -79,6 +79,9 @@ export class InventoryService {
     }
     if (category_id) {
       qb.andWhere('p.category_id = :category_id', { category_id });
+    }
+    if (product_type) {
+      qb.andWhere('p.product_type = :product_type', { product_type });
     }
 
     const [data, total] = await qb
@@ -518,6 +521,8 @@ export class InventoryService {
       .leftJoinAndSelect('p.unit', 'unit')
       .where('p.tenant_id = :tenantId', { tenantId })
       .andWhere('p.is_active = :active', { active: true })
+      // Las materias primas no se venden directo: no aparecen en el POS
+      .andWhere('p.product_type != :rawType', { rawType: 'raw_material' })
       .andWhere(
         '(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)',
         { q: `%${query}%`, exact: query },

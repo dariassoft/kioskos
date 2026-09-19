@@ -32,6 +32,7 @@ const productSchema = z.object({
   supplier_id: z.string().optional(),
   sale_price: z.coerce.number().min(0).optional(),
   sale_margin: z.coerce.number().optional(),
+  product_type: z.enum(['standard', 'raw_material', 'fractionated', 'elaborated']).optional(),
 })
 
 type ProductForm = z.infer<typeof productSchema>
@@ -68,7 +69,7 @@ function ProductModal({
   } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
     defaultValues: (() => {
-      if (!product) return { image_url: '', min_stock_alert: 5 }
+      if (!product) return { image_url: '', min_stock_alert: 5, product_type: 'standard' as const }
       
       const defaultPrice = product.prices?.find(p => p.price_list?.is_default) || product.prices?.[0]
       
@@ -84,6 +85,7 @@ function ProductModal({
         image_url: product.image_url ?? '',
         brand_id: product.brand_id ?? '',
         supplier_id: product.supplier_id ?? '',
+        product_type: product.product_type ?? 'standard',
         sale_price: defaultPrice ? Number(defaultPrice.price) : 0,
         sale_margin: product.cost_price > 0 && defaultPrice 
           ? Number((((Number(defaultPrice.price) - product.cost_price) / product.cost_price) * 100).toFixed(2))
@@ -416,6 +418,20 @@ function ProductModal({
                   </select>
                 )}
               </div>
+            </div>
+
+            {/* Tipo de producto */}
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Tipo de producto</label>
+              <select {...register('product_type')} className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm">
+                <option value="standard">Estándar (compra y venta directa)</option>
+                <option value="raw_material">Materia prima / Insumo (no se vende en el POS)</option>
+                <option value="fractionated">Fraccionado (se obtiene de otro producto)</option>
+                <option value="elaborated">Elaborado (se produce a partir de insumos)</option>
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Las materias primas se compran pero no aparecen en el POS. Los fraccionados/elaborados se producen desde Producción.
+              </p>
             </div>
 
             {/* PRECIOS */}

@@ -12,6 +12,7 @@ export declare class CreateProductDto {
     supplier_id?: string;
     sale_price?: number;
     sale_margin?: number;
+    product_type?: string;
 }
 export declare class UpdateProductDto {
     name?: string;
@@ -26,6 +27,7 @@ export declare class UpdateProductDto {
     is_active?: boolean;
     brand_id?: string;
     supplier_id?: string;
+    product_type?: string;
 }
 export declare class SetPriceDto {
     price_list_id: string;
@@ -57,6 +59,7 @@ export declare class CreateUnitDto {
 export declare class ProductQueryDto {
     search?: string;
     category_id?: string;
+    product_type?: string;
     page?: number;
     limit?: number;
 }

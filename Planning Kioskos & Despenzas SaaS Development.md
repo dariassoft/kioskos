@@ -1693,3 +1693,54 @@ Ademas necesito conocer el plan de implementacion y ver con que continuar, Pero 
 *User accepted the command `docker compose restart api && sleep 5 && docker exec kioskos_api sh -c "cd /usr/src/app && npm run migration:run && npx ts-node src/seed.ts"`*
 
 *Checked command status*
+---
+
+## 📌 CIERRE DE PLANIFICACIÓN — Estado final del proyecto (Septiembre 2026)
+
+> Sección agregada tras una revisión completa del código (script por script, backend y frontend). La conversación de arriba documenta el proceso; esta sección refleja el resultado final.
+
+### Resultado
+
+El sistema **Kioskos & Despenzas** quedó implementado por completo como SaaS ERP/POS multi-tenant y desplegado en producción (VPS con Dokploy). Todas las fases del roadmap original (1-5) están completas, más 8 fases adicionales:
+
+| Fase | Estado | Alcance |
+|---|---|---|
+| 1 — Core (Docker, Auth JWT, Multi-tenant, SuperAdmin) | ✅ | — |
+| 2 — Inventario multisucursal + alertas WebSocket | ✅ | + marcas, precios masivos |
+| 3 — POS, Fiados, Caja registradora | ✅ | — |
+| 4 — Compras, Proveedores, Contabilidad automática | ✅ | — |
+| 5 — Dashboard BI, reportes, exportación | ✅ | — |
+| 6 — SuperAdmin: billing, suscripciones, planes, MRR | ✅ | — |
+| 7 — Settings: sucursales, usuarios, perfil de negocio | ✅ | — |
+| 8 — Hardening: migraciones, CI/CD, deploy Dokploy | ✅ | — |
+| 9 — Facturación electrónica AFIP (CAE, PDF+QR) | ✅ | Ver `FASE-9-RESUMEN.md` y `COMO-USAR-AFIP.md` |
+| 10 — Checkout self-service + MercadoPago | ✅ | Landing, registro pago, aprobación manual |
+| 11 — Medios de pago POS (QR/Link MP, transferencias) | ✅ | OAuth MP por tenant, comprobantes |
+| 12 — Promociones, referidos, prorrateo | ✅ | — |
+| 13 — Gastos, system-settings, PWA, mail | ✅ | — |
+
+### Inventario final verificado
+
+- **Backend (NestJS):** 13 módulos de negocio (auth, tenants, billing+checkout+promotions, inventory, sales, accounting, purchases, reports, notifications, settings, electronic-invoicing, system-settings, expenses), 30+ entidades, 5 migraciones TypeORM (`synchronize: false`), seed por `seed.sql`, Swagger en `/api/docs`, prefijo `/api/v1`.
+- **Frontend (React + Vite):** 30+ páginas/rutas (públicas, admin, POS, superadmin), 5 stores Zustand, 12 hooks React Query, 10 clientes API tipados, PWA instalable, Nginx en producción.
+- **Infraestructura:** `docker-compose.yml` (dev con healthchecks) y `docker-compose.prod.yml` (Dokploy, sin puertos expuestos, red externa `dokploy-network`). CI/CD: `.github/workflows/ci.yml` y `deploy.yml` (build/push a ghcr.io).
+
+### Documento de referencia vigente
+
+El archivo **`AGENTS.md` (v9.0)** es la fuente de verdad actualizada: contiene el estado por fase, inventario de archivos real, esquema de base de datos completo (incluidas tablas de fases 9-13), rutas del frontend, variables de entorno y reglas para agentes de IA (`/skills`).
+
+---
+
+## 🏭 FASE 14 — Producción y Fraccionamiento (Septiembre 2026) ✅
+
+Nueva funcionalidad implementada y verificada (type-check backend y frontend OK):
+
+- **Caso fraccionado:** bolsa de alimento 20/25kg → bolsas de 1kg vendibles.
+- **Caso elaborado:** caja de pollos (cantidad variable) → pata-muslo, pechuga, alitas, milanesas, albóndigas, carne molida.
+- **Materias primas** (`product_type = raw_material`): se compran a proveedores pero no se venden directo — excluidas del `quickSearch` del POS. Su seguimiento de stock es **calculado/aproximado** (permite negativo con warning), ya que no siempre se cargan las compras con exactitud.
+- **Recetas** con consumo estimado por tanda + **órdenes de producción** con cantidades reales, multi-output (desposte), transacción atómica de stock, prorrateo automático de costos y cancelación con reversa.
+- **Frontend:** `/production` con tabs Producciones/Recetas, calculadora de insumos estimados, selector de tipo en el modal de producto, tarjeta en hub de Inventario y entrada en el menú lateral.
+- **Migración:** `1777700000000-AddProductionModule` (5 tablas + columna `products.product_type`).
+- **Compatibilidad garantizada:** productos existentes quedan como `standard`; ningún flujo de ventas/compras/caja fue modificado salvo la exclusión de insumos en el buscador del POS.
+
+Documentación completa en `AGENTS.md` v10.0 (sección Fase 14, esquema 7.3, módulos y rutas).

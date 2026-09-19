@@ -2,7 +2,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { 
   Package, BarChart3, Tag, Landmark, Award, 
-  LayoutGrid, List, ChevronRight, ArrowLeft 
+  LayoutGrid, List, ChevronRight, ArrowLeft, Factory 
 } from 'lucide-react'
 import ProductsPage from './ProductsPage'
 import StockPage from './StockPage'
@@ -50,6 +50,14 @@ const inventoryTools = [
     description: 'Aumentos masivos y actualización selectiva',
     icon: Landmark, 
     color: 'bg-amber-500' 
+  },
+  { 
+    id: 'production',
+    to: '/production', 
+    label: 'Producción', 
+    description: 'Fraccionamiento a granel y elaboración con insumos',
+    icon: Factory, 
+    color: 'bg-indigo-500' 
   },
 ]
 

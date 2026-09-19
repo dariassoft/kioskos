@@ -80,6 +80,14 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => Number)
   sale_margin?: number;
+
+  @ApiPropertyOptional({
+    enum: ['standard', 'raw_material', 'fractionated', 'elaborated'],
+    description: 'Tipo de producto: standard (default), raw_material (insumo, no se vende en POS), fractionated, elaborated',
+  })
+  @IsString()
+  @IsOptional()
+  product_type?: string;
 }
 
 export class UpdateProductDto {
@@ -146,6 +154,11 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   supplier_id?: string;
+
+  @ApiPropertyOptional({ enum: ['standard', 'raw_material', 'fractionated', 'elaborated'] })
+  @IsString()
+  @IsOptional()
+  product_type?: string;
 }
 
 export class SetPriceDto {
@@ -245,6 +258,11 @@ export class ProductQueryDto {
   @IsString()
   @IsOptional()
   category_id?: string;
+
+  @ApiPropertyOptional({ enum: ['standard', 'raw_material', 'fractionated', 'elaborated'], description: 'Filtrar por tipo de producto' })
+  @IsString()
+  @IsOptional()
+  product_type?: string;
 
   @ApiPropertyOptional({ default: 1 })
   @IsNumber()

@@ -104,6 +104,15 @@ __decorate([
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "sale_margin", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: ['standard', 'raw_material', 'fractionated', 'elaborated'],
+        description: 'Tipo de producto: standard (default), raw_material (insumo, no se vende en POS), fractionated, elaborated',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "product_type", void 0);
 class UpdateProductDto {
 }
 exports.UpdateProductDto = UpdateProductDto;
@@ -183,6 +192,12 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateProductDto.prototype, "supplier_id", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: ['standard', 'raw_material', 'fractionated', 'elaborated'] }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductDto.prototype, "product_type", void 0);
 class SetPriceDto {
 }
 exports.SetPriceDto = SetPriceDto;
@@ -310,6 +325,12 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], ProductQueryDto.prototype, "category_id", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: ['standard', 'raw_material', 'fractionated', 'elaborated'], description: 'Filtrar por tipo de producto' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ProductQueryDto.prototype, "product_type", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ default: 1 }),
     (0, class_validator_1.IsNumber)(),

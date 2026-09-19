@@ -4,7 +4,7 @@
 
 ---
 
-## 🚦 ESTADO DEL PROYECTO — Última actualización: Abril 2026
+## 🚦 ESTADO DEL PROYECTO — Última actualización: Septiembre 2026
 
 | Fase | Estado | Descripción |
 |---|---|---|
@@ -15,8 +15,15 @@
 | **Fase 5** — BI y Reportes | ✅ **COMPLETA** | Dashboard, PDF/Excel, Recharts |
 | **Fase 6** — SuperAdmin Panel Completo | ✅ **COMPLETA** | Billing, Suscripciones, Pagos, Planes, MRR |
 | **Fase 7** — Gestión de Sucursales y Usuarios | ✅ **COMPLETA** | CRUD Branches, Usuarios por Sucursal, Settings |
-| **Fase 8** — Hardening y Deploy VPS | ✅ **COMPLETA** | Migraciones, CI/CD, SSL, Backups, Git Deploy |
-| **Fase 9** — Facturación Electrónica AFIP | 🚀 **EN PROGRESO** | Integración completa POS + Generación CAE + PDF |
+| **Fase 8** — Hardening y Deploy VPS | ✅ **COMPLETA** | Migraciones, CI/CD, Dokploy, Git Deploy |
+| **Fase 9** — Facturación Electrónica AFIP | ✅ **COMPLETA** | WSAA/WSFEv1 vía AfipSDK, CAE, PDF + QR, toggle en POS |
+| **Fase 10** — Checkout Self-Service y MercadoPago | ✅ **COMPLETA** | Landing pública, registro con pago (MP + transferencia), aprobación manual |
+| **Fase 11** — Medios de Pago del POS | ✅ **COMPLETA** | QR/Link MercadoPago, transferencias con comprobante, cuentas de pago |
+| **Fase 12** — Promociones, Referidos y Billing Avanzado | ✅ **COMPLETA** | Promotions, referral codes, prorrateo, upcoming charges, pending payments |
+| **Fase 13** — Gastos, System Settings y PWA | ✅ **COMPLETA** | Módulo de gastos, system-settings, PWA instalable, mail service |
+| **Fase 14** — Producción y Fraccionamiento | ✅ **COMPLETA** | Recetas (BOM), órdenes de producción, product_type, costeo prorrateado |
+
+> **Estado general:** El sistema es un SaaS completo en producción (deploy con Dokploy + `docker-compose.prod.yml`). Documentación de usuario AFIP en `COMO-USAR-AFIP.md` y resumen técnico en `FASE-9-RESUMEN.md`.
 
 ---
 
@@ -50,79 +57,86 @@ El archivo `backend/src/database/seed.sql` contiene los inserts para:
 - Categorías base (Bebidas, Snacks, Lácteos, Limpieza)
 - Planes de suscripción (Emprendedor, Negocio, Profesional)
 
-### 📁 Archivos implementados hasta Fase 2
+### 📁 Archivos implementados (inventario real — Sept 2026)
 
 ```
 backend/src/
+  ✅ main.ts                    (CORS, Swagger /api/docs, prefix api/v1, bootstrap migraciones/seed)
+  ✅ app.module.ts              (13 módulos de negocio + TenantMiddleware)
+  ✅ seed.ts                    (seeder de referencia; usar seed.sql en Docker)
   ✅ common/base.entity.ts
-  ✅ common/decorators/get-tenant.decorator.ts
-  ✅ common/decorators/roles.decorator.ts
-  ✅ common/guards/jwt-auth.guard.ts
-  ✅ common/guards/roles.guard.ts
-  ✅ common/guards/superadmin.guard.ts
-  ✅ auth/ (module, service, controller, dto, jwt.strategy)
-  ✅ tenants/ (module, service, controller, middleware, entities)
-  ✅ billing/ (module, service, controller, entities: Plan, Subscription, BillingHistory)
+  ✅ common/decorators/ (get-tenant.decorator.ts, roles.decorator.ts)
+  ✅ common/guards/ (jwt-auth.guard.ts, roles.guard.ts, superadmin.guard.ts)
+  ✅ common/services/mail.service.ts
+  ✅ auth/ (module, service, controller, dto, strategies/jwt.strategy)
+  ✅ tenants/ (module, service, controller, middleware, entities: Tenant, User)
+  ✅ billing/
+     ✅ entities/ (Plan, Subscription, BillingHistory, PendingSubscription, Promotion)
+     ✅ billing.service.ts / billing.controller.ts
+     ✅ checkout.service.ts / checkout.controller.ts   ← NUEVO Fase 10 (registro + pago)
+     ✅ promotion.service.ts                           ← NUEVO Fase 12
   ✅ inventory/
-     ✅ entities/ (Branch, Unit, Category, PriceList, Product, ProductPrice, Inventory)
-     ✅ dto/inventory.dto.ts
-     ✅ events/stock-reduced.event.ts
-     ✅ inventory.module.ts
-     ✅ inventory.service.ts    (CRUD productos, stock multi-branch, precios, quickSearch)
-     ✅ inventory.controller.ts (todos los endpoints RESTful + bulk-update)
-     ✅ inventory.listener.ts   (escucha 'stock.reduced' → WebSocket alert)
-  ✅ notifications/gateway.ts  (WebSocket rooms por tenant)
-  ✅ sales/     
-     ✅ entities/ (Customer, CashRegister, Sale, SaleItem)
-     ✅ dto/sales.dto.ts
+     ✅ entities/ (Branch, Unit, Category, Brand, PriceList, Product, ProductPrice, Inventory)
+     ✅ dto/, events/stock-reduced.event.ts
+     ✅ inventory.module/service/controller/listener
+  ✅ notifications/ (module + gateway WebSocket rooms por tenant y superadmin)
+  ✅ sales/
+     ✅ entities/ (Customer, CashRegister, Sale, SaleItem, PaymentAccount, MercadoPagoCredentials)
+     ✅ dto/ (sales.dto.ts, payment-account.dto.ts)
      ✅ events/sale-completed.event.ts
-     ✅ sales.service.ts  (Fiados, apertura de caja, facturación)
-     ✅ sales.controller.ts
-     ✅ sales.module.ts
-  ✅ accounting/
-     ✅ entities/accounting-ledger.entity.ts
-     ✅ accounting.service.ts (Libro diario manual y automático)
-     ✅ accounting.listener.ts (Asientos automáticos de compras y ventas)
-     ✅ accounting.controller.ts
-  ✅ purchases/
-     ✅ entities/ (Supplier, PurchaseOrder, PurchaseOrderItem)
-     ✅ purchases.service.ts (Recepción de OC aumenta stock)
-     ✅ purchases.controller.ts
-  ✅ reports/
-     ✅ reports.service.ts (Dashboard metyrics, Top Products, Weekly charts)
-     ✅ reports.controller.ts
-     ✅ reports.module.ts
+     ✅ sales.service.ts / sales.controller.ts / sales.module.ts
+  ✅ accounting/ (entities/accounting-ledger, service, listener, controller, module)
+  ✅ purchases/ (entities: Supplier, PurchaseOrder, PurchaseOrderItem; events/purchase-received)
+  ✅ reports/ (service, controller, module)
+  ✅ settings/ (settings.service/controller, settings-mercadopago.service, dto)
+  ✅ electronic-invoicing/                              ← Fase 9
+     ✅ entities/ (AfipCredentials, ElectronicInvoice)
+     ✅ electronic-invoicing.service/controller/module
+     ✅ invoice-pdf.service.ts        (PDFKit + QR bwip-js)
+     ✅ dto/afip.dto.ts + README.md
+  ✅ system-settings/ (entity SystemSetting, service, controller, module)  ← Fase 13
+  ✅ expenses/ (entities: Expense, ExpenseCategory; events/expense-created) ← Fase 13
+  ✅ production/                                                   ← Fase 14
+     ✅ entities/ (Recipe, RecipeItem, ProductionOrder, ProductionInput, ProductionOutput)
+     ✅ dto/production.dto.ts
+     ✅ events/production-completed.event.ts
+     ✅ production.service.ts  (recetas, órdenes, prorrateo de costos, requerimientos)
+     ✅ production.controller.ts (/production/recipes, /orders, /requirements)
+  ✅ database/
+     ✅ data-source.ts  (synchronize: false — solo migraciones)
+     ✅ migrations/ (InitialSchema, AddBrandEntity, AddExpensesModule,
+                      BillingRestructure, UpdateCheckoutSchema)
+     ✅ seed.sql + fase-9-afip.sql + run-migrations.ts
 
 frontend/src/
+  ✅ App.tsx (rutas públicas + admin + POS + superadmin, PWA toast)
   ✅ layouts/ (AdminLayout, AuthLayout, PosLayout, SuperAdminLayout)
-  ✅ store/ (auth.store, branch.store, cart.store)
-  ✅ api/client.ts
-  ✅ api/inventory.api.ts   ← NUEVO Fase 2
-  ✅ api/inventory.types.ts ← NUEVO Fase 2
-  ✅ hooks/useInventory.ts  ← NUEVO Fase 2
-  ✅ pages/auth/LoginPage.tsx
-  ✅ pages/DashboardPage.tsx
-  ✅ pages/inventory/
-     ✅ InventoryPage.tsx   (Rediseño Hub: Menu Cards/List + Nav Back)
-     ✅ ProductsPage.tsx    (Grid visual premium + modal avanzado + supplier/brand inline + internal_code restored)
-     ✅ MassivePricingPage.tsx (NUEVO: Actualización masiva por brand/category/supplier)
-     ✅ StockPage.tsx       (selector sucursal + alertas + modal agregar stock)
-     ✅ CategoriesPage.tsx  (grid visual con colores)
-     ✅ BrandsPage.tsx      (NUEVO: Gestión formal de marcas)
-  ✅ pages/pos/PosPage.tsx  (Terminal completo con búsqueda, carrito, cobro)
-  ✅ pages/customers/CustomersPage.tsx (Fiados, límites de crédito, pagos)
-  ✅ pages/accounting/AccountingPage.tsx (Libro Diario)
-  ✅ pages/purchases/PurchasesPage.tsx (Órdenes y Proveedores)
-   ✅ pages/superadmin/SuperAdminDashboard.tsx  (MRR, gráfico ingresos, alertas vencimiento)
-   ✅ pages/superadmin/TenantsPage.tsx          (lista + activar/suspender)
-   ✅ pages/superadmin/BillingPage.tsx          ← NUEVO Fase 6 (historial pagos + registrar pago)
-   ✅ pages/superadmin/SubscriptionsPage.tsx    ← NUEVO Fase 6 (gestión suscripciones + cambiar plan)
-   ✅ pages/superadmin/PlansPage.tsx            ← NUEVO Fase 6 (CRUD planes con features toggle)
-   ✅ pages/afip/AfipInvoicesPage.tsx           ← NUEVO Fase 9 (listado de facturas electrónicas)
-   ✅ pages/settings/tabs/AfipTab.tsx           ← NUEVO Fase 9 (configuración AFIP en Settings)
-   ✅ components/NotificationDropdown.tsx      ← NUEVO (Alertas tiempo real)
-   ✅ components/ReplenishmentAssistant.tsx    ← NUEVO (Asistente IA de compras)
-   ✅ store/notification.store.ts              ← NUEVO (Estado global alertas)
+  ✅ store/ (auth.store, branch.store, cart.store, notification.store, pwa.store)
+  ✅ api/ (client.ts + inventory, sales, purchases, accounting, reports, settings,
+           afip, checkout, expenses, system-settings — cada uno con sus .types)
+  ✅ hooks/ (useInventory, useSales, usePurchases, useSettings, useReports, useAfip,
+             useExpenses, useAccounting, useNotificationsRealtime, usePWA,
+             useSuperAdminPendingRealtime)
+  ✅ components/ (NotificationDropdown, ReplenishmentAssistant, InviteFriendsModal)
+  ✅ pages/
+     ✅ LandingPage.tsx                      ← NUEVO Fase 10 (pública)
+     ✅ auth/ (LoginPage, RegisterPage)
+     ✅ checkout/ (CheckoutPage, PaymentSuccessPage, PaymentResultPages) ← Fase 10
+     ✅ DashboardPage.tsx
+     ✅ inventory/ (InventoryPage hub, ProductsPage, MassivePricingPage,
+                    StockPage, CategoriesPage, BrandsPage)
+     ✅ pos/PosPage.tsx  (toggle factura AFIP, QR MP, transferencias)
+     ✅ customers/CustomersPage.tsx
+     ✅ purchases/ (PurchasesPage + OrdersTab + SuppliersTab)
+     ✅ accounting/AccountingPage.tsx
+     ✅ expenses/ExpensesPage.tsx            ← NUEVO Fase 13
+     ✅ production/ (ProductionPage + OrdersTab + RecipesTab) ← NUEVO Fase 14
+     ✅ afip/AfipInvoicesPage.tsx            ← Fase 9
+     ✅ settings/ (SettingsPage + tabs: BranchesTab, UsersTab, BusinessTab,
+                   AfipTab, MercadopagoTab, PaymentAccountsTab, SubscriptionTab)
+     ✅ superadmin/ (SuperAdminDashboard, TenantsPage, BillingPage,
+                     SubscriptionsPage, PlansPage, PendingPaymentsPage,
+                     PromotionsPage, UpcomingChargesPage, SettingsPage)
 ```
 
 ### ⚙️ Decisiones técnicas tomadas en Fase 2
@@ -146,6 +160,51 @@ frontend/src/
 7. **Persistencia de respuesta AFIP completa:** El campo `afip_response` (JSON) almacena toda la respuesta de AFIP para auditoría y debugging.
 8. **Integración Directa con POS:** Se añadió un toggle en el terminal de ventas para emitir factura ARCA en el momento del cobro. El sistema valida si el negocio tiene el módulo habilitado y configurado antes de mostrar la opción.
 9. **Determinación Inteligente de Receptor:** Si el cliente seleccionado tiene CUIT/DNI guardado, se precarga en el formulario de facturación. En caso contrario, permite el ingreso manual de datos fiscales del receptor.
+
+### 💳 Decisiones técnicas Fase 10 — Checkout Self-Service y MercadoPago (Sept 2026)
+
+1. **Registro con pago (self-service):** `LandingPage` pública (`/`) + `CheckoutPage` (`/checkout`). El visitante elige plan, completa sus datos y paga. Entidad `PendingSubscription` guarda el registro pendiente hasta confirmar el pago.
+2. **Dos métodos de pago del checkout:** MercadoPago (preference/init_point, webhook de confirmación) y transferencia bancaria manual (alias + confirmación con aprobación manual del SuperAdmin vía `PendingPaymentsPage`).
+3. **Rutas públicas excluidas del TenantMiddleware:** `checkout/plans`, `checkout/start`, `checkout/status/*`, `checkout/confirm-transfer`, `checkout/webhook/*`, `checkout/sandbox-info`, `system-settings/public-info`.
+4. **SDK `mercadopago` v2** en backend; credenciales de la plataforma por env; resultado del pago en páginas `/checkout/success|pending|failure`.
+
+### 🧾 Decisiones técnicas Fase 11 — Medios de Pago en el POS
+
+1. **`payment_method` ampliado en `Sale`:** `cash | debit_card | credit_card | transfer | qr_mercadopago | link_mercadopago | credit_client` + `payment_status` (`pending | confirmed | failed`).
+2. **Trazabilidad de pago:** campos `mp_payment_id`, `card_last_digits`, `card_brand`, `authorization_code`, `transfer_voucher`, `voucher_image_url`, `payment_verified_at`.
+3. **`PaymentAccount` (entidad):** cuentas del negocio (alias/CBU) para recibir transferencias; CRUD desde Settings → Payment Accounts.
+4. **`MercadoPagoCredentials` por tenant:** OAuth MP (public_key, access_token, refresh_token, store_id, pos_id, sandbox). Configuración en Settings → MercadoPago.
+5. **Verificación de pagos:** endpoints `verify-payment` y `revert-payment`; el POS permite confirmar/revertir pagos pendientes de transferencia o QR.
+
+### 🎁 Decisiones técnicas Fase 12 — Promociones, Referidos y Billing Avanzado
+
+1. **Entidad `Promotion`:** descuentos por porcentaje o monto fijo, con vigencia, tope de usos, duración en meses y planes aplicables. CRUD en `/superadmin/promotions`.
+2. **Campos promocionales en `Subscription`:** `discount_percentage`, `discount_ends_at`, `locked_price`, `locked_plan_name`, `billing_day`, `promotion_id`, `price_after_promo`, `promo_ends_at`, `mp_preapproval_id`.
+3. **Sistema de referidos:** `Tenant.referral_code` y `Tenant.referred_by_id`; link compartible `/checkout?ref=...` (componente `InviteFriendsModal`, alerta WS `referral_success_alert`).
+4. **Prorrateo y cobros:** `BillingHistory` con `billing_period_start/end`, `is_prorated`, `plan_name` denormalizado. Página `/superadmin/upcoming-charges` para próximos cobros.
+5. **Alertas SuperAdmin en tiempo real:** hook `useSuperAdminPendingRealtime` escucha `pending_payment_alert` / `pending_payment_resolved` por WebSocket.
+
+### 💸 Decisiones técnicas Fase 13 — Gastos, System Settings y PWA
+
+1. **Módulo `expenses`:** entidades `Expense` y `ExpenseCategory` (con seeder de categorías), evento `expense.created`, endpoints CRUD + `/expenses/summary`. Página `/expenses`.
+2. **Módulo `system-settings`:** clave/valor global de plataforma (solo SuperAdmin) + endpoint público `public-info` (datos para landing/checkout, ej: alias de transferencia).
+3. **PWA:** `vite-plugin-pwa` con `autoUpdate`, manifest propio, hook `usePWA` + `pwa.store` para instalar la app; `nginx.conf` sin caché para `sw.js`.
+4. **Mail service:** `common/services/mail.service.ts` (SMTP por env) para notificaciones transaccionales.
+5. **Migraciones activas:** `DB_SYNCHRONIZE=false` definitivo; `main.ts` corre migraciones si `DB_RUN_MIGRATIONS=true` y seed si `DB_RUN_SEED=true`.
+6. **Deploy Dokploy:** `docker-compose.prod.yml` sin puertos expuestos, redes `internal_network` + `dokploy-network` (externa); frontend production = Nginx sirviendo `dist` con proxy `/api/` → `api:3000`.
+
+### 🏭 Decisiones técnicas Fase 14 — Producción y Fraccionamiento (Sept 2026)
+
+Cubre dos casos de uso: **productos fraccionados** (comprar a granel y vender fraccionado, ej: bolsa de alimento de 20kg → bolsas de 1kg) y **productos elaborados** (insumos → producto vendible, ej: caja de pollos → pata-muslo, pechuga, milanesas, albóndigas).
+
+1. **`Product.product_type`:** nuevo enum `standard | raw_material | fractionated | elaborated` (default `standard`). Los `raw_material` se compran pero **no aparecen en el POS** (`quickSearch` los excluye). Los demás tipos se comportan como siempre → **no rompe nada existente**.
+2. **Recetas (`recipes` + `recipe_items`):** definen el consumo **aproximado** de insumos por tanda (`output_product_id`, `output_quantity`, items con `quantity`). Sirven para precargar producciones y para el cálculo estimado de necesidades (`GET /production/requirements`). Tipos: `fractioning` | `elaboration`.
+3. **Órdenes de producción (`production_orders` + `production_inputs` + `production_outputs`):** registran la producción REAL con cantidades reales (el rinde puede variar, ej: caja de 8 o 9 pollos). Soportan multi-output manual sin receta (desposte).
+4. **Transacción atómica:** al registrar una orden se descuenta stock de insumos, se incrementa stock de productos obtenidos y se actualiza `cost_price` de los outputs — todo en una sola transacción TypeORM.
+5. **Seguimiento CALCULADO, no bloqueante:** el stock de materias primas puede quedar **negativo** sin bloquear la producción (se devuelve `warnings[]`), porque las compras de insumos no siempre se cargan con precisión. La cancelación de una orden sí revierte stock y falla si el producto ya se vendió.
+6. **Costeo prorrateado:** el costo total de insumos (`cost_price` vigente) se distribuye entre los outputs proporcionalmente a la cantidad, salvo que se indique `unit_cost` manual por línea.
+7. **Eventos:** emite `stock.reduced` por cada insumo (reusa alertas de stock bajo existentes) y `production.completed`.
+8. **Frontend:** nueva página `/production` con tabs **Producciones** y **Recetas**, calculadora de insumos estimados, selector de `product_type` en el modal de producto, tarjeta en el hub de Inventario y entrada "Producción" en el menú lateral.
 
 ### 📦 Mejoras de Inventario y Gestión de Precios (Abril 2026)
 
@@ -376,95 +435,59 @@ gestión360/
 
 ## 5. Configuración de Infraestructura (Docker)
 
+> **Estado real (Sept 2026):** El `docker-compose.yml` de desarrollo usa contenedores `kioskos_mysql`, `kioskos_redis`, `kioskos_api`, `kioskos_client`, `kioskos_adminer` sobre la red `kioskos_network`, con healthchecks en db/redis y `depends_on: service_healthy`. El `docker-compose.prod.yml` (deploy en VPS con **Dokploy**) no expone puertos, usa target `production` en ambos Dockerfiles, redes `internal_network` + `dokploy-network` (externa), y el frontend corre con **Nginx** (SPA fallback + proxy `/api/` → `api:3000`).
+>
+> CI/CD en `.github/workflows/`: `ci.yml` (type-check + build en PRs) y `deploy.yml` (build/push de imágenes a ghcr.io en push a main).
+
 ```yaml
-# docker-compose.yml
+# docker-compose.yml (desarrollo local — referencia resumida)
 version: '3.8'
 
 services:
   db:
     image: mysql:8.0
-    container_name: g360_mysql
-    #restar: always
+    container_name: kioskos_mysql
+    restart: unless-stopped
     environment:
       MYSQL_DATABASE: kioskos_db
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_USER: dev_user
       MYSQL_PASSWORD: dev_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - g360_network
+    ports: [ "3306:3306" ]
+    volumes: [ mysql_data:/var/lib/mysql ]
+    healthcheck: mysqladmin ping (10s interval, 5 retries)
 
   redis:
     image: redis:7-alpine
-    container_name: g360_redis
-    ports:
-      - "6379:6379"
-    networks:
-      - g360_network
+    container_name: kioskos_redis
+    ports: [ "6379:6379" ]
+    healthcheck: redis-cli ping
 
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: g360_api
-    #restar: always
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_HOST=db
-      - DATABASE_PORT=3306
-      - DATABASE_USER=dev_user
-      - DATABASE_PASSWORD=dev_password
-      - DATABASE_NAME=kioskos_db
-      - JWT_SECRET=super_secret_key_2026
-      - REDIS_HOST=redis
-    volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
-    depends_on:
-      - db
-      - redis
-    networks:
-      - g360_network
+    build: ./backend           # Dockerfile multi-etapa (development por defecto)
+    container_name: kioskos_api
+    ports: [ "3000:3000" ]
+    env_file: [ .env ]
+    environment: [ DB_HOST=db, REDIS_HOST=redis ]
+    volumes: [ ./backend:/usr/src/app, /usr/src/app/node_modules ]
+    depends_on: db (healthy), redis (healthy)
 
   client:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    container_name: g360_client
-    #restar: always
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules
-    environment:
-      - VITE_API_URL=http://localhost:3000
-    depends_on:
-      - api
-    networks:
-      - g360_network
+      target: development      # dev: vite --host; prod: nginx:alpine
+    container_name: kioskos_client
+    ports: [ "5173:5173" ]
+    env_file: [ .env ]
+    volumes: [ ./frontend:/usr/src/app, /usr/src/app/node_modules ]
 
   adminer:
-    image: adminer
-    container_name: g360_adminer
-    ports:
-      - "8080:8080"
-    networks:
-      - g360_network
+    image: adminer:latest
+    ports: [ "8080:8080" ]
 
-networks:
-  g360_network:
-    driver: bridge
-
-volumes:
-  mysql_data:
+networks:  kioskos_network (bridge)
+volumes:   mysql_data
 ```
-
-> **Dockerfile Backend (Multi-etapa para producción):** Usar `FROM node:20-alpine AS builder` para minimizar la imagen final.
 
 ---
 
@@ -518,6 +541,31 @@ MAIL_FROM="noreply@kioskos.com"
 S3_ACCESS_KEY=tus_credenciales
 S3_SECRET_KEY=tus_credenciales
 S3_BUCKET=kioskos-assets
+S3_REGION=us-east-1
+
+# ==========================================
+# FACTURACIÓN ELECTRÓNICA AFIP (Fase 9)
+# ==========================================
+# Secreto para cifrado AES-256-CBC de credenciales AFIP (scrypt).
+# ⚠️ CAMBIAR EN PRODUCCIÓN — mínimo 32 caracteres aleatorios
+AFIP_ENCRYPTION_SECRET=...
+
+# ==========================================
+# PAGOS — MERCADOPAGO PLATAFORMA (Fases 10-12)
+# ==========================================
+MP_ACCESS_TOKEN=APP_USR-...        # Access Token de la app (checkout)
+MP_CLIENT_ID=...                   # OAuth plataforma (conexión de tenants)
+MP_CLIENT_SECRET=...
+MP_REDIRECT_URI=https://api.tudominio.com/api/v1/settings/mercadopago/callback
+TRANSFER_ALIAS=tu.alias.mp         # Alias/CBU para pagos por transferencia del checkout
+TRANSFER_CBU=0000000...
+
+# ==========================================
+# URLS / BOOTSTRAP
+# ==========================================
+FRONTEND_URL=http://localhost:5173     # Usado por CORS y WebSocket gateway
+DB_RUN_MIGRATIONS=false                # true → corre migraciones al boot
+DB_RUN_SEED=false                      # true → corre seed.sql al boot
 ```
 
 > ⚠️ **NUNCA** subir el `.env` al repositorio. Agregarlo al `.gitignore` de inmediato.
@@ -757,6 +805,109 @@ CREATE TABLE purchase_orders (
 );
 ```
 
+### 7.3 Tablas agregadas en Fases 9-13 (Sept 2026)
+
+> Esquema real extraído de las entidades TypeORM. La fuente de verdad son las migraciones en `backend/src/database/migrations/` (`synchronize: false`).
+
+```sql
+-- FASE 9 — Facturación electrónica AFIP
+afip_credentials (
+  id, tenant_id, auth_mode ENUM('certificate','access_token'),
+  cuit_encrypted, certificate_encrypted, private_key_encrypted,
+  access_token_encrypted, punto_de_venta INT, razon_social,
+  tipo_iva ENUM('monotributista','responsable_inscripto'),
+  production_mode BOOL, is_configured BOOL, last_cae_date,
+  created_at, updated_at
+);
+
+electronic_invoices (
+  id, tenant_id, sale_id, punto_de_venta, tipo_comprobante,
+  numero_comprobante, cae, cae_expiration, fecha_comprobante,
+  concepto, doc_tipo_receptor, doc_nro_receptor, nombre_receptor,
+  importe_total DECIMAL(15,2), importe_neto, importe_iva, alicuota_iva,
+  moneda, afip_response JSON, is_test BOOL, created_at, updated_at
+);
+
+-- FASE 10 — Checkout self-service
+pending_subscriptions (
+  id, plan_id, amount DECIMAL(12,2), business_name, owner_email,
+  owner_name, owner_phone, tax_id, temp_password_hash,
+  status, payment_method, mp_preference_id, mp_payment_id,
+  mp_init_point, transfer_alias, transfer_notes, tenant_id,
+  referred_by_code, created_at, updated_at
+);
+
+-- FASE 11 — Medios de pago del POS
+payment_accounts (
+  id, tenant_id, name, type ENUM('alias','cbu','other'),
+  value, is_active, created_at, updated_at
+);
+
+mercadopago_credentials (
+  id, tenant_id, public_key, access_token, refresh_token,
+  mp_user_id, token_expires_at, store_id, pos_id,
+  is_sandbox BOOL, is_configured BOOL, last_verified_at,
+  created_at, updated_at
+);
+-- sales: + payment_status, mp_payment_id, mp_payment_status, payer_name,
+--        payer_email, transfer_voucher, transfer_origin, card_last_digits,
+--        card_brand, authorization_code, payment_notes, payment_verified_at,
+--        voucher_image_url
+-- sales.payment_method ahora ENUM('cash','debit_card','credit_card',
+--        'transfer','qr_mercadopago','link_mercadopago','credit_client')
+
+-- FASE 12 — Promociones y referidos
+promotions (
+  id, name, description, discount_type, discount_value,
+  start_date, end_date, max_uses, current_uses,
+  promo_duration_months, applies_to_plan_ids JSON,
+  is_active, created_at
+);
+-- subscriptions: + discount_percentage, discount_ends_at, locked_price,
+--        locked_plan_name, billing_day, status, cancelled_at,
+--        cancellation_reason, promotion_id, price_after_promo,
+--        promo_ends_at, mp_preapproval_id
+-- billing_history: + plan_id, plan_name, billing_period_start,
+--        billing_period_end, is_prorated, promotion_id
+-- tenants: + phone, address, referral_code, referred_by_id,
+--        trial_ends_at, settings JSON
+
+-- FASE 13 — Gastos y settings de plataforma
+expense_categories (id, tenant_id, name, ..., created_at, updated_at);
+expenses (id, tenant_id, category_id, amount, description, date, ..., created_at, updated_at);
+system_settings (id, key, value, ...);  -- Global plataforma (sin tenant_id)
+
+-- EXTRAS de inventario (Fase 2 ampliada)
+brands (id, tenant_id, name, created_at, updated_at);
+-- products: + cost_price, image_url, brand_id, supplier_id, min_stock_alert, is_active
+-- categories: + color, icon
+
+-- FASE 14 — Producción y Fraccionamiento
+-- products: + product_type ENUM('standard','raw_material','fractionated','elaborated')
+--           DEFAULT 'standard'  (raw_material NO aparece en el POS)
+recipes (
+  id, tenant_id, name, type ENUM('fractioning','elaboration'),
+  output_product_id, output_quantity DECIMAL(15,3),
+  notes, is_active, created_at, updated_at
+);
+recipe_items (
+  id, recipe_id FK→recipes CASCADE, product_id, quantity DECIMAL(15,3)
+);
+production_orders (
+  id, tenant_id, branch_id, recipe_id NULL, user_id NULL,
+  status ENUM('completed','cancelled'), total_input_cost DECIMAL(15,2),
+  notes, cancelled_at NULL, created_at, updated_at
+);
+production_inputs (
+  id, production_order_id FK→production_orders CASCADE,
+  product_id, quantity DECIMAL(15,3), unit_cost, subtotal
+);
+production_outputs (
+  id, production_order_id FK→production_orders CASCADE,
+  product_id, quantity DECIMAL(15,3), unit_cost, subtotal
+);
+```
+
 ---
 
 ## 8. Arquitectura Multi-tenant
@@ -796,13 +947,18 @@ export abstract class BaseG360Entity {
 |---|---|---|---|
 | `AuthModule` | Login, Register, JWT Strategy | Público | — |
 | `TenantModule` | CRUD negocios, configuración | SUPERADMIN | — |
-| `BillingModule` | Planes, suscripciones, historial | SUPERADMIN | — |
-| `InventoryModule` | Productos, stock, sucursales, barcodes | JwtAuth | `stock.reduced` |
-| `SalesModule` | POS, caja, fiados, devoluciones | JwtAuth | `sale.completed` |
+| `BillingModule` | Planes, suscripciones, historial, **checkout**, **promociones** | SUPERADMIN / público checkout | `pending_payment.*` |
+| `InventoryModule` | Productos, stock, sucursales, marcas, barcodes | JwtAuth | `stock.reduced` |
+| `SalesModule` | POS, caja, fiados, **medios de pago MP/transferencia** | JwtAuth | `sale.completed` |
 | `AccountingModule` | Asientos contables automáticos | JwtAuth | Escucha `sale.completed` |
 | `PurchasesModule` | Proveedores, órdenes de compra | JwtAuth | `purchase.received` |
-| `ReportsModule` | Generación PDF/Excel, BI | JwtAuth | — |
+| `ReportsModule` | Dashboard, métricas, BI | JwtAuth | — |
 | `NotificationsModule` | WebSocket Gateway (alertas tiempo real) | — | Escucha todos |
+| `SettingsModule` | Sucursales, usuarios, negocio, **MercadoPago OAuth** | JwtAuth | — |
+| `ElectronicInvoicingModule` | AFIP/ARCA: credenciales, facturas, CAE, PDF | JwtAuth + feature plan | — |
+| `SystemSettingsModule` | Clave/valor global de plataforma + `public-info` | SUPERADMIN / público info | — |
+| `ExpensesModule` | Gastos y categorías de gastos | JwtAuth | `expense.created` |
+| `ProductionModule` | Recetas, fraccionamiento y elaboración, costeo prorrateado | JwtAuth | `production.completed` |
 
 ### Roles del Sistema
 
@@ -1002,27 +1158,46 @@ export class AccountingListener {
 
 | Ruta | Componente | Rol mínimo |
 |---|---|---|
-| `/auth/login` | `LoginPage` | Público |
+| `/` | `LandingPage` | Público |
+| `/checkout` | `CheckoutPage` | Público |
+| `/checkout/success` `/pending` `/failure` | `PaymentResultPages` | Público |
+| `/login` / `/auth/login` | `LoginPage` | Público |
 | `/auth/register` | `RegisterPage` | Público |
-| `/pos` | `PosTerminal` | CASHIER |
-| `/dashboard` | `Dashboard` | MANAGER |
-| `/inventory` | `InventoryPage` | MANAGER |
+| `/pos` | `PosPage` | CASHIER |
+| `/dashboard` | `DashboardPage` | MANAGER |
+| `/inventory` | `InventoryPage` (hub) | MANAGER |
 | `/inventory/products` | `ProductsPage` | MANAGER |
-| `/inventory/barcodes` | `BarcodesPage` | MANAGER |
+| `/inventory/stock` | `StockPage` | MANAGER |
+| `/inventory/categories` | `CategoriesPage` | MANAGER |
+| `/inventory/brands` | `BrandsPage` | MANAGER |
+| `/inventory/pricing` | `MassivePricingPage` | ADMIN |
 | `/customers` | `CustomersPage` | MANAGER |
-| `/customers/debts` | `FiadosPage` | MANAGER |
-| `/purchases` | `PurchasesPage` | ADMIN |
+| `/purchases` | `PurchasesPage` (OrdersTab + SuppliersTab) | ADMIN |
 | `/accounting` | `AccountingPage` | ADMIN |
-| `/reports` | `ReportsPage` | MANAGER |
-| `/settings` | `SettingsPage` | ADMIN |
+| `/expenses` | `ExpensesPage` | ADMIN |
+| `/production` | `ProductionPage` (OrdersTab + RecipesTab) | MANAGER |
+| `/afip/invoices` | `AfipInvoicesPage` | ADMIN |
+| `/settings/branches` | `BranchesTab` | ADMIN |
+| `/settings/users` | `UsersTab` | ADMIN |
+| `/settings/business` | `BusinessTab` | ADMIN |
+| `/settings/afip` | `AfipTab` | ADMIN |
+| `/settings/mercadopago` | `MercadopagoTab` | ADMIN |
+| `/settings/payment-accounts` | `PaymentAccountsTab` | ADMIN |
+| `/settings/subscription` | `SubscriptionTab` | ADMIN |
 | `/superadmin` | `SuperAdminDashboard` | SUPERADMIN |
 | `/superadmin/tenants` | `TenantsPage` | SUPERADMIN |
 | `/superadmin/billing` | `BillingPage` | SUPERADMIN |
+| `/superadmin/pending-payments` | `PendingPaymentsPage` | SUPERADMIN |
+| `/superadmin/subscriptions` | `SubscriptionsPage` | SUPERADMIN |
+| `/superadmin/plans` | `PlansPage` | SUPERADMIN |
+| `/superadmin/promotions` | `PromotionsPage` | SUPERADMIN |
+| `/superadmin/upcoming-charges` | `UpcomingChargesPage` | SUPERADMIN |
+| `/superadmin/settings` | `SuperAdminSettingsPage` | SUPERADMIN |
 
 ### State Management
 
 - **TanStack Query:** Toda la comunicación con la API. Caché automático, refetch on window focus.
-- **Zustand:** Estado local de UI. Stores: `useAuthStore` (user, token), `useBranchStore` (sucursal activa), `useCartStore` (carrito del POS).
+- **Zustand:** Estado local de UI. Stores: `auth.store` (user, token), `branch.store` (sucursal activa), `cart.store` (carrito del POS), `notification.store` (alertas), `pwa.store` (instalación PWA).
 
 ---
 
@@ -1238,8 +1413,8 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 
 ---
 
-*Última actualización: Abril 2026 | Versión del documento: 8.0 — Fase 8 completada*
-*Basado en los documentos de planificación 01 al 08 del proyecto Kioskos & Despenzas.*
+*Última actualización: Septiembre 2026 | Versión del documento: 10.0 — Fase 14: Producción y Fraccionamiento*
+*Basado en los documentos de planificación 01 al 08 del proyecto Kioskos & Despenzas y en el inventario real del código (backend + frontend).*
 
 ---
 
@@ -1254,6 +1429,6 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 5.0 | Abr 2026 | Fase 5 completada: Intelligence, Dashboard y Reportes PDF |
 | 6.0 | Abr 2026 | Fase 6 completada: SuperAdmin Panel — Billing, Suscripciones, Planes, MRR |
 | 7.0 | Abr 2026 | Fase 7 completada: Settings — CRUD Sucursales, Usuarios, Perfil del Negocio |
-| 8.0 | Abr 2026 | Fase 8 completada: Hardening — CI/CD GitHub Actions, docker-compose.prod, SSL Traefik, Backups |
-| 6.0 | Abr 2026 | Fase 6 completada: SuperAdmin Panel — Billing, Suscripciones, Planes, MRR |
-| 7.0 | Abr 2026 | Fase 7 completada: Settings — CRUD Sucursales, Usuarios, Perfil del Negocio |
+| 8.0 | Abr 2026 | Fase 8 completada: Hardening — CI/CD GitHub Actions, docker-compose.prod, Dokploy |
+| 9.0 | Sept 2026 | **Revisión completa script por script.** Fase 9 AFIP ✅ (CAE, PDF+QR, toggle POS). Nuevas fases documentadas: Fase 10 (Landing + Checkout self-service con MercadoPago/transferencia), Fase 11 (medios de pago POS: QR/Link MP, transferencias, comprobantes), Fase 12 (Promociones, Referidos, prorrateo, upcoming charges), Fase 13 (Gastos, System Settings, PWA, Mail). Inventario de archivos, esquema DB (7.3), módulos, rutas y `.env` actualizados al código real. Deploy: Dokploy + docker-compose.prod.yml. |
+| 10.0 | Sept 2026 | **Fase 14 completada: Producción y Fraccionamiento.** `Product.product_type` (standard/raw_material/fractionated/elaborated), recetas con insumos aproximados, órdenes de producción multi-output con transacción atómica de stock, prorrateo de costos, seguimiento calculado no bloqueante de materias primas, calculadora de requerimientos, página `/production` (Producciones + Recetas), selector de tipo en modal de producto. Migración `AddProductionModule`. `quickSearch` del POS excluye materias primas. |

@@ -78,3 +78,56 @@ El sistema debe estar diseñado para ser **Multi-tenant**. Cada cliente (negocio
 1. **Migración de DB:** Al usar **TypeORM**, asegúrate de no usar funciones específicas de MySQL (como JSON\_CONTAINS) si planeas moverte a Postgres pronto; utiliza funciones estándar de SQL.  
 2. **Docker:** El Dockerfile del backend debe ser multi-etapa para optimizar el tamaño de la imagen en producción.  
 3. **Seguridad:** Implementar *CORS policy* correctamente (dado que has tenido problemas previos con esto) configurando los orígenes permitidos en el main.ts de NestJS.
+---
+
+## ✅ ACTUALIZACIÓN DE ESTADO — Septiembre 2026
+
+> Este plan fue la base del proyecto. El desarrollo se completó y superó lo planificado. Estado real verificado contra el código (ver `AGENTS.md` v9.0 para el detalle completo):
+
+### Estado de las fases originales
+
+| Fase planificada | Estado | Notas |
+|---|---|---|
+| **Fase 1** — Cimientos, Docker, Auth JWT, Roles | ✅ Completada | + Multi-tenant por columna, SuperAdmin panel, Billing |
+| **Fase 2** — Inventario, productos, stock, listas de precios | ✅ Completada | + Marcas, alertas WS en tiempo real, precios masivos, imágenes |
+| **Fase 3** — POS, Clientes, Fiados, Caja | ✅ Completada | + Medios de pago: QR/Link MercadoPago, transferencias con comprobante |
+| **Fase 4** — Compras, Proveedores, Devoluciones | ✅ Completada | + Asientos contables automáticos (event-driven) |
+| **Fase 5** — Reportes, BI, Exportación | ✅ Completada | Dashboard con Recharts, métricas, valuación de inventario |
+
+### Funcionalidades agregadas más allá del plan original
+
+1. **Fase 6-8:** SuperAdmin completo (MRR, suscripciones, planes), gestión de sucursales/usuarios, hardening con migraciones TypeORM, CI/CD (GitHub Actions) y deploy en VPS con **Dokploy** (`docker-compose.prod.yml` + Nginx).
+2. **Fase 9 — Facturación Electrónica AFIP:** Credenciales encriptadas (AES-256-CBC), generación de CAE vía AfipSDK, PDF con QR, toggle de facturación en el POS, modo homologación/producción.
+3. **Fase 10 — Checkout self-service:** Landing pública, registro de nuevos negocios con pago online (MercadoPago) o transferencia con aprobación manual.
+4. **Fase 11 — Medios de pago del POS:** OAuth de MercadoPago por tenant, cuentas de pago (alias/CBU), verificación de pagos pendientes.
+5. **Fase 12 — Promociones y Referidos:** Descuentos por plan con vigencia, códigos de referido, prorrateo y próximos cobros.
+6. **Fase 13 — Gastos, System Settings y PWA:** Módulo de gastos con categorías, settings globales de plataforma, app instalable (PWA) y servicio de mail.
+
+### Consideraciones técnicas — validación final
+
+1. **Migración de DB:** ✅ TypeORM portable, `synchronize: false`, 5 migraciones versionadas. Drivers `mysql2` y `pg` instalados.
+2. **Docker:** ✅ Backend multi-etapa (development/production); frontend con etapa Nginx para producción.
+3. **Seguridad CORS:** ✅ Origen explícito vía `FRONTEND_URL` en `main.ts`; prefijo global `/api/v1`; Swagger en `/api/docs`.
+
+---
+
+## 🏭 FASE 14 — Producción y Fraccionamiento (Septiembre 2026) ✅
+
+Funcionalidad agregada más allá del plan original, solicitada por negocios que compran a granel o elaboran productos:
+
+- **Productos Fraccionados:** compra de bultos grandes (ej: bolsa de alimento 20/25kg) que se fraccionan en unidades vendibles (bolsas de 1kg).
+- **Productos Elaborados:** insumos que se transforman en productos vendibles (ej: caja de pollos —cantidad variable por kg— → pata-muslo, pechuga, alitas, milanesas, albóndigas, carne molida).
+
+### Implementación
+
+| Componente | Detalle |
+|---|---|
+| `products.product_type` | `standard` (default) / `raw_material` (insumo, oculto en POS) / `fractionated` / `elaborated` |
+| **Recetas** (`recipes`, `recipe_items`) | Consumo **aproximado** de insumos por tanda; precargan producciones y alimentan la calculadora de requerimientos |
+| **Órdenes de producción** (`production_orders`, `production_inputs`, `production_outputs`) | Registro real con cantidades variables; multi-output (desposte); transacción atómica de stock |
+| **Costeo** | Prorrateo automático del costo de insumos a los productos obtenidos (o `unit_cost` manual) |
+| **Seguimiento de insumos** | **Calculado, no bloqueante:** el stock de materias primas puede quedar negativo con advertencia |
+| **Frontend** | Página `/production` (tabs Producciones/Recetas), calculadora de insumos, selector de tipo en el modal de producto |
+| **No rompe lo existente** | Productos `standard` intactos; POS solo excluye `raw_material`; nueva migración `AddProductionModule` |
+
+Endpoints: `/api/v1/production/recipes`, `/api/v1/production/orders`, `/api/v1/production/requirements`. Detalle completo en `AGENTS.md` v10.0.

@@ -42,6 +42,7 @@ export interface Product {
   internal_code?: string
   cost_price: number
   is_active: boolean
+  product_type?: 'standard' | 'raw_material' | 'fractionated' | 'elaborated'
   unit_id?: string
   category_id?: string
   unit?: Unit
@@ -80,6 +81,7 @@ export interface Inventory {
 export interface ProductQuery {
   search?: string
   category_id?: string
+  product_type?: string
   page?: number
   limit?: number
 }

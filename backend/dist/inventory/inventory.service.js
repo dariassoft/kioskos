@@ -40,7 +40,7 @@ let InventoryService = class InventoryService {
         this.eventEmitter = eventEmitter;
     }
     async findAllProducts(tenantId, query) {
-        const { search, category_id, page = 1, limit = 25 } = query;
+        const { search, category_id, product_type, page = 1, limit = 25 } = query;
         const skip = (page - 1) * limit;
         const qb = this.productRepo.createQueryBuilder('p')
             .leftJoinAndSelect('p.unit', 'unit')
@@ -54,6 +54,9 @@ let InventoryService = class InventoryService {
         }
         if (category_id) {
             qb.andWhere('p.category_id = :category_id', { category_id });
+        }
+        if (product_type) {
+            qb.andWhere('p.product_type = :product_type', { product_type });
         }
         const [data, total] = await qb
             .orderBy('p.name', 'ASC')
@@ -373,6 +376,7 @@ let InventoryService = class InventoryService {
             .leftJoinAndSelect('p.unit', 'unit')
             .where('p.tenant_id = :tenantId', { tenantId })
             .andWhere('p.is_active = :active', { active: true })
+            .andWhere('p.product_type != :rawType', { rawType: 'raw_material' })
             .andWhere('(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)', { q: `%${query}%`, exact: query });
         if (branchId) {
             qb.leftJoinAndMapOne('p.inventory', inventory_entity_1.Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId', { branchId });

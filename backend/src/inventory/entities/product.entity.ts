@@ -8,6 +8,20 @@ import { Supplier } from '../../purchases/entities/supplier.entity';
 import { Brand } from './brand.entity';
 
 /**
+ * Tipo de producto según su rol en el negocio:
+ * - standard:     compra y venta directa (default, comportamiento histórico)
+ * - raw_material: insumo/materia prima — se compra pero NO se vende directo (oculto en el POS)
+ * - fractionated: se obtiene por fraccionamiento de otro producto (ej: bolsa 1kg desde bolsa 20kg)
+ * - elaborated:   se obtiene por elaboración a partir de insumos (ej: milanesas desde pechuga)
+ */
+export enum ProductType {
+  STANDARD = 'standard',
+  RAW_MATERIAL = 'raw_material',
+  FRACTIONATED = 'fractionated',
+  ELABORATED = 'elaborated',
+}
+
+/**
  * Producto base del catálogo.
  * El precio NO se guarda aquí — está en ProductPrice (relación con PriceList).
  * El stock NO se guarda aquí — está en Inventory (por sucursal).
@@ -49,6 +63,9 @@ export class Product extends BaseKioskosEntity {
 
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
+
+  @Column({ type: 'enum', enum: ProductType, default: ProductType.STANDARD })
+  product_type: ProductType;
 
   @ManyToOne(() => Unit, { eager: true, nullable: true })
   @JoinColumn({ name: 'unit_id' })

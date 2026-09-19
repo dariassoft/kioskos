@@ -41,6 +41,9 @@ import AfipInvoicesPage from '@pages/afip/AfipInvoicesPage'
 // Expenses (Gastos)
 import ExpensesPage from '@pages/expenses/ExpensesPage'
 
+// Production (Fase 14)
+import ProductionPage from '@pages/production/ProductionPage'
+
 // Sales - POS (Fase 3)
 import PosPage from '@pages/pos/PosPage'
 
@@ -166,6 +169,7 @@ export default function App() {
           <Route path="/settings/*" element={<SettingsPage />} />
           <Route path="/afip/invoices" element={<AfipInvoicesPage />} />
           <Route path="/expenses/*" element={<ExpensesPage />} />
+          <Route path="/production/*" element={<ProductionPage />} />
         </Route>
 
         {/* ====================================
