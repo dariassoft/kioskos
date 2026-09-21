@@ -7,7 +7,7 @@ import { PurchasePayment } from './entities/purchase-payment.entity';
 import { PurchaseReturn } from './entities/purchase-return.entity';
 import { PurchaseReturnItem } from './entities/purchase-return-item.entity';
 import { Product } from '../inventory/entities/product.entity';
-import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto, UpdatePurchaseOrderDto, ReceivePurchaseOrderDto, CreatePurchasePaymentDto, CreatePurchaseReturnDto } from './dto/purchases.dto';
+import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto, UpdatePurchaseOrderDto, ReceivePurchaseOrderDto, CreatePurchasePaymentDto, CreatePurchaseReturnDto, SupplierCurrentAccountsQueryDto } from './dto/purchases.dto';
 import { InventoryService } from '../inventory/inventory.service';
 export declare class PurchasesService {
     private readonly supplierRepo;
@@ -44,6 +44,19 @@ export declare class PurchasesService {
             amount: number;
             direction: string;
         }[];
+    }>;
+    findSupplierAccounts(query: SupplierCurrentAccountsQueryDto, tenantId: string): Promise<{
+        data: {
+            id: string;
+            name: string;
+            phone: string;
+            email: string;
+            balance: number;
+            account_type: "supplier";
+        }[];
+        total: number;
+        page: number;
+        limit: number;
     }>;
     cancelOrder(id: string, tenantId: string): Promise<PurchaseOrder>;
 }

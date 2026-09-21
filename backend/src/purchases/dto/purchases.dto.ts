@@ -50,6 +50,27 @@ export class CreateSupplierDto {
 
 export class UpdateSupplierDto extends CreateSupplierDto {}
 
+export class SupplierCurrentAccountsQueryDto {
+  @ApiPropertyOptional({ example: 'Distribuidora', description: 'Buscar por nombre, teléfono o email' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+}
+
 // ==========================================
 // ÓRDENES DE COMPRA
 // ==========================================

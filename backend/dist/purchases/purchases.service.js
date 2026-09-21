@@ -291,12 +291,48 @@ let PurchasesService = class PurchasesService {
             this.purchaseReturnRepo.find({ where: { supplier_id: id, tenant_id: tenantId }, order: { created_at: 'ASC' } }),
         ]);
         const entries = [
+            ...(Number(supplier.opening_balance || 0) > 0 ? [{
+                    id: `opening-${supplier.id}`,
+                    date: supplier.created_at,
+                    type: 'opening_balance',
+                    description: 'Saldo inicial de cuenta corriente',
+                    amount: Number(supplier.opening_balance),
+                    direction: 'credit',
+                }] : []),
             ...orders.map((order) => ({ id: order.id, date: order.created_at, type: 'purchase', description: 'Compra recibida', amount: Number(order.total), direction: 'credit' })),
             ...payments.map((payment) => ({ id: payment.id, date: payment.created_at, type: 'payment', description: 'Pago a proveedor', amount: Number(payment.amount), direction: 'debit' })),
             ...returns.map((returned) => ({ id: returned.id, date: returned.created_at, type: 'return', description: 'Devolución / nota de crédito', amount: Number(returned.total), direction: 'debit' })),
         ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         const balance = Number(supplier.opening_balance || 0) + orders.reduce((sum, order) => sum + Number(order.total), 0) - payments.reduce((sum, payment) => sum + Number(payment.amount), 0) - returns.reduce((sum, returned) => sum + Number(returned.total), 0) + returns.reduce((sum, returned) => sum + Number(returned.refund_amount), 0);
         return { supplier, balance, entries };
+    }
+    async findSupplierAccounts(query, tenantId) {
+        const page = Math.max(1, query.page || 1);
+        const limit = Math.min(100, Math.max(1, query.limit || 20));
+        const qb = this.supplierRepo.createQueryBuilder('supplier')
+            .where('supplier.tenant_id = :tenantId', { tenantId })
+            .andWhere('supplier.current_account_enabled = :enabled', { enabled: true })
+            .orderBy('supplier.name', 'ASC')
+            .skip((page - 1) * limit)
+            .take(limit);
+        if (query.search?.trim()) {
+            qb.andWhere('(supplier.name LIKE :search OR supplier.phone LIKE :search OR supplier.email LIKE :search)', {
+                search: `%${query.search.trim()}%`,
+            });
+        }
+        const [suppliers, total] = await qb.getManyAndCount();
+        const data = await Promise.all(suppliers.map(async (supplier) => {
+            const account = await this.getSupplierAccount(supplier.id, tenantId);
+            return {
+                id: supplier.id,
+                name: supplier.name,
+                phone: supplier.phone,
+                email: supplier.email,
+                balance: account.balance,
+                account_type: 'supplier',
+            };
+        }));
+        return { data, total, page, limit };
     }
     async cancelOrder(id, tenantId) {
         const order = await this.findOneOrder(id, tenantId);

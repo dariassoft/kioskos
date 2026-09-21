@@ -64,6 +64,9 @@ let PurchasesController = class PurchasesController {
     getSupplierAccount(id, tenantId) {
         return this.purchasesService.getSupplierAccount(id, tenantId);
     }
+    findSupplierAccounts(query, tenantId) {
+        return this.purchasesService.findSupplierAccounts(query, tenantId);
+    }
 };
 exports.PurchasesController = PurchasesController;
 __decorate([
@@ -197,6 +200,16 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], PurchasesController.prototype, "getSupplierAccount", null);
+__decorate([
+    (0, common_1.Get)('suppliers/current-accounts'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Listar cuentas corrientes habilitadas de proveedores' }),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [purchases_dto_1.SupplierCurrentAccountsQueryDto, String]),
+    __metadata("design:returntype", void 0)
+], PurchasesController.prototype, "findSupplierAccounts", null);
 exports.PurchasesController = PurchasesController = __decorate([
     (0, swagger_1.ApiTags)('purchases'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),

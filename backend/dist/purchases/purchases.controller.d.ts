@@ -1,5 +1,5 @@
 import { PurchasesService } from './purchases.service';
-import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto, UpdatePurchaseOrderDto, ReceivePurchaseOrderDto, CreatePurchasePaymentDto, CreatePurchaseReturnDto } from './dto/purchases.dto';
+import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto, UpdatePurchaseOrderDto, ReceivePurchaseOrderDto, CreatePurchasePaymentDto, CreatePurchaseReturnDto, SupplierCurrentAccountsQueryDto } from './dto/purchases.dto';
 export declare class PurchasesController {
     private readonly purchasesService;
     constructor(purchasesService: PurchasesService);
@@ -26,5 +26,18 @@ export declare class PurchasesController {
             amount: number;
             direction: string;
         }[];
+    }>;
+    findSupplierAccounts(query: SupplierCurrentAccountsQueryDto, tenantId: string): Promise<{
+        data: {
+            id: string;
+            name: string;
+            phone: string;
+            email: string;
+            balance: number;
+            account_type: "supplier";
+        }[];
+        total: number;
+        page: number;
+        limit: number;
     }>;
 }

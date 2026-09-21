@@ -9,6 +9,11 @@ export declare class CreateSupplierDto {
 }
 export declare class UpdateSupplierDto extends CreateSupplierDto {
 }
+export declare class SupplierCurrentAccountsQueryDto {
+    search?: string;
+    page?: number;
+    limit?: number;
+}
 export declare class CreatePurchaseOrderItemDto {
     product_id: string;
     quantity: number;

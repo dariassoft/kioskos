@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import salesApi from '@api/sales.api'
-import type { Customer, CreateSaleDto, ListSalesQuery, CreateSaleReturnDto } from '@api/sales.types'
+import type { Customer, CreateSaleDto, ListSalesQuery, CreateSaleReturnDto, CustomerPaymentInput } from '@api/sales.types'
 import toast from 'react-hot-toast'
 
 // ==========================================
@@ -129,10 +129,12 @@ export const useUpdateCustomer = () => {
 export const usePayDebt = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, amount }: { id: string; amount: number }) =>
-      salesApi.payDebt(id, amount),
+    mutationFn: ({ id, amount, payment_method, notes }: { id: string } & CustomerPaymentInput) =>
+      salesApi.payDebt(id, { amount, payment_method, notes }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] })
+      qc.invalidateQueries({ queryKey: ['current-accounts'] })
+      qc.invalidateQueries({ queryKey: ['current-account'] })
       toast.success('Pago registrado')
     },
     onError: (err: any) =>

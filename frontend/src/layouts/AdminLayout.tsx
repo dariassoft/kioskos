@@ -5,7 +5,7 @@ import { useBranchStore } from '@store/branch.store'
 import { useBranches } from '@hooks/useSettings'
 import { usePWA } from '@hooks/usePWA'
 import {
-  LayoutDashboard, Package, ShoppingCart, Users, Truck,
+  LayoutDashboard, Package, ShoppingCart, Users, Truck, WalletCards,
   BookOpen, ChevronLeft, ChevronRight,
   LogOut, Store, Menu, UserCircle, Moon, Sun, Settings, FileText, Download, Receipt, Factory
 } from 'lucide-react'
@@ -19,6 +19,7 @@ const navItems = [
   { to: '/pos', icon: ShoppingCart, label: 'POS / Venta' },
   { to: '/inventory', icon: Package, label: 'Inventario' },
   { to: '/customers', icon: Users, label: 'Clientes / Fiados' },
+  { to: '/current-accounts', icon: WalletCards, label: 'Cuentas corrientes' },
   { to: '/purchases', icon: Truck, label: 'Compras' },
   { to: '/accounting', icon: BookOpen, label: 'Contabilidad' },
   { to: '/expenses', icon: Receipt, label: 'Gastos' },

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, UseGuards, Request
+  Body, Param, Query, UseGuards, Request
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
@@ -18,6 +18,7 @@ import {
   ReceivePurchaseOrderDto,
   CreatePurchasePaymentDto,
   CreatePurchaseReturnDto,
+  SupplierCurrentAccountsQueryDto,
 } from './dto/purchases.dto';
 
 @ApiTags('purchases')
@@ -146,5 +147,15 @@ export class PurchasesController {
   @ApiOperation({ summary: 'Consultar cuenta corriente de un proveedor' })
   getSupplierAccount(@Param('id') id: string, @GetTenantId() tenantId: string) {
     return this.purchasesService.getSupplierAccount(id, tenantId);
+  }
+
+  @Get('suppliers/current-accounts')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Listar cuentas corrientes habilitadas de proveedores' })
+  findSupplierAccounts(
+    @Query() query: SupplierCurrentAccountsQueryDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.purchasesService.findSupplierAccounts(query, tenantId);
   }
 }

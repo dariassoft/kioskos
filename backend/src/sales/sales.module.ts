@@ -12,6 +12,7 @@ import { Customer } from './entities/customer.entity';
 import { PaymentAccount } from './entities/payment-account.entity';
 import { SaleReturn } from './entities/sale-return.entity';
 import { SaleReturnItem } from './entities/sale-return-item.entity';
+import { CustomerAccountPayment } from './entities/customer-account-payment.entity';
 import { Branch } from '../inventory/entities/branch.entity';
 
 import { SalesService } from './sales.service';
@@ -22,7 +23,7 @@ import { ElectronicInvoicingModule } from '../electronic-invoicing/electronic-in
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Sale, SaleItem, CashRegister, Customer, Branch, PaymentAccount, SaleReturn, SaleReturnItem]),
+    TypeOrmModule.forFeature([Sale, SaleItem, CashRegister, Customer, Branch, PaymentAccount, SaleReturn, SaleReturnItem, CustomerAccountPayment]),
     InventoryModule,
     ElectronicInvoicingModule,
     MulterModule.register({

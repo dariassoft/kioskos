@@ -18,6 +18,8 @@ import {
   CloseCashRegisterDto,
   CreateCustomerDto,
   UpdateCustomerDto,
+  CreateCustomerPaymentDto,
+  CurrentAccountsQueryDto,
   ListSalesQueryDto,
   CreateSaleReturnDto,
 } from './dto/sales.dto';
@@ -140,6 +142,16 @@ export class SalesController {
   // CLIENTES (Customers / Fiados)
   // ==========================================
 
+  @Get('customers/current-accounts')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Listar cuentas corrientes de clientes' })
+  findCustomerAccounts(
+    @Query() query: CurrentAccountsQueryDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.salesService.findCustomerAccounts(query, tenantId);
+  }
+
   @Get('customers')
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)
   @ApiOperation({ summary: 'Listar todos los clientes del negocio' })
@@ -173,10 +185,17 @@ export class SalesController {
   @ApiOperation({ summary: 'Registrar el abono/pago de la deuda de cuenta corriente' })
   payDebt(
     @Param('id') id: string,
-    @Body('amount') amount: number,
+    @Body() dto: CreateCustomerPaymentDto,
     @GetTenantId() tenantId: string,
   ) {
-    return this.salesService.payDebt(id, amount, tenantId);
+    return this.salesService.payDebt(id, dto, tenantId);
+  }
+
+  @Get('customers/:id/current-account')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Consultar movimientos de la cuenta corriente de un cliente' })
+  getCustomerAccount(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.salesService.getCustomerAccount(id, tenantId);
   }
 
   // ==========================================

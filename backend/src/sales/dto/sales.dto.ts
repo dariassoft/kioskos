@@ -5,6 +5,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { PaymentMethod, PaymentStatus } from '../entities/sale.entity';
+import { CustomerPaymentMethod } from '../entities/customer-account-payment.entity';
 
 const LEGACY_UUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
@@ -37,6 +38,45 @@ export class CreateCustomerDto {
 }
 
 export class UpdateCustomerDto extends CreateCustomerDto {}
+
+export class CreateCustomerPaymentDto {
+  @ApiProperty({ example: 2500, description: 'Importe del abono' })
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  amount: number;
+
+  @ApiPropertyOptional({ enum: CustomerPaymentMethod, default: CustomerPaymentMethod.CASH })
+  @IsEnum(CustomerPaymentMethod)
+  @IsOptional()
+  payment_method?: CustomerPaymentMethod;
+
+  @ApiPropertyOptional({ description: 'Observaciones del abono' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
+
+export class CurrentAccountsQueryDto {
+  @ApiPropertyOptional({ example: 'Juan', description: 'Buscar por nombre, teléfono o email' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number;
+}
 
 // ==========================================
 // CAJA REGISTRADORA (Cash Register)

@@ -9,11 +9,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ListSalesQueryDto = exports.CreateSaleReturnDto = exports.CreateSaleReturnItemDto = exports.CreateSaleDto = exports.PaymentDetailsDto = exports.CreateSaleItemDto = exports.CloseCashRegisterDto = exports.OpenCashRegisterDto = exports.UpdateCustomerDto = exports.CreateCustomerDto = void 0;
+exports.ListSalesQueryDto = exports.CreateSaleReturnDto = exports.CreateSaleReturnItemDto = exports.CreateSaleDto = exports.PaymentDetailsDto = exports.CreateSaleItemDto = exports.CloseCashRegisterDto = exports.OpenCashRegisterDto = exports.CurrentAccountsQueryDto = exports.CreateCustomerPaymentDto = exports.UpdateCustomerDto = exports.CreateCustomerDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const sale_entity_1 = require("../entities/sale.entity");
+const customer_account_payment_entity_1 = require("../entities/customer-account-payment.entity");
 const LEGACY_UUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 class CreateCustomerDto {
 }
@@ -47,6 +48,53 @@ __decorate([
 class UpdateCustomerDto extends CreateCustomerDto {
 }
 exports.UpdateCustomerDto = UpdateCustomerDto;
+class CreateCustomerPaymentDto {
+}
+exports.CreateCustomerPaymentDto = CreateCustomerPaymentDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 2500, description: 'Importe del abono' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateCustomerPaymentDto.prototype, "amount", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: customer_account_payment_entity_1.CustomerPaymentMethod, default: customer_account_payment_entity_1.CustomerPaymentMethod.CASH }),
+    (0, class_validator_1.IsEnum)(customer_account_payment_entity_1.CustomerPaymentMethod),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateCustomerPaymentDto.prototype, "payment_method", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Observaciones del abono' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateCustomerPaymentDto.prototype, "notes", void 0);
+class CurrentAccountsQueryDto {
+}
+exports.CurrentAccountsQueryDto = CurrentAccountsQueryDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Juan', description: 'Buscar por nombre, teléfono o email' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CurrentAccountsQueryDto.prototype, "search", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 1 }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CurrentAccountsQueryDto.prototype, "page", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 20 }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CurrentAccountsQueryDto.prototype, "limit", void 0);
 class OpenCashRegisterDto {
 }
 exports.OpenCashRegisterDto = OpenCashRegisterDto;

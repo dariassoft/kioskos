@@ -1,4 +1,5 @@
 import { PaymentMethod, PaymentStatus } from '../entities/sale.entity';
+import { CustomerPaymentMethod } from '../entities/customer-account-payment.entity';
 export declare class CreateCustomerDto {
     name: string;
     email?: string;
@@ -6,6 +7,16 @@ export declare class CreateCustomerDto {
     credit_limit?: number;
 }
 export declare class UpdateCustomerDto extends CreateCustomerDto {
+}
+export declare class CreateCustomerPaymentDto {
+    amount: number;
+    payment_method?: CustomerPaymentMethod;
+    notes?: string;
+}
+export declare class CurrentAccountsQueryDto {
+    search?: string;
+    page?: number;
+    limit?: number;
 }
 export declare class OpenCashRegisterDto {
     branch_id: string;

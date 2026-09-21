@@ -5,6 +5,7 @@ import { PurchaseReceivedEvent } from '@purchases/events/purchase-received.event
 import { PurchasePaymentCreatedEvent } from '@purchases/events/purchase-payment-created.event';
 import { PurchaseReturnedEvent } from '@purchases/events/purchase-returned.event';
 import { Sale } from '@sales/entities/sale.entity';
+import { CustomerPaymentCreatedEvent } from '@sales/events/customer-payment-created.event';
 import { SaleReturnedEvent } from '@sales/events/sale-returned.event';
 import { ExpenseVoidedEvent } from '../expenses/events/expense-voided.event';
 export declare class AccountingListener {
@@ -18,6 +19,7 @@ export declare class AccountingListener {
     handleSaleReturnedEvent(event: SaleReturnedEvent): Promise<void>;
     handlePurchaseReturnedEvent(event: PurchaseReturnedEvent): Promise<void>;
     handlePurchasePayment(event: PurchasePaymentCreatedEvent): Promise<void>;
+    handleCustomerPayment(event: CustomerPaymentCreatedEvent): Promise<void>;
     handleExpenseCreatedEvent(event: {
         tenantId: string;
         expenseId: string;

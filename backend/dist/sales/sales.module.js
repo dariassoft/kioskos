@@ -20,6 +20,7 @@ const customer_entity_1 = require("./entities/customer.entity");
 const payment_account_entity_1 = require("./entities/payment-account.entity");
 const sale_return_entity_1 = require("./entities/sale-return.entity");
 const sale_return_item_entity_1 = require("./entities/sale-return-item.entity");
+const customer_account_payment_entity_1 = require("./entities/customer-account-payment.entity");
 const branch_entity_1 = require("../inventory/entities/branch.entity");
 const sales_service_1 = require("./sales.service");
 const sales_controller_1 = require("./sales.controller");
@@ -31,7 +32,7 @@ exports.SalesModule = SalesModule;
 exports.SalesModule = SalesModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([sale_entity_1.Sale, sale_item_entity_1.SaleItem, cash_register_entity_1.CashRegister, customer_entity_1.Customer, branch_entity_1.Branch, payment_account_entity_1.PaymentAccount, sale_return_entity_1.SaleReturn, sale_return_item_entity_1.SaleReturnItem]),
+            typeorm_1.TypeOrmModule.forFeature([sale_entity_1.Sale, sale_item_entity_1.SaleItem, cash_register_entity_1.CashRegister, customer_entity_1.Customer, branch_entity_1.Branch, payment_account_entity_1.PaymentAccount, sale_return_entity_1.SaleReturn, sale_return_item_entity_1.SaleReturnItem, customer_account_payment_entity_1.CustomerAccountPayment]),
             inventory_module_1.InventoryModule,
             electronic_invoicing_module_1.ElectronicInvoicingModule,
             platform_express_1.MulterModule.register({

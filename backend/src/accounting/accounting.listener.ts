@@ -8,6 +8,7 @@ import { PurchaseReceivedEvent } from '@purchases/events/purchase-received.event
 import { PurchasePaymentCreatedEvent } from '@purchases/events/purchase-payment-created.event';
 import { PurchaseReturnedEvent } from '@purchases/events/purchase-returned.event';
 import { PaymentMethod, PaymentStatus, Sale } from '@sales/entities/sale.entity';
+import { CustomerPaymentCreatedEvent } from '@sales/events/customer-payment-created.event';
 import { SaleReturnedEvent } from '@sales/events/sale-returned.event';
 import { ExpenseVoidedEvent } from '../expenses/events/expense-voided.event';
 
@@ -105,6 +106,15 @@ export class AccountingListener {
     await this.accountingService.createEntry(event.tenantId, `Pago a proveedor por orden ${event.purchaseOrderId}`, [
       { account_name: 'Proveedores', debit: event.amount, credit: 0 },
       { account_name: account, debit: 0, credit: event.amount },
+    ], event.paymentId);
+  }
+
+  @OnEvent('customer.payment.created')
+  async handleCustomerPayment(event: CustomerPaymentCreatedEvent) {
+    const account = event.paymentMethod === 'cash' ? 'Caja' : 'Bancos';
+    await this.accountingService.createEntry(event.tenantId, 'Cobro de cuenta corriente de cliente', [
+      { account_name: account, debit: event.amount, credit: 0 },
+      { account_name: 'Cuentas por Cobrar', debit: 0, credit: event.amount },
     ], event.paymentId);
   }
 

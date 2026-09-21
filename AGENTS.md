@@ -1483,6 +1483,14 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - **IVA en ventas y contabilidad.** El precio POS/lista es bruto y cada `sale_items` conserva `vat_rate`, `net_subtotal` y `vat_amount`. Los asientos separan `Ventas` de `IVA Débito Fiscal`, las compras separan `Mercadería` de `IVA Crédito Fiscal`, y las devoluciones invierten ambas partes. Las columnas nuevas dejan IVA `0` en líneas históricas para no modificar comprobantes ya contabilizados.
 - **Migración:** `AddReturnsSupplierAccountsAndVat1800000000000` crea las columnas fiscales, estados de anulación, cuentas corrientes y tablas `purchase_returns`, `purchase_return_items`, `sale_returns` y `sale_return_items`. En producción se debe ejecutar mediante el flujo normal de migraciones antes de utilizar estas pantallas.
 
+### 10.11 | Septiembre 2026 — Sección centralizada de cuentas corrientes
+
+- La ruta protegida `/current-accounts` ofrece una sección independiente con pestañas para `Clientes` y `Proveedores`, búsqueda, saldo pendiente, totales de cargos/abonos y detalle cronológico de movimientos.
+- Las cuentas de clientes muestran ventas `credit_client`, abonos, devoluciones y saldo actual. Los abonos se persisten en `customer_account_payments`, admiten efectivo, transferencia o banco, y generan el asiento `Caja/Bancos` contra `Cuentas por Cobrar` mediante el evento `customer.payment.created`.
+- Las cuentas de proveedores continúan siendo opt-in mediante `suppliers.current_account_enabled`; la sección lista solo las habilitadas y muestra saldo inicial, recepciones, pagos y devoluciones/notas de crédito.
+- Nuevos endpoints paginados: `GET /sales/customers/current-accounts`, `GET /sales/customers/:id/current-account` y `GET /purchases/suppliers/current-accounts`. Se mantiene `GET /purchases/suppliers/:id/current-account` para compatibilidad con Compras.
+- La migración `AddCustomerAccountPayments1800000000000` debe ejecutarse en producción antes de registrar abonos de clientes o utilizar el historial completo de sus cuentas.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1506,3 +1514,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.5 | Sept 2026 | Dashboard: se corrige el desplazamiento de fechas causado por interpretar días calendario como UTC. |
 | 10.6 | Sept 2026 | POS: se corrige el error `500` de sugerencias populares causado por `GROUP BY` incompatible con `ONLY_FULL_GROUP_BY`; se usa un subquery correlacionado. |
 | 10.7 | Sept 2026 | Devoluciones parciales/totales de compras y ventas, anulaciones auditables de gastos, recepción real de órdenes, cuentas corrientes opcionales de proveedores e IVA por producto con desglose neto/bruto y asientos inversos. |
+| 10.8 | Sept 2026 | Nueva sección `/current-accounts` para consultar movimientos de clientes y proveedores; abonos de clientes auditables con persistencia, asiento contable y migración `AddCustomerAccountPayments`. |

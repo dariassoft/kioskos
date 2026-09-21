@@ -14,6 +14,7 @@ import { SaleReturn } from './entities/sale-return.entity';
 import { SaleReturnItem } from './entities/sale-return-item.entity';
 import { CashRegister } from './entities/cash-register.entity';
 import { Customer } from './entities/customer.entity';
+import { CustomerAccountPayment, CustomerPaymentMethod } from './entities/customer-account-payment.entity';
 import { PaymentAccount } from './entities/payment-account.entity';
 import { Branch } from '@inventory/entities/branch.entity';
 import { Inventory } from '@inventory/entities/inventory.entity';
@@ -24,6 +25,8 @@ import {
   CloseCashRegisterDto,
   CreateCustomerDto,
   UpdateCustomerDto,
+  CreateCustomerPaymentDto,
+  CurrentAccountsQueryDto,
   ListSalesQueryDto,
   CreateSaleReturnDto,
 } from './dto/sales.dto';
@@ -34,6 +37,7 @@ import { InventoryService } from '@inventory/inventory.service';
 import { ElectronicInvoicingService } from '@electronic-invoicing/electronic-invoicing.service';
 import { SaleCompletedEvent } from '@sales/events/sale-completed.event';
 import { SaleReturnedEvent } from '@sales/events/sale-returned.event';
+import { CustomerPaymentCreatedEvent } from './events/customer-payment-created.event';
 
 @Injectable()
 export class SalesService {
@@ -46,6 +50,8 @@ export class SalesService {
     private readonly cashRegisterRepo: Repository<CashRegister>,
     @InjectRepository(Customer)
     private readonly customerRepo: Repository<Customer>,
+    @InjectRepository(CustomerAccountPayment)
+    private readonly customerPaymentRepo: Repository<CustomerAccountPayment>,
     @InjectRepository(Branch)
     private readonly branchRepo: Repository<Branch>,
     @InjectRepository(PaymentAccount)
@@ -447,6 +453,38 @@ export class SalesService {
     });
   }
 
+  async findCustomerAccounts(query: CurrentAccountsQueryDto, tenantId: string) {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.min(100, Math.max(1, query.limit || 20));
+    const qb = this.customerRepo.createQueryBuilder('customer')
+      .where('customer.tenant_id = :tenantId', { tenantId })
+      .orderBy('customer.name', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (query.search?.trim()) {
+      qb.andWhere('(customer.name LIKE :search OR customer.phone LIKE :search OR customer.email LIKE :search)', {
+        search: `%${query.search.trim()}%`,
+      });
+    }
+
+    const [customers, total] = await qb.getManyAndCount();
+    return {
+      data: customers.map((customer) => ({
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        credit_limit: Number(customer.credit_limit),
+        balance: Number(customer.current_debt),
+        account_type: 'customer' as const,
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
+
   async findOneCustomer(id: string, tenantId: string): Promise<Customer> {
     const customer = await this.customerRepo.findOne({ where: { id, tenant_id: tenantId } });
     if (!customer) throw new NotFoundException('Cliente no encontrado');
@@ -465,15 +503,106 @@ export class SalesService {
   }
 
   // Abono a la deuda de fiados
-  async payDebt(id: string, amount: number, tenantId: string): Promise<Customer> {
-    const customer = await this.findOneCustomer(id, tenantId);
+  async payDebt(id: string, dto: CreateCustomerPaymentDto, tenantId: string): Promise<Customer> {
+    const amount = Number(dto.amount);
     if (amount <= 0) throw new BadRequestException('El monto debe ser mayor a 0');
 
-    let newDebt = Number(customer.current_debt) - amount;
-    if (newDebt < 0) newDebt = 0; // Prevenir deuda negativa para simplificar por ahora
+    const payment = await this.customerPaymentRepo.manager.transaction(async (manager) => {
+      // Bloquear el saldo durante el abono evita que dos cajeros puedan
+      // registrar pagos simultáneos sobre la misma deuda disponible.
+      const customer = await manager.findOne(Customer, {
+        where: { id, tenant_id: tenantId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!customer) throw new NotFoundException('Cliente no encontrado');
+      if (amount > Number(customer.current_debt) + 0.0001) {
+        throw new BadRequestException('El abono no puede superar la deuda actual del cliente');
+      }
 
-    await this.customerRepo.update({ id, tenant_id: tenantId }, { current_debt: newDebt });
+      const savedPayment = await manager.save(manager.create(CustomerAccountPayment, {
+        tenant_id: tenantId,
+        customer_id: id,
+        amount,
+        payment_method: dto.payment_method || CustomerPaymentMethod.CASH,
+        notes: dto.notes || null,
+      }));
+      await manager.update(Customer, { id, tenant_id: tenantId }, {
+        current_debt: Number(customer.current_debt) - amount,
+      });
+      return savedPayment;
+    });
+
+    this.eventEmitter.emit('customer.payment.created', new CustomerPaymentCreatedEvent(
+      tenantId,
+      payment.id,
+      id,
+      amount,
+      payment.payment_method,
+    ));
     return this.findOneCustomer(id, tenantId);
+  }
+
+  async getCustomerAccount(id: string, tenantId: string) {
+    const customer = await this.findOneCustomer(id, tenantId);
+    const [sales, payments, returns] = await Promise.all([
+      this.saleRepo.find({
+        where: { customer_id: id, tenant_id: tenantId, payment_method: PaymentMethod.CREDIT_CLIENT },
+        order: { created_at: 'ASC' },
+      }),
+      this.customerPaymentRepo.find({ where: { customer_id: id, tenant_id: tenantId }, order: { created_at: 'ASC' } }),
+      this.saleReturnRepo.createQueryBuilder('saleReturn')
+        .innerJoin('saleReturn.sale', 'sale')
+        .where('saleReturn.tenant_id = :tenantId', { tenantId })
+        .andWhere('sale.customer_id = :customerId', { customerId: id })
+        .andWhere('sale.payment_method = :paymentMethod', { paymentMethod: PaymentMethod.CREDIT_CLIENT })
+        .orderBy('saleReturn.created_at', 'ASC')
+        .getMany(),
+    ]);
+
+    const entries = [
+      ...sales.map((sale) => ({
+        id: sale.id,
+        date: sale.created_at,
+        type: 'sale' as const,
+        description: `Venta fiada #${sale.id.slice(0, 8).toUpperCase()}`,
+        amount: Number(sale.total),
+        balance_effect: 'increase' as const,
+        payment_method: sale.payment_method,
+      })),
+      ...payments.map((payment) => ({
+        id: payment.id,
+        date: payment.created_at,
+        type: 'payment' as const,
+        description: payment.notes || 'Abono de cuenta corriente',
+        amount: Number(payment.amount),
+        balance_effect: 'decrease' as const,
+        payment_method: payment.payment_method,
+      })),
+      ...returns.map((returned) => ({
+        id: returned.id,
+        date: returned.created_at,
+        type: 'return' as const,
+        description: `Devolución de venta: ${returned.reason}`,
+        amount: Number(returned.total),
+        balance_effect: 'decrease' as const,
+        payment_method: null,
+      })),
+    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return {
+      account_type: 'customer' as const,
+      account: {
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        credit_limit: Number(customer.credit_limit),
+        balance: Number(customer.current_debt),
+        account_type: 'customer' as const,
+      },
+      balance: Number(customer.current_debt),
+      entries,
+    };
   }
 
   // ==========================================

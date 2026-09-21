@@ -9,6 +9,12 @@ export interface Customer {
   created_at: string
 }
 
+export interface CustomerPaymentInput {
+  amount: number
+  payment_method?: 'cash' | 'transfer' | 'bank'
+  notes?: string
+}
+
 export type PaymentMethod =
   | 'cash'
   | 'debit_card'

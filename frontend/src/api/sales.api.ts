@@ -1,5 +1,5 @@
 import apiClient from '@api/client'
-import type { Customer, CashRegister, Sale, CreateSaleDto, ListSalesQuery, SalesListResponse, PaymentAccount, CreatePaymentAccountDto, CreateSaleReturnDto } from './sales.types'
+import type { Customer, CashRegister, Sale, CreateSaleDto, ListSalesQuery, SalesListResponse, PaymentAccount, CreatePaymentAccountDto, CreateSaleReturnDto, CustomerPaymentInput } from './sales.types'
 
 export default {
   // ==========================================
@@ -68,8 +68,8 @@ export default {
     return res.data
   },
 
-  payDebt: async (id: string, amount: number): Promise<Customer> => {
-    const res = await apiClient.post(`/sales/customers/${id}/pay`, { amount })
+  payDebt: async (id: string, data: CustomerPaymentInput): Promise<Customer> => {
+    const res = await apiClient.post(`/sales/customers/${id}/pay`, data)
     return res.data
   },
 
@@ -111,4 +111,3 @@ export default {
     return res.data
   },
 }
-

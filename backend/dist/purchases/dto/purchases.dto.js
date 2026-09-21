@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreatePurchasePaymentDto = exports.CreatePurchaseReturnDto = exports.CreatePurchaseReturnItemDto = exports.PurchaseReturnSettlementDto = exports.ReceivePurchaseOrderDto = exports.UpdatePurchaseOrderDto = exports.CreatePurchaseOrderDto = exports.CreatePurchaseOrderItemDto = exports.UpdateSupplierDto = exports.CreateSupplierDto = void 0;
+exports.CreatePurchasePaymentDto = exports.CreatePurchaseReturnDto = exports.CreatePurchaseReturnItemDto = exports.PurchaseReturnSettlementDto = exports.ReceivePurchaseOrderDto = exports.UpdatePurchaseOrderDto = exports.CreatePurchaseOrderDto = exports.CreatePurchaseOrderItemDto = exports.SupplierCurrentAccountsQueryDto = exports.UpdateSupplierDto = exports.CreateSupplierDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -63,6 +63,31 @@ __decorate([
 class UpdateSupplierDto extends CreateSupplierDto {
 }
 exports.UpdateSupplierDto = UpdateSupplierDto;
+class SupplierCurrentAccountsQueryDto {
+}
+exports.SupplierCurrentAccountsQueryDto = SupplierCurrentAccountsQueryDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Distribuidora', description: 'Buscar por nombre, teléfono o email' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SupplierCurrentAccountsQueryDto.prototype, "search", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 1 }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], SupplierCurrentAccountsQueryDto.prototype, "page", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 20 }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], SupplierCurrentAccountsQueryDto.prototype, "limit", void 0);
 class CreatePurchaseOrderItemDto {
 }
 exports.CreatePurchaseOrderItemDto = CreatePurchaseOrderItemDto;

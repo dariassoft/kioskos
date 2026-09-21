@@ -27,6 +27,7 @@ import DashboardPage from '@pages/DashboardPage'
 import InventoryPage from '@pages/inventory/InventoryPage'
 
 import CustomersPage from '@pages/customers/CustomersPage'
+import CurrentAccountsPage from '@pages/current-accounts/CurrentAccountsPage'
 
 // Purchases & Accounting (Fase 4)
 import PurchasesPage from '@pages/purchases/PurchasesPage'
@@ -164,6 +165,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/inventory/*" element={<InventoryPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/current-accounts" element={<CurrentAccountsPage />} />
           <Route path="/purchases/*" element={<PurchasesPage />} />
           <Route path="/accounting/*" element={<AccountingPage />} />
           <Route path="/settings/*" element={<SettingsPage />} />

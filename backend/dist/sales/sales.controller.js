@@ -55,6 +55,9 @@ let SalesController = class SalesController {
         const imageUrl = `/uploads/${file.filename}`;
         return this.salesService.uploadVoucher(id, imageUrl, tenantId);
     }
+    findCustomerAccounts(query, tenantId) {
+        return this.salesService.findCustomerAccounts(query, tenantId);
+    }
     findAllCustomers(tenantId) {
         return this.salesService.findAllCustomers(tenantId);
     }
@@ -64,8 +67,11 @@ let SalesController = class SalesController {
     updateCustomer(id, dto, tenantId) {
         return this.salesService.updateCustomer(id, dto, tenantId);
     }
-    payDebt(id, amount, tenantId) {
-        return this.salesService.payDebt(id, amount, tenantId);
+    payDebt(id, dto, tenantId) {
+        return this.salesService.payDebt(id, dto, tenantId);
+    }
+    getCustomerAccount(id, tenantId) {
+        return this.salesService.getCustomerAccount(id, tenantId);
     }
     findAllPaymentAccounts(tenantId) {
         return this.salesService.findAllPaymentAccounts(tenantId);
@@ -182,6 +188,16 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], SalesController.prototype, "uploadVoucher", null);
 __decorate([
+    (0, common_1.Get)('customers/current-accounts'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Listar cuentas corrientes de clientes' }),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [sales_dto_1.CurrentAccountsQueryDto, String]),
+    __metadata("design:returntype", void 0)
+], SalesController.prototype, "findCustomerAccounts", null);
+__decorate([
     (0, common_1.Get)('customers'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),
     (0, swagger_1.ApiOperation)({ summary: 'Listar todos los clientes del negocio' }),
@@ -216,12 +232,22 @@ __decorate([
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),
     (0, swagger_1.ApiOperation)({ summary: 'Registrar el abono/pago de la deuda de cuenta corriente' }),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)('amount')),
+    __param(1, (0, common_1.Body)()),
     __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Number, String]),
+    __metadata("design:paramtypes", [String, sales_dto_1.CreateCustomerPaymentDto, String]),
     __metadata("design:returntype", void 0)
 ], SalesController.prototype, "payDebt", null);
+__decorate([
+    (0, common_1.Get)('customers/:id/current-account'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Consultar movimientos de la cuenta corriente de un cliente' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], SalesController.prototype, "getCustomerAccount", null);
 __decorate([
     (0, common_1.Get)('payment-accounts'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),
