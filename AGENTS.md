@@ -1467,6 +1467,11 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - Las etiquetas de la gráfica interpretan las fechas `YYYY-MM-DD` como días calendario locales, evitando que la conversión UTC muestre cada día desplazado.
 - La tarjeta de ingresos de hoy y los clics de la gráfica consultan exactamente el mismo día local mostrado.
 
+### 10.9 | Septiembre 2026 — Búsqueda popular del POS y `ONLY_FULL_GROUP_BY`
+
+- La búsqueda rápida con `q=` vacío calcula la popularidad mediante un subquery correlacionado, filtrando tenant, ventas completadas y sucursal.
+- No usar `GROUP BY p.id` junto con la selección completa de productos y relaciones: MySQL en producción puede tener `ONLY_FULL_GROUP_BY` habilitado y devolver `500`.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1488,3 +1493,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.3 | Sept 2026 | Dashboard: la gráfica incluye el día actual y permite consultar el detalle de ventas desde hoy, cada día del gráfico o un calendario. |
 | 10.4 | Sept 2026 | POS: al abrir la ventana de ventas se muestran automáticamente los diez productos más vendidos de la sucursal; la búsqueda manual permanece disponible. |
 | 10.5 | Sept 2026 | Dashboard: se corrige el desplazamiento de fechas causado por interpretar días calendario como UTC. |
+| 10.6 | Sept 2026 | POS: se corrige el error `500` de sugerencias populares causado por `GROUP BY` incompatible con `ONLY_FULL_GROUP_BY`; se usa un subquery correlacionado. |

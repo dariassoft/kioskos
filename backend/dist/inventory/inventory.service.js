@@ -439,13 +439,21 @@ let InventoryService = class InventoryService {
             qb.andWhere('(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)', { q: `%${query}%`, exact: query });
         }
         else {
-            qb.innerJoin('sale_items', 'popularItem', 'popularItem.product_id = p.id')
+            const popularitySubquery = qb.subQuery()
+                .select('COALESCE(SUM(popularItem.quantity), 0)')
+                .from('sale_items', 'popularItem')
                 .innerJoin('sales', 'popularSale', 'popularSale.id = popularItem.sale_id')
-                .andWhere('popularSale.tenant_id = :tenantId', { tenantId })
-                .andWhere('popularSale.status = :completedStatus', { completedStatus: 'completed' })
-                .andWhere(branchId ? 'popularSale.branch_id = :popularBranchId' : '1 = 1', { popularBranchId: branchId })
-                .addGroupBy('p.id')
-                .orderBy('SUM(popularItem.quantity)', 'DESC');
+                .where('popularItem.product_id = p.id')
+                .andWhere('popularSale.tenant_id = :tenantId')
+                .andWhere('popularSale.status = :completedStatus')
+                .andWhere(branchId ? 'popularSale.branch_id = :popularBranchId' : '1 = 1');
+            qb.addSelect(`(${popularitySubquery.getQuery()})`, 'popularity')
+                .setParameters({
+                tenantId,
+                completedStatus: 'completed',
+                ...(branchId ? { popularBranchId: branchId } : {}),
+            })
+                .orderBy('popularity', 'DESC');
         }
         if (branchId) {
             qb.leftJoinAndMapOne('p.inventory', inventory_entity_1.Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId', { branchId });

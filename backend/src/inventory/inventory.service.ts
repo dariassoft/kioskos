@@ -593,13 +593,25 @@ export class InventoryService {
         { q: `%${query}%`, exact: query },
       );
     } else {
-      qb.innerJoin('sale_items', 'popularItem', 'popularItem.product_id = p.id')
+      // Usar un subquery evita agrupar la selección completa de productos,
+      // precios y unidad. MySQL en producción puede tener ONLY_FULL_GROUP_BY
+      // habilitado y rechazar GROUP BY p.id con esas columnas adicionales.
+      const popularitySubquery = qb.subQuery()
+        .select('COALESCE(SUM(popularItem.quantity), 0)')
+        .from('sale_items', 'popularItem')
         .innerJoin('sales', 'popularSale', 'popularSale.id = popularItem.sale_id')
-        .andWhere('popularSale.tenant_id = :tenantId', { tenantId })
-        .andWhere('popularSale.status = :completedStatus', { completedStatus: 'completed' })
-        .andWhere(branchId ? 'popularSale.branch_id = :popularBranchId' : '1 = 1', { popularBranchId: branchId })
-        .addGroupBy('p.id')
-        .orderBy('SUM(popularItem.quantity)', 'DESC');
+        .where('popularItem.product_id = p.id')
+        .andWhere('popularSale.tenant_id = :tenantId')
+        .andWhere('popularSale.status = :completedStatus')
+        .andWhere(branchId ? 'popularSale.branch_id = :popularBranchId' : '1 = 1');
+
+      qb.addSelect(`(${popularitySubquery.getQuery()})`, 'popularity')
+        .setParameters({
+          tenantId,
+          completedStatus: 'completed',
+          ...(branchId ? { popularBranchId: branchId } : {}),
+        })
+        .orderBy('popularity', 'DESC');
     }
 
     if (branchId) {
