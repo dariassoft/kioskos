@@ -4,7 +4,7 @@ import { useOrders, useReceiveOrder, useCreateOrder, useSuppliers } from '@hooks
 import { useProducts } from '@hooks/useInventory';
 import { useBranchStore } from '@store/branch.store';
 import ReplenishmentAssistant from '@components/ReplenishmentAssistant';
-import type { PurchaseOrder } from '@api/purchases.types';
+import type { PurchaseOrder, Supplier } from '@api/purchases.types';
 
 function CreatePOModal({ isOpen, onClose, suggested = [] }: { isOpen: boolean, onClose: () => void, suggested?: { product_id: string; quantity: number; unit_cost: number }[] }) {
   const { activeBranch } = useBranchStore(); const { data: suppliers = [] } = useSuppliers(); const { data: products } = useProducts({ page: 1, limit: 200 }); const createOrder = useCreateOrder()
@@ -17,7 +17,7 @@ function CreatePOModal({ isOpen, onClose, suggested = [] }: { isOpen: boolean, o
       <div className="bg-card w-full max-w-lg rounded-2xl p-6 shadow-xl border border-border animate-fade-in text-center">
         <Package className="w-12 h-12 text-primary mx-auto mb-4 opacity-50" />
         <h2 className="text-xl font-bold mb-2">Crear Orden de Compra</h2>
-        <select value={supplierId} onChange={e => setSupplierId(e.target.value)} className="w-full p-2 border rounded-lg mb-3"><option value="">Seleccionar proveedor</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+        <select value={supplierId} onChange={e => setSupplierId(e.target.value)} className="w-full p-2 border rounded-lg mb-3"><option value="">Seleccionar proveedor</option>{suppliers.map((s: Supplier) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
         <div className="flex gap-2 mb-3"><select value={productId} onChange={e => setProductId(e.target.value)} className="flex-1 p-2 border rounded-lg"><option value="">Agregar producto</option>{products?.data?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><input type="number" min="1" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-20 p-2 border rounded-lg" placeholder="Cant." /><input type="number" min="0" value={unitCost} onChange={e => setUnitCost(Number(e.target.value))} className="w-24 p-2 border rounded-lg" placeholder="Costo" /><button onClick={addItem} className="px-3 bg-accent rounded-lg">+</button></div>
         <div className="text-left max-h-32 overflow-auto mb-4">{items.map((item, i) => <div key={i} className="text-sm flex justify-between py-1"><span>{products?.data?.find(p => p.id === item.product_id)?.name || 'Producto'} x {item.quantity}</span><span>${item.quantity * item.unit_cost}</span></div>)}</div>
         <div className="flex gap-2"><button onClick={onClose} className="flex-1 px-5 py-2.5 border rounded-xl">Cancelar</button><button disabled={!supplierId || !items.length || createOrder.isPending} onClick={submit} className="flex-1 px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl">Crear orden</button></div>
