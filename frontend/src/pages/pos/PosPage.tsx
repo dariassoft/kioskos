@@ -498,17 +498,13 @@ export default function PosPage() {
 
   // 3. Manejo de búsqueda en tiempo real usando el endpoint rápido
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setProductsCache([])
-      return
-    }
     const timer = setTimeout(() => {
       setIsSearching(true)
       inventoryApi.quickSearch(searchQuery, activeBranch?.id).then((res) => {
         setProductsCache(res)
         setIsSearching(false)
       })
-    }, 300)
+    }, searchQuery.trim() ? 300 : 0)
     return () => clearTimeout(timer)
   }, [searchQuery, activeBranch?.id])
 
@@ -661,7 +657,7 @@ export default function PosPage() {
             </button>
           </div>
           <p className="text-[10px] md:text-xs text-muted-foreground font-medium uppercase tracking-wider">
-            {productsCache.length} productos {searchQuery ? 'encontrados' : 'sugeridos'}
+             {searchQuery ? `${productsCache.length} productos encontrados` : '5 productos más vendidos'}
           </p>
         </div>
 

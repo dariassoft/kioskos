@@ -1456,6 +1456,12 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - La tarjeta `Ingresos de hoy`, cada barra del gráfico y el calendario del Dashboard abren el detalle de ventas de la fecha seleccionada.
 - El detalle reutiliza `GET /sales` con rango de fechas, paginación y `branch_id`, manteniendo el aislamiento por tenant y sucursal.
 
+### 10.7 | Septiembre 2026 — Productos más vendidos en el POS
+
+- La búsqueda rápida del POS, cuando el campo está vacío, muestra automáticamente los cinco productos más vendidos de la sucursal según las ventas completadas.
+- La búsqueda por nombre, código de barras o código interno mantiene su comportamiento normal y continúa mostrando hasta 20 resultados.
+- Las sugerencias populares respetan el tenant, la sucursal y la exclusión de materias primas; se reutiliza el mismo endpoint para conservar stock y precios actuales.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1475,3 +1481,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.1 | Sept 2026 | Registro del incidente DNS de `dokploy-network` y corrección permanente mediante upstream explícito `kioskos_api`; CRUD de unidades, categorías y marcas; creación manual y automática de órdenes de compra desde reposición. |
 | 10.2 | Sept 2026 | Corrección del flujo de pagos confirmados del POS: se evita la doble verificación de transferencias con comprobante y se hace idempotente la confirmación. |
 | 10.3 | Sept 2026 | Dashboard: la gráfica incluye el día actual y permite consultar el detalle de ventas desde hoy, cada día del gráfico o un calendario. |
+| 10.4 | Sept 2026 | POS: al abrir la ventana de ventas se muestran automáticamente los cinco productos más vendidos de la sucursal; la búsqueda manual permanece disponible. |

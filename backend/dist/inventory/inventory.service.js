@@ -434,12 +434,22 @@ let InventoryService = class InventoryService {
             .leftJoinAndSelect('p.unit', 'unit')
             .where('p.tenant_id = :tenantId', { tenantId })
             .andWhere('p.is_active = :active', { active: true })
-            .andWhere('p.product_type != :rawType', { rawType: 'raw_material' })
-            .andWhere('(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)', { q: `%${query}%`, exact: query });
+            .andWhere('p.product_type != :rawType', { rawType: 'raw_material' });
+        if (query.trim()) {
+            qb.andWhere('(p.name LIKE :q OR p.barcode = :exact OR p.internal_code LIKE :q)', { q: `%${query}%`, exact: query });
+        }
+        else {
+            qb.innerJoin('sale_items', 'popularItem', 'popularItem.product_id = p.id')
+                .innerJoin('sales', 'popularSale', 'popularSale.id = popularItem.sale_id')
+                .andWhere('popularSale.tenant_id = :tenantId', { tenantId })
+                .andWhere('popularSale.status = :completedStatus', { completedStatus: 'completed' })
+                .addGroupBy('p.id')
+                .orderBy('SUM(popularItem.quantity)', 'DESC');
+        }
         if (branchId) {
             qb.leftJoinAndMapOne('p.inventory', inventory_entity_1.Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId', { branchId });
         }
-        return qb.limit(20).getMany();
+        return qb.limit(query.trim() ? 20 : 5).getMany();
     }
 };
 exports.InventoryService = InventoryService;
