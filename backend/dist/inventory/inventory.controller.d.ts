@@ -39,10 +39,16 @@ export declare class InventoryController {
     updateBranch(id: string, dto: CreateBranchDto, tenantId: string): Promise<import("./entities/branch.entity").Branch>;
     findCategories(tenantId: string): Promise<import("./entities/category.entity").Category[]>;
     createCategory(dto: CreateCategoryDto, tenantId: string): Promise<import("./entities/category.entity").Category>;
+    updateCategory(id: string, dto: Partial<CreateCategoryDto>, tenantId: string): Promise<import("./entities/category.entity").Category>;
+    deleteCategory(id: string, tenantId: string): Promise<void>;
     findAllBrands(tenantId: string): Promise<import("./entities/brand.entity").Brand[]>;
     createBrand(dto: CreateBrandDto, tenantId: string): Promise<import("./entities/brand.entity").Brand>;
+    updateBrand(id: string, dto: Partial<CreateBrandDto>, tenantId: string): Promise<import("./entities/brand.entity").Brand>;
+    deleteBrand(id: string, tenantId: string): Promise<void>;
     findUnits(tenantId: string): Promise<import("./entities/unit.entity").Unit[]>;
     createUnit(dto: CreateUnitDto, tenantId: string): Promise<import("./entities/unit.entity").Unit>;
+    updateUnit(id: string, dto: Partial<CreateUnitDto>, tenantId: string): Promise<import("./entities/unit.entity").Unit>;
+    deleteUnit(id: string, tenantId: string): Promise<void>;
     findPriceLists(tenantId: string): Promise<import("./entities/price-list.entity").PriceList[]>;
     createPriceList(body: {
         name: string;

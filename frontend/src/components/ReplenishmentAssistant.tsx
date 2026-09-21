@@ -16,7 +16,7 @@ interface ReplenishmentItem {
   }
 }
 
-export default function ReplenishmentAssistant({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+export default function ReplenishmentAssistant({ isOpen, onClose, onGenerate }: { isOpen: boolean, onClose: () => void, onGenerate?: (items: { product_id: string; quantity: number; unit_cost: number }[]) => void }) {
   const { activeBranch } = useBranchStore()
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
 
@@ -39,8 +39,8 @@ export default function ReplenishmentAssistant({ isOpen, onClose }: { isOpen: bo
   }
 
   const handleGenerateOC = () => {
-    // Aquí iría la lógica para abrir el modal de nueva OC pre-cargado
-    alert('Función de generación de OC automática en desarrollo. Se pre-cargarán ' + selectedItems.size + ' productos.')
+    const suggested = items.filter(i => selectedItems.has(i.product.id)).map(i => ({ product_id: i.product.id, quantity: Math.max(Number(i.min_stock_alert) - Number(i.stock_quantity), 1), unit_cost: Number(i.product.cost_price) || 0 }))
+    onGenerate?.(suggested)
     onClose()
   }
 
@@ -83,7 +83,7 @@ export default function ReplenishmentAssistant({ isOpen, onClose }: { isOpen: bo
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-muted-foreground uppercase">{items.length} Productos críticos detectados</span>
                 <button 
-                  onClick={() => setSelectedItems(new Set(items.map((i: ReplenishmentItem) => i.id)))}
+                   onClick={() => setSelectedItems(new Set(items.map((i: ReplenishmentItem) => i.product.id)))}
                   className="text-xs text-primary font-bold hover:underline"
                 >
                   Seleccionar todos
@@ -94,7 +94,7 @@ export default function ReplenishmentAssistant({ isOpen, onClose }: { isOpen: bo
                 {items.map((item: ReplenishmentItem) => (
                   <div 
                     key={item.id}
-                    onClick={() => toggleItem(item.id)}
+                     onClick={() => toggleItem(item.product.id)}
                     className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                       selectedItems.has(item.id) 
                         ? 'border-primary bg-primary/5' 

@@ -222,6 +222,25 @@ export class InventoryController {
     return this.inventoryService.createCategory(dto, tenantId);
   }
 
+  @Patch('categories/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Actualizar categoría' })
+  updateCategory(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateCategoryDto>,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.updateCategory(id, dto, tenantId);
+  }
+
+  @Delete('categories/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar categoría (desvincula productos)' })
+  deleteCategory(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.inventoryService.deleteCategory(id, tenantId);
+  }
+
   @Get('brands')
   @ApiOperation({ summary: 'Listado de marcas' })
   findAllBrands(@GetTenantId() tenantId: string) {
@@ -233,6 +252,25 @@ export class InventoryController {
   @ApiOperation({ summary: 'Crear nueva marca' })
   createBrand(@Body() dto: CreateBrandDto, @GetTenantId() tenantId: string) {
     return this.inventoryService.createBrand(dto, tenantId);
+  }
+
+  @Patch('brands/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Actualizar marca' })
+  updateBrand(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateBrandDto>,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.updateBrand(id, dto, tenantId);
+  }
+
+  @Delete('brands/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar marca (desvincula productos)' })
+  deleteBrand(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.inventoryService.deleteBrand(id, tenantId);
   }
 
   // ==========================================
@@ -251,6 +289,25 @@ export class InventoryController {
   @ApiOperation({ summary: 'Crear unidad de medida' })
   createUnit(@Body() dto: CreateUnitDto, @GetTenantId() tenantId: string) {
     return this.inventoryService.createUnit(dto, tenantId);
+  }
+
+  @Patch('units/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Actualizar unidad de medida' })
+  updateUnit(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateUnitDto>,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.inventoryService.updateUnit(id, dto, tenantId);
+  }
+
+  @Delete('units/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar unidad de medida (desvincula productos)' })
+  deleteUnit(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.inventoryService.deleteUnit(id, tenantId);
   }
 
   // ==========================================

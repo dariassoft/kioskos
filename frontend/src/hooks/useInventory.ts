@@ -167,6 +167,15 @@ export const useCreateCategory = () => {
   })
 }
 
+export const useUpdateCategory = () => {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: ({ id, data }: { id: string; data: any }) => inventoryApi.updateCategory(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); toast.success('Categoría actualizada') } })
+}
+export const useDeleteCategory = () => {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: inventoryApi.deleteCategory, onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); toast.success('Categoría eliminada') } })
+}
+
 export const useCreateUnit = () => {
   const qc = useQueryClient()
   return useMutation({
@@ -176,6 +185,14 @@ export const useCreateUnit = () => {
       toast.success('Unidad creada')
     },
   })
+}
+export const useUpdateUnit = () => {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: ({ id, data }: { id: string; data: any }) => inventoryApi.updateUnit(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['units'] }); toast.success('Unidad actualizada') } })
+}
+export const useDeleteUnit = () => {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: inventoryApi.deleteUnit, onSuccess: () => { qc.invalidateQueries({ queryKey: ['units'] }); toast.success('Unidad eliminada') } })
 }
 
 export const useBulkUpdatePrices = () => {
@@ -210,6 +227,14 @@ export function useCreateBrand() {
       queryClient.invalidateQueries({ queryKey: ['inventory', 'brands'] })
     },
   })
+}
+export function useUpdateBrand() {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: ({ id, data }: { id: string; data: CreateBrandDto }) => inventoryApi.updateBrand(id, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['inventory', 'brands'] }); toast.success('Marca actualizada') } })
+}
+export function useDeleteBrand() {
+  const qc = useQueryClient()
+  return useMutation({ mutationFn: inventoryApi.deleteBrand, onSuccess: () => { qc.invalidateQueries({ queryKey: ['inventory', 'brands'] }); toast.success('Marca eliminada') } })
 }
 
 export const useTransferStock = () => {

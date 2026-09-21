@@ -56,10 +56,16 @@ export declare class InventoryService {
     findOneBranch(id: string, tenantId: string): Promise<Branch>;
     findAllCategories(tenantId: string): Promise<Category[]>;
     createCategory(dto: CreateCategoryDto, tenantId: string): Promise<Category>;
+    updateCategory(id: string, dto: Partial<CreateCategoryDto>, tenantId: string): Promise<Category>;
+    deleteCategory(id: string, tenantId: string): Promise<void>;
     findAllBrands(tenantId: string): Promise<Brand[]>;
     createBrand(dto: CreateBrandDto, tenantId: string): Promise<Brand>;
+    updateBrand(id: string, dto: Partial<CreateBrandDto>, tenantId: string): Promise<Brand>;
+    deleteBrand(id: string, tenantId: string): Promise<void>;
     findAllUnits(tenantId: string): Promise<Unit[]>;
     createUnit(dto: CreateUnitDto, tenantId: string): Promise<Unit>;
+    updateUnit(id: string, dto: Partial<CreateUnitDto>, tenantId: string): Promise<Unit>;
+    deleteUnit(id: string, tenantId: string): Promise<void>;
     findAllPriceLists(tenantId: string): Promise<PriceList[]>;
     createPriceList(name: string, tenantId: string, isDefault?: boolean): Promise<PriceList>;
     quickSearch(query: string, tenantId: string, branchId?: string): Promise<Product[]>;

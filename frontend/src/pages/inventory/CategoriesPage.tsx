@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Tag, Loader2, X } from 'lucide-react'
-import { useCategories, useCreateCategory } from '@hooks/useInventory'
+import { Plus, Tag, Loader2, X, Pencil, Trash2 } from 'lucide-react'
+import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@hooks/useInventory'
 import type { Category } from '@api/inventory.types'
 
 const CATEGORY_COLORS = [
@@ -18,23 +18,23 @@ const categorySchema = z.object({
 })
 type CategoryForm = z.infer<typeof categorySchema>
 
-function CategoryModal({ onClose }: { onClose: () => void }) {
-  const [selectedColor, setSelectedColor] = useState(CATEGORY_COLORS[0])
-  const createCategory = useCreateCategory()
+function CategoryModal({ onClose, category }: { onClose: () => void; category?: Category }) {
+  const [selectedColor, setSelectedColor] = useState(category?.color || CATEGORY_COLORS[0])
+  const createCategory = useCreateCategory(); const updateCategory = useUpdateCategory()
 
   const { register, handleSubmit, formState: { errors } } = useForm<CategoryForm>({
     resolver: zodResolver(categorySchema),
   })
 
   const onSubmit = (data: CategoryForm) => {
-    createCategory.mutate({ ...data, color: selectedColor }, { onSuccess: onClose })
+    category ? updateCategory.mutate({ id: category.id, data: { ...data, color: selectedColor } }, { onSuccess: onClose }) : createCategory.mutate({ ...data, color: selectedColor }, { onSuccess: onClose })
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in">
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-semibold text-foreground">Nueva categoría</h2>
+          <h2 className="font-semibold text-foreground">{category ? 'Editar categoría' : 'Nueva categoría'}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
             <X className="w-4 h-4" />
           </button>
@@ -43,7 +43,7 @@ function CategoryModal({ onClose }: { onClose: () => void }) {
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">Nombre *</label>
             <input
-              {...register('name')}
+               defaultValue={category?.name} {...register('name')}
               autoFocus
               className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm
                          focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -75,12 +75,12 @@ function CategoryModal({ onClose }: { onClose: () => void }) {
             </button>
             <button
               type="submit"
-              disabled={createCategory.isPending}
+               disabled={createCategory.isPending || updateCategory.isPending}
               className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium
                          hover:bg-primary/90 disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {createCategory.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Crear
+               {category ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
@@ -91,14 +91,16 @@ function CategoryModal({ onClose }: { onClose: () => void }) {
 
 export default function CategoriesPage() {
   const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<Category | undefined>()
   const { data: categories = [], isLoading } = useCategories()
+  const deleteCategory = useDeleteCategory()
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{categories.length} categorías</p>
         <button
-          onClick={() => setShowModal(true)}
+           onClick={() => { setEditing(undefined); setShowModal(true) }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground
                      rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
         >
@@ -130,13 +132,15 @@ export default function CategoriesPage() {
               >
                 <Tag className="w-4 h-4" style={{ color: cat.color ?? 'var(--muted-foreground)' }} />
               </div>
-              <span className="font-medium text-foreground text-sm truncate">{cat.name}</span>
+               <span className="font-medium text-foreground text-sm truncate flex-1">{cat.name}</span>
+               <button title="Editar" onClick={() => { setEditing(cat); setShowModal(true) }} className="p-1 text-muted-foreground hover:text-primary"><Pencil className="w-3.5 h-3.5" /></button>
+               <button title="Eliminar" onClick={() => window.confirm(`¿Eliminar ${cat.name}?`) && deleteCategory.mutate(cat.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>
       )}
 
-      {showModal && <CategoryModal onClose={() => setShowModal(false)} />}
+       {showModal && <CategoryModal category={editing} onClose={() => setShowModal(false)} />}
     </div>
   )
 }

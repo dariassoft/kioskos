@@ -1,23 +1,26 @@
 import { useState } from 'react';
 import { Package, Search, Plus, CheckCircle2, Factory, Sparkles } from 'lucide-react';
-import { useOrders, useReceiveOrder } from '@hooks/usePurchases';
+import { useOrders, useReceiveOrder, useCreateOrder, useSuppliers } from '@hooks/usePurchases';
+import { useProducts } from '@hooks/useInventory';
 import { useBranchStore } from '@store/branch.store';
 import ReplenishmentAssistant from '@components/ReplenishmentAssistant';
 import type { PurchaseOrder } from '@api/purchases.types';
 
-function CreatePOModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+function CreatePOModal({ isOpen, onClose, suggested = [] }: { isOpen: boolean, onClose: () => void, suggested?: { product_id: string; quantity: number; unit_cost: number }[] }) {
+  const { activeBranch } = useBranchStore(); const { data: suppliers = [] } = useSuppliers(); const { data: products } = useProducts({ page: 1, limit: 200 }); const createOrder = useCreateOrder()
+  const [supplierId, setSupplierId] = useState(''); const [items, setItems] = useState(suggested); const [productId, setProductId] = useState(''); const [quantity, setQuantity] = useState(1); const [unitCost, setUnitCost] = useState(0)
   if (!isOpen) return null;
+  const addItem = () => { if (!productId || quantity <= 0) return; setItems([...items, { product_id: productId, quantity, unit_cost: unitCost }]); setProductId('') }
+  const submit = () => { if (!supplierId || !activeBranch?.id || !items.length) return; createOrder.mutate({ supplier_id: supplierId, branch_id: activeBranch.id, items }, { onSuccess: onClose }) }
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex flex-col items-center justify-center p-4">
       <div className="bg-card w-full max-w-lg rounded-2xl p-6 shadow-xl border border-border animate-fade-in text-center">
         <Package className="w-12 h-12 text-primary mx-auto mb-4 opacity-50" />
         <h2 className="text-xl font-bold mb-2">Crear Orden de Compra</h2>
-        <p className="text-muted-foreground text-sm mb-6">
-          Para simplificar la demo, hemos saltado el formulario complejo de carrito de compras.
-        </p>
-        <button onClick={onClose} className="px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl shadow-sm hover:bg-primary/90">
-          Cerrar
-        </button>
+        <select value={supplierId} onChange={e => setSupplierId(e.target.value)} className="w-full p-2 border rounded-lg mb-3"><option value="">Seleccionar proveedor</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+        <div className="flex gap-2 mb-3"><select value={productId} onChange={e => setProductId(e.target.value)} className="flex-1 p-2 border rounded-lg"><option value="">Agregar producto</option>{products?.data?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><input type="number" min="1" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-20 p-2 border rounded-lg" placeholder="Cant." /><input type="number" min="0" value={unitCost} onChange={e => setUnitCost(Number(e.target.value))} className="w-24 p-2 border rounded-lg" placeholder="Costo" /><button onClick={addItem} className="px-3 bg-accent rounded-lg">+</button></div>
+        <div className="text-left max-h-32 overflow-auto mb-4">{items.map((item, i) => <div key={i} className="text-sm flex justify-between py-1"><span>{products?.data?.find(p => p.id === item.product_id)?.name || 'Producto'} x {item.quantity}</span><span>${item.quantity * item.unit_cost}</span></div>)}</div>
+        <div className="flex gap-2"><button onClick={onClose} className="flex-1 px-5 py-2.5 border rounded-xl">Cancelar</button><button disabled={!supplierId || !items.length || createOrder.isPending} onClick={submit} className="flex-1 px-5 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl">Crear orden</button></div>
       </div>
     </div>
   );
@@ -30,6 +33,7 @@ export default function OrdersTab() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
   const [isAssistantOpen, setAssistantOpen] = useState(false);
+  const [suggestedItems, setSuggestedItems] = useState<{ product_id: string; quantity: number; unit_cost: number }[]>([]);
 
   // Filtrar por sucursal actual y búsqueda local (ej: prov o total)
   const branchOrders = orders.filter((o: PurchaseOrder) => o.branch_id === activeBranch?.id);
@@ -55,7 +59,7 @@ export default function OrdersTab() {
               Asistente IA
             </button>
             <button
-              onClick={() => setModalOpen(true)}
+               onClick={() => { setSuggestedItems([]); setModalOpen(true) }}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 font-semibold hover:bg-primary/90 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -126,8 +130,8 @@ export default function OrdersTab() {
         </div>
       )}
       
-      <CreatePOModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
-      <ReplenishmentAssistant isOpen={isAssistantOpen} onClose={() => setAssistantOpen(false)} />
+       <CreatePOModal isOpen={isModalOpen} suggested={suggestedItems} onClose={() => setModalOpen(false)} />
+       <ReplenishmentAssistant isOpen={isAssistantOpen} onClose={() => setAssistantOpen(false)} onGenerate={(items) => { setSuggestedItems(items); setModalOpen(true) }} />
     </div>
   );
 }

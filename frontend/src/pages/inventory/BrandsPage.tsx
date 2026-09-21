@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Award, Loader2, X, Search, Trash2 } from 'lucide-react'
-import { useBrands, useCreateBrand } from '@hooks/useInventory'
+import { Plus, Award, Loader2, X, Search, Trash2, Pencil } from 'lucide-react'
+import { useBrands, useCreateBrand, useUpdateBrand, useDeleteBrand } from '@hooks/useInventory'
 import type { Brand } from '@api/inventory.types'
 
 const brandSchema = z.object({
@@ -11,22 +11,22 @@ const brandSchema = z.object({
 })
 type BrandForm = z.infer<typeof brandSchema>
 
-function BrandModal({ onClose }: { onClose: () => void }) {
-  const createBrand = useCreateBrand()
+function BrandModal({ onClose, brand }: { onClose: () => void; brand?: Brand }) {
+  const createBrand = useCreateBrand(); const updateBrand = useUpdateBrand()
 
   const { register, handleSubmit, formState: { errors } } = useForm<BrandForm>({
     resolver: zodResolver(brandSchema),
   })
 
   const onSubmit = (data: BrandForm) => {
-    createBrand.mutate(data, { onSuccess: onClose })
+    brand ? updateBrand.mutate({ id: brand.id, data }, { onSuccess: onClose }) : createBrand.mutate(data, { onSuccess: onClose })
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in">
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-semibold text-foreground">Nueva marca</h2>
+           <h2 className="font-semibold text-foreground">{brand ? 'Editar marca' : 'Nueva marca'}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
             <X className="w-4 h-4" />
           </button>
@@ -34,7 +34,7 @@ function BrandModal({ onClose }: { onClose: () => void }) {
         <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">Nombre de la marca *</label>
-            <input
+              <input defaultValue={brand?.name}
               {...register('name')}
               autoFocus
               className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -51,8 +51,8 @@ function BrandModal({ onClose }: { onClose: () => void }) {
               disabled={createBrand.isPending}
               className="flex-1 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-60 flex items-center justify-center gap-2"
             >
-              {createBrand.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Crear
+               {(createBrand.isPending || updateBrand.isPending) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+               {brand ? 'Guardar' : 'Crear'}
             </button>
           </div>
         </form>
@@ -63,8 +63,10 @@ function BrandModal({ onClose }: { onClose: () => void }) {
 
 export default function BrandsPage() {
   const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<Brand | undefined>()
   const [search, setSearch] = useState('')
   const { data: brands = [], isLoading } = useBrands()
+  const deleteBrand = useDeleteBrand()
 
   const filteredBrands = brands.filter((b: Brand) => b.name.toLowerCase().includes(search.toLowerCase()))
 
@@ -82,7 +84,7 @@ export default function BrandsPage() {
         </div>
         
         <button
-          onClick={() => setShowModal(true)}
+           onClick={() => { setEditing(undefined); setShowModal(true) }}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -117,9 +119,12 @@ export default function BrandsPage() {
               </div>
               <span className="font-bold text-foreground text-sm line-clamp-2">{brand.name}</span>
               
-              <button 
+               <button title="Editar" className="absolute top-2 left-2 p-1.5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all" onClick={() => { setEditing(brand); setShowModal(true) }}>
+                 <Pencil className="w-3.5 h-3.5" />
+               </button>
+               <button 
                 className="absolute top-2 right-2 p-1.5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
-                onClick={() => {}} // TODO: Eliminar marca
+                 onClick={() => window.confirm(`¿Eliminar ${brand.name}?`) && deleteBrand.mutate(brand.id)}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -128,7 +133,7 @@ export default function BrandsPage() {
         </div>
       )}
 
-      {showModal && <BrandModal onClose={() => setShowModal(false)} />}
+       {showModal && <BrandModal brand={editing} onClose={() => setShowModal(false)} />}
     </div>
   )
 }

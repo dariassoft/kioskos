@@ -87,17 +87,35 @@ let InventoryController = class InventoryController {
     createCategory(dto, tenantId) {
         return this.inventoryService.createCategory(dto, tenantId);
     }
+    updateCategory(id, dto, tenantId) {
+        return this.inventoryService.updateCategory(id, dto, tenantId);
+    }
+    deleteCategory(id, tenantId) {
+        return this.inventoryService.deleteCategory(id, tenantId);
+    }
     findAllBrands(tenantId) {
         return this.inventoryService.findAllBrands(tenantId);
     }
     createBrand(dto, tenantId) {
         return this.inventoryService.createBrand(dto, tenantId);
     }
+    updateBrand(id, dto, tenantId) {
+        return this.inventoryService.updateBrand(id, dto, tenantId);
+    }
+    deleteBrand(id, tenantId) {
+        return this.inventoryService.deleteBrand(id, tenantId);
+    }
     findUnits(tenantId) {
         return this.inventoryService.findAllUnits(tenantId);
     }
     createUnit(dto, tenantId) {
         return this.inventoryService.createUnit(dto, tenantId);
+    }
+    updateUnit(id, dto, tenantId) {
+        return this.inventoryService.updateUnit(id, dto, tenantId);
+    }
+    deleteUnit(id, tenantId) {
+        return this.inventoryService.deleteUnit(id, tenantId);
     }
     findPriceLists(tenantId) {
         return this.inventoryService.findAllPriceLists(tenantId);
@@ -315,6 +333,28 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "createCategory", null);
 __decorate([
+    (0, common_1.Patch)('categories/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Actualizar categoría' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateCategory", null);
+__decorate([
+    (0, common_1.Delete)('categories/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    (0, swagger_1.ApiOperation)({ summary: 'Eliminar categoría (desvincula productos)' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteCategory", null);
+__decorate([
     (0, common_1.Get)('brands'),
     (0, swagger_1.ApiOperation)({ summary: 'Listado de marcas' }),
     __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
@@ -332,6 +372,28 @@ __decorate([
     __metadata("design:paramtypes", [inventory_dto_1.CreateBrandDto, String]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "createBrand", null);
+__decorate([
+    (0, common_1.Patch)('brands/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Actualizar marca' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateBrand", null);
+__decorate([
+    (0, common_1.Delete)('brands/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    (0, swagger_1.ApiOperation)({ summary: 'Eliminar marca (desvincula productos)' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteBrand", null);
 __decorate([
     (0, common_1.Get)('units'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),
@@ -351,6 +413,28 @@ __decorate([
     __metadata("design:paramtypes", [inventory_dto_1.CreateUnitDto, String]),
     __metadata("design:returntype", void 0)
 ], InventoryController.prototype, "createUnit", null);
+__decorate([
+    (0, common_1.Patch)('units/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Actualizar unidad de medida' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "updateUnit", null);
+__decorate([
+    (0, common_1.Delete)('units/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    (0, swagger_1.ApiOperation)({ summary: 'Eliminar unidad de medida (desvincula productos)' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], InventoryController.prototype, "deleteUnit", null);
 __decorate([
     (0, common_1.Get)('price-lists'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),

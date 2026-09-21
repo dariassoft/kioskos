@@ -91,6 +91,11 @@ export const inventoryApi = {
     const res = await apiClient.post('/inventory/categories', data)
     return res.data
   },
+  updateCategory: async (id: string, data: Partial<Category>): Promise<Category> => {
+    const res = await apiClient.patch(`/inventory/categories/${id}`, data)
+    return res.data
+  },
+  deleteCategory: async (id: string): Promise<void> => { await apiClient.delete(`/inventory/categories/${id}`) },
 
   // Unidades
   getUnits: async (): Promise<Unit[]> => {
@@ -102,6 +107,11 @@ export const inventoryApi = {
     const res = await apiClient.post('/inventory/units', data)
     return res.data
   },
+  updateUnit: async (id: string, data: Partial<Unit>): Promise<Unit> => {
+    const res = await apiClient.patch(`/inventory/units/${id}`, data)
+    return res.data
+  },
+  deleteUnit: async (id: string): Promise<void> => { await apiClient.delete(`/inventory/units/${id}`) },
 
   // Listas de precios
   getPriceLists: async (): Promise<PriceList[]> => {
@@ -124,6 +134,11 @@ export const inventoryApi = {
     const res = await apiClient.post('/inventory/brands', data)
     return res.data
   },
+  async updateBrand(id: string, data: Partial<CreateBrandDto>): Promise<Brand> {
+    const res = await apiClient.patch(`/inventory/brands/${id}`, data)
+    return res.data
+  },
+  async deleteBrand(id: string): Promise<void> { await apiClient.delete(`/inventory/brands/${id}`) },
   
   async transferStock(data: TransferStockDto): Promise<{ success: boolean; transferred: number }> {
     const res = await apiClient.post('/inventory/stock/transfer', data)

@@ -470,6 +470,21 @@ export class InventoryService {
     return this.categoryRepo.save(cat);
   }
 
+  async updateCategory(id: string, dto: Partial<CreateCategoryDto>, tenantId: string): Promise<Category> {
+    const cat = await this.categoryRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!cat) throw new NotFoundException('Categoría no encontrada');
+    await this.categoryRepo.update({ id, tenant_id: tenantId }, dto as any);
+    return this.categoryRepo.findOne({ where: { id, tenant_id: tenantId } }) as Promise<Category>;
+  }
+
+  async deleteCategory(id: string, tenantId: string): Promise<void> {
+    const cat = await this.categoryRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!cat) throw new NotFoundException('Categoría no encontrada');
+    // Desvincular productos para no romper el catálogo, luego borrar
+    await this.productRepo.update({ category_id: id, tenant_id: tenantId }, { category_id: null as any });
+    await this.categoryRepo.delete({ id, tenant_id: tenantId });
+  }
+
   // ==========================================
   // MARCAS
   // ==========================================
@@ -483,6 +498,20 @@ export class InventoryService {
     return this.brandRepo.save(brand);
   }
 
+  async updateBrand(id: string, dto: Partial<CreateBrandDto>, tenantId: string): Promise<Brand> {
+    const brand = await this.brandRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!brand) throw new NotFoundException('Marca no encontrada');
+    await this.brandRepo.update({ id, tenant_id: tenantId }, dto as any);
+    return this.brandRepo.findOne({ where: { id, tenant_id: tenantId } }) as Promise<Brand>;
+  }
+
+  async deleteBrand(id: string, tenantId: string): Promise<void> {
+    const brand = await this.brandRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!brand) throw new NotFoundException('Marca no encontrada');
+    await this.productRepo.update({ brand_id: id, tenant_id: tenantId }, { brand_id: null as any });
+    await this.brandRepo.delete({ id, tenant_id: tenantId });
+  }
+
   // ==========================================
   // UNIDADES DE MEDIDA
   // ==========================================
@@ -494,6 +523,20 @@ export class InventoryService {
   async createUnit(dto: CreateUnitDto, tenantId: string): Promise<Unit> {
     const unit = this.unitRepo.create({ ...dto, tenant_id: tenantId });
     return this.unitRepo.save(unit);
+  }
+
+  async updateUnit(id: string, dto: Partial<CreateUnitDto>, tenantId: string): Promise<Unit> {
+    const unit = await this.unitRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!unit) throw new NotFoundException('Unidad de medida no encontrada');
+    await this.unitRepo.update({ id, tenant_id: tenantId }, dto as any);
+    return this.unitRepo.findOne({ where: { id, tenant_id: tenantId } }) as Promise<Unit>;
+  }
+
+  async deleteUnit(id: string, tenantId: string): Promise<void> {
+    const unit = await this.unitRepo.findOne({ where: { id, tenant_id: tenantId } });
+    if (!unit) throw new NotFoundException('Unidad de medida no encontrada');
+    await this.productRepo.update({ unit_id: id, tenant_id: tenantId }, { unit_id: null as any });
+    await this.unitRepo.delete({ id, tenant_id: tenantId });
   }
 
   // ==========================================

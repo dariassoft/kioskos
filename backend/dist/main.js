@@ -232,6 +232,17 @@ async function bootstrap() {
     app.useStaticAssets(path.join(__dirname, '..', 'uploads'), {
         prefix: '/uploads/',
     });
+    if (configService.get('API_REQUEST_LOG') !== 'false') {
+        app.use((req, res, next) => {
+            const start = Date.now();
+            res.on('finish', () => {
+                const ms = Date.now() - start;
+                console.log(`[REQ] ${req.method} ${req.originalUrl} → ${res.statusCode} (${ms}ms)`);
+            });
+            next();
+        });
+        console.log('🔍 [DEBUG] Request logger activo (API_REQUEST_LOG)');
+    }
     const port = Number(configService.get('APP_PORT') || 3000);
     await app.listen(port);
     console.log(`🚀 Kioskos & Despenzas API corriendo en: http://localhost:${port}/api/v1`);

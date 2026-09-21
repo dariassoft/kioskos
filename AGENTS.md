@@ -43,6 +43,11 @@
 ### 🐛 Bug DNS en Docker exec
 Cuando se corre `docker exec kioskos_api sh -c "npx ts-node src/seed.ts"`, el proceso nuevo NO hereda el DNS interno de Docker (hostname `db` no resuelve). El proceso principal (PID 1) SÍ resuelve porque fue iniciado por Docker Compose con la red configurada. **Solución permanente:** usar `seed.sql` directamente en el contenedor MySQL.
 
+### 🚨 Bug DNS en `dokploy-network` — nombres de servicios API
+En producción sobre el VPS, `dokploy-network` es una red compartida por varios proyectos. Existían varios servicios que publicaban el alias genérico `api` (`rms_api`, `medical_api`, `kioskos_api`). Docker resolvía `api` hacia las tres IPs en round-robin, por lo que aproximadamente 2 de cada 3 requests podían llegar al backend equivocado y devolver errores `404` intermitentes.
+
+**Regla permanente:** en producción nunca usar `api` como upstream del frontend de Kioskos & Despenzas. El proxy de `frontend/nginx.conf` debe apuntar explícitamente a `kioskos_api`, que es el nombre único de este proyecto dentro de `dokploy-network`. Si se agrega o modifica un servicio Docker, verificar que no se reintroduzca el alias genérico.
+
 ### 🔧 node_modules en contenedores
 Al hacer `docker compose down`, los volúmenes anónimos de node_modules se eliminan. Usar `docker compose stop` para pausar sin perder volúmenes. Si se perdieron: `docker compose build client && docker compose up -d`. El Dockerfile del cliente ahora ejecuta `npm install` en el CMD para garantizar dependencias frescas.
 
@@ -216,6 +221,12 @@ Cubre dos casos de uso: **productos fraccionados** (comprar a granel y vender fr
 6. **Diseño Premium Grid**: El catálogo de productos se rediseñó como una grilla de cards visuales optimizada para dispositivos móviles (Zero Horizontal Scroll).
 6. **Automatización Contable Configurable**: El administrador puede decidir desde *Ajustes de Negocio* si los movimientos de stock generan automáticamente asientos de pérdida en el Libro Diario.
 7. **Mobile-First UX (Cero Scroll Horizontal)**: Se aplicaron restricciones estrictas de overflow y rediseño de componentes críticos (Header, Modales, POS) para garantizar una navegación fluida en dispositivos móviles, eliminando desplazamientos laterales.
+
+### 🛒 Mejoras de Inventario y Compras — Septiembre 2026
+
+1. **Unidades de medida:** la pantalla de Inventario permite crear, editar y eliminar unidades; al eliminar una unidad se desvincula de los productos del tenant.
+2. **Categorías y marcas:** ambas gestiones permiten editar y eliminar registros, preservando el aislamiento por tenant y desvinculando los productos relacionados antes de borrar.
+3. **Órdenes de compra:** Compras permite crear órdenes manualmente seleccionando proveedor, productos, cantidades y costos. El Asistente de Reposición reutiliza el mismo formulario y genera una orden pre-cargada con los productos bajo el mínimo; la recepción continúa ingresando stock y emitiendo el evento contable correspondiente.
 
 ---
 
@@ -1432,3 +1443,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 8.0 | Abr 2026 | Fase 8 completada: Hardening — CI/CD GitHub Actions, docker-compose.prod, Dokploy |
 | 9.0 | Sept 2026 | **Revisión completa script por script.** Fase 9 AFIP ✅ (CAE, PDF+QR, toggle POS). Nuevas fases documentadas: Fase 10 (Landing + Checkout self-service con MercadoPago/transferencia), Fase 11 (medios de pago POS: QR/Link MP, transferencias, comprobantes), Fase 12 (Promociones, Referidos, prorrateo, upcoming charges), Fase 13 (Gastos, System Settings, PWA, Mail). Inventario de archivos, esquema DB (7.3), módulos, rutas y `.env` actualizados al código real. Deploy: Dokploy + docker-compose.prod.yml. |
 | 10.0 | Sept 2026 | **Fase 14 completada: Producción y Fraccionamiento.** `Product.product_type` (standard/raw_material/fractionated/elaborated), recetas con insumos aproximados, órdenes de producción multi-output con transacción atómica de stock, prorrateo de costos, seguimiento calculado no bloqueante de materias primas, calculadora de requerimientos, página `/production` (Producciones + Recetas), selector de tipo en modal de producto. Migración `AddProductionModule`. `quickSearch` del POS excluye materias primas. |
+| 10.1 | Sept 2026 | Registro del incidente DNS de `dokploy-network` y corrección permanente mediante upstream explícito `kioskos_api`; CRUD de unidades, categorías y marcas; creación manual y automática de órdenes de compra desde reposición. |

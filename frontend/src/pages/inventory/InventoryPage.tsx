@@ -1,7 +1,7 @@
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { 
-  Package, BarChart3, Tag, Landmark, Award, 
+  Package, BarChart3, Tag, Landmark, Award, Ruler, 
   LayoutGrid, List, ChevronRight, ArrowLeft, Factory 
 } from 'lucide-react'
 import ProductsPage from './ProductsPage'
@@ -9,8 +9,12 @@ import StockPage from './StockPage'
 import CategoriesPage from './CategoriesPage'
 import MassivePricingPage from './MassivePricingPage'
 import BrandsPage from './BrandsPage'
+import UnitsPage from './UnitsPage'
 
 const inventoryTools = [
+  { 
+    id: 'units', to: '/inventory/units', label: 'Unidades', description: 'Unidades de medida para productos', icon: Ruler, color: 'bg-cyan-500'
+  },
   { 
     id: 'products',
     to: '/inventory/products', 
@@ -158,6 +162,7 @@ export default function InventoryPage() {
             <Route path="stock" element={<StockPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="brands" element={<BrandsPage />} />
+            <Route path="units" element={<UnitsPage />} />
             <Route path="pricing" element={<MassivePricingPage />} />
           </Routes>
         )}

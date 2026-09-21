@@ -347,6 +347,20 @@ let InventoryService = class InventoryService {
         const cat = this.categoryRepo.create({ ...dto, tenant_id: tenantId });
         return this.categoryRepo.save(cat);
     }
+    async updateCategory(id, dto, tenantId) {
+        const cat = await this.categoryRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!cat)
+            throw new common_1.NotFoundException('Categoría no encontrada');
+        await this.categoryRepo.update({ id, tenant_id: tenantId }, dto);
+        return this.categoryRepo.findOne({ where: { id, tenant_id: tenantId } });
+    }
+    async deleteCategory(id, tenantId) {
+        const cat = await this.categoryRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!cat)
+            throw new common_1.NotFoundException('Categoría no encontrada');
+        await this.productRepo.update({ category_id: id, tenant_id: tenantId }, { category_id: null });
+        await this.categoryRepo.delete({ id, tenant_id: tenantId });
+    }
     async findAllBrands(tenantId) {
         return this.brandRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
     }
@@ -354,12 +368,40 @@ let InventoryService = class InventoryService {
         const brand = this.brandRepo.create({ ...dto, tenant_id: tenantId });
         return this.brandRepo.save(brand);
     }
+    async updateBrand(id, dto, tenantId) {
+        const brand = await this.brandRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!brand)
+            throw new common_1.NotFoundException('Marca no encontrada');
+        await this.brandRepo.update({ id, tenant_id: tenantId }, dto);
+        return this.brandRepo.findOne({ where: { id, tenant_id: tenantId } });
+    }
+    async deleteBrand(id, tenantId) {
+        const brand = await this.brandRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!brand)
+            throw new common_1.NotFoundException('Marca no encontrada');
+        await this.productRepo.update({ brand_id: id, tenant_id: tenantId }, { brand_id: null });
+        await this.brandRepo.delete({ id, tenant_id: tenantId });
+    }
     async findAllUnits(tenantId) {
         return this.unitRepo.find({ where: { tenant_id: tenantId }, order: { name: 'ASC' } });
     }
     async createUnit(dto, tenantId) {
         const unit = this.unitRepo.create({ ...dto, tenant_id: tenantId });
         return this.unitRepo.save(unit);
+    }
+    async updateUnit(id, dto, tenantId) {
+        const unit = await this.unitRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!unit)
+            throw new common_1.NotFoundException('Unidad de medida no encontrada');
+        await this.unitRepo.update({ id, tenant_id: tenantId }, dto);
+        return this.unitRepo.findOne({ where: { id, tenant_id: tenantId } });
+    }
+    async deleteUnit(id, tenantId) {
+        const unit = await this.unitRepo.findOne({ where: { id, tenant_id: tenantId } });
+        if (!unit)
+            throw new common_1.NotFoundException('Unidad de medida no encontrada');
+        await this.productRepo.update({ unit_id: id, tenant_id: tenantId }, { unit_id: null });
+        await this.unitRepo.delete({ id, tenant_id: tenantId });
     }
     async findAllPriceLists(tenantId) {
         return this.priceListRepo.find({ where: { tenant_id: tenantId } });
