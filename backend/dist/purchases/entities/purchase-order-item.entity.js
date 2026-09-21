@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PurchaseOrderItem = void 0;
 const typeorm_1 = require("typeorm");
 const purchase_order_entity_1 = require("./purchase-order.entity");
+const product_entity_1 = require("../../inventory/entities/product.entity");
 let PurchaseOrderItem = class PurchaseOrderItem {
 };
 exports.PurchaseOrderItem = PurchaseOrderItem;
@@ -44,6 +45,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'purchase_order_id' }),
     __metadata("design:type", purchase_order_entity_1.PurchaseOrder)
 ], PurchaseOrderItem.prototype, "purchase_order", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product),
+    (0, typeorm_1.JoinColumn)({ name: 'product_id' }),
+    __metadata("design:type", product_entity_1.Product)
+], PurchaseOrderItem.prototype, "product", void 0);
 exports.PurchaseOrderItem = PurchaseOrderItem = __decorate([
     (0, typeorm_1.Entity)('purchase_order_items')
 ], PurchaseOrderItem);

@@ -61,7 +61,7 @@ let PurchasesService = class PurchasesService {
     async findAllOrders(tenantId) {
         const orders = await this.orderRepo.find({
             where: { tenant_id: tenantId },
-            relations: ['supplier', 'items'],
+            relations: ['supplier', 'items', 'items.product'],
             order: { created_at: 'DESC' },
         });
         const payments = await this.paymentRepo.createQueryBuilder('payment')
@@ -80,7 +80,7 @@ let PurchasesService = class PurchasesService {
     async findOneOrder(id, tenantId) {
         const order = await this.orderRepo.findOne({
             where: { id, tenant_id: tenantId },
-            relations: ['supplier', 'items'],
+            relations: ['supplier', 'items', 'items.product'],
         });
         if (!order)
             throw new common_1.NotFoundException('Orden de compra no encontrada');

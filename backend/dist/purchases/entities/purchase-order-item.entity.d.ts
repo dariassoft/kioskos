@@ -1,4 +1,5 @@
 import { PurchaseOrder } from './purchase-order.entity';
+import { Product } from '../../inventory/entities/product.entity';
 export declare class PurchaseOrderItem {
     id: string;
     purchase_order_id: string;
@@ -7,4 +8,5 @@ export declare class PurchaseOrderItem {
     unit_cost: number;
     subtotal: number;
     purchase_order: PurchaseOrder;
+    product: Product;
 }
