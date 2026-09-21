@@ -132,7 +132,10 @@ export class SalesService {
 
     if (!sale) throw new NotFoundException('Venta no encontrada');
     if (sale.payment_status === PaymentStatus.CONFIRMED) {
-      throw new BadRequestException('Esta venta ya está confirmada');
+      // La verificación puede repetirse después de crear una venta confirmada
+      // (por ejemplo, al subir un comprobante). Devolver la venta evita que
+      // un reintento válido termine mostrando un error al cajero.
+      return sale;
     }
 
     sale.payment_status = PaymentStatus.CONFIRMED;

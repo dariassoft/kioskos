@@ -97,7 +97,7 @@ let SalesService = class SalesService {
         if (!sale)
             throw new common_1.NotFoundException('Venta no encontrada');
         if (sale.payment_status === sale_entity_1.PaymentStatus.CONFIRMED) {
-            throw new common_1.BadRequestException('Esta venta ya está confirmada');
+            return sale;
         }
         sale.payment_status = sale_entity_1.PaymentStatus.CONFIRMED;
         sale.payment_verified_at = new Date();

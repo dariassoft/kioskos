@@ -194,7 +194,7 @@ function PaymentModal({
         
         // El usuario pidió que el cajero lo marque como pagado manualmente.
         // En este flujo, al subir el comprobante y finalizar, lo confirmamos.
-        if (cart.paymentMethod === 'transfer' && voucherFile) {
+        if (cart.paymentMethod === 'transfer' && voucherFile && sale.payment_status !== 'confirmed') {
            await verifyPayment.mutateAsync(sale.id)
         }
 

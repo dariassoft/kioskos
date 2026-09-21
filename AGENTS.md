@@ -1445,6 +1445,11 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - Las órdenes acumulan los pagos realizados y se muestran como `Pendiente` o `Pagada`; al completar el total se deshabilita la acción de registrar otro pago.
 - Compras permite alternar entre vista grilla y listado, además de abrir el detalle de cada orden con sus líneas, costos y estado de pago.
 
+### 10.5 | Septiembre 2026 — Idempotencia al confirmar pagos del POS
+
+- Una venta enviada con `payment_status: confirmed` se confirma dentro de `createSale`; el frontend no debe volver a verificarla después de subir un comprobante.
+- `verifySale` es idempotente: si la venta ya está confirmada, devuelve la venta sin generar un error ni duplicar asientos contables.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1462,3 +1467,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 9.0 | Sept 2026 | **Revisión completa script por script.** Fase 9 AFIP ✅ (CAE, PDF+QR, toggle POS). Nuevas fases documentadas: Fase 10 (Landing + Checkout self-service con MercadoPago/transferencia), Fase 11 (medios de pago POS: QR/Link MP, transferencias, comprobantes), Fase 12 (Promociones, Referidos, prorrateo, upcoming charges), Fase 13 (Gastos, System Settings, PWA, Mail). Inventario de archivos, esquema DB (7.3), módulos, rutas y `.env` actualizados al código real. Deploy: Dokploy + docker-compose.prod.yml. |
 | 10.0 | Sept 2026 | **Fase 14 completada: Producción y Fraccionamiento.** `Product.product_type` (standard/raw_material/fractionated/elaborated), recetas con insumos aproximados, órdenes de producción multi-output con transacción atómica de stock, prorrateo de costos, seguimiento calculado no bloqueante de materias primas, calculadora de requerimientos, página `/production` (Producciones + Recetas), selector de tipo en modal de producto. Migración `AddProductionModule`. `quickSearch` del POS excluye materias primas. |
 | 10.1 | Sept 2026 | Registro del incidente DNS de `dokploy-network` y corrección permanente mediante upstream explícito `kioskos_api`; CRUD de unidades, categorías y marcas; creación manual y automática de órdenes de compra desde reposición. |
+| 10.2 | Sept 2026 | Corrección del flujo de pagos confirmados del POS: se evita la doble verificación de transferencias con comprobante y se hace idempotente la confirmación. |
