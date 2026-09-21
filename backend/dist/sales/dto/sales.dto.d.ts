@@ -43,6 +43,7 @@ export declare class CreateSaleDto {
     invoice_doc_nro?: string;
 }
 export declare class ListSalesQueryDto {
+    branch_id?: string;
     page?: number;
     limit?: number;
     payment_status?: PaymentStatus;

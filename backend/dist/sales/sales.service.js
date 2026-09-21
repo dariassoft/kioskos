@@ -221,6 +221,9 @@ let SalesService = class SalesService {
         if (query.payment_status) {
             qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });
         }
+        if (query.branch_id) {
+            qb.andWhere('sale.branch_id = :branchId', { branchId: query.branch_id });
+        }
         if (query.start_date) {
             qb.andWhere('sale.created_at >= :startDate', {
                 startDate: `${query.start_date} 00:00:00`

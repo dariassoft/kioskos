@@ -84,9 +84,9 @@ export class ReportsService {
     for (let i = 0; i <= 6; i++) {
        const d = new Date(sevenDaysAgo);
        d.setDate(d.getDate() + i);
-       const dateStr = d.toISOString().split('T')[0];
+        const dateStr = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
        
-       const found = results.find((r) => r.date === dateStr);
+        const found = results.find((r) => String(r.date).slice(0, 10) === dateStr);
        chartData.push({
          date: dateStr,
          total: found ? Number(found.total) : 0,

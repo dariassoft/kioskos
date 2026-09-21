@@ -192,6 +192,11 @@ export class CreateSaleDto {
 // ==========================================
 
 export class ListSalesQueryDto {
+  @ApiPropertyOptional({ description: 'ID de la sucursal' })
+  @IsOptional()
+  @IsString()
+  branch_id?: string;
+
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @IsInt()
@@ -219,4 +224,3 @@ export class ListSalesQueryDto {
   @IsString()
   end_date?: string;
 }
-

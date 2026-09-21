@@ -1,5 +1,6 @@
 import apiClient from './client';
 import type { DashboardMetrics, ChartData, TopProduct, InventoryValuation } from './reports.types';
+import type { SalesListResponse, ListSalesQuery } from './sales.types';
 
 export const reportsApi = {
   getDashboardMetrics: (branchId?: string) => 
@@ -15,4 +16,7 @@ export const reportsApi = {
     
   getInventoryValuation: (branchId?: string) => 
     apiClient.get<InventoryValuation>('/reports/inventory-valuation', { params: { branchId } }).then((res: any) => res.data || {}),
+
+  getSalesByDate: (query: ListSalesQuery) =>
+    apiClient.get<SalesListResponse>('/sales', { params: { ...query, limit: 100 } }).then((res: any) => res.data || { data: [], total: 0 }),
 };

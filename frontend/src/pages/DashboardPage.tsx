@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useAuthStore } from '@store/auth.store';
 import { useBranchStore } from '@store/branch.store';
 import { 
-  TrendingUp, ShoppingBag, Package, Users, ArrowUpRight, BarChart3, Database 
+  TrendingUp, ShoppingBag, Package, Users, ArrowUpRight, BarChart3, Database, CalendarDays, X
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -12,6 +13,7 @@ import {
   useWeeklyChart,
   useTopProducts,
   useInventoryValuation
+  ,useSalesByDate
 } from '@hooks/useReports';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316'];
@@ -24,6 +26,9 @@ export default function DashboardPage() {
   const { data: weeklyData = [], isLoading: loadingWeekly } = useWeeklyChart(activeBranch?.id);
   const { data: topProducts = [], isLoading: loadingTop } = useTopProducts(activeBranch?.id);
   const { data: valuation, isLoading: loadingValuation } = useInventoryValuation(activeBranch?.id);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarDate, setCalendarDate] = useState('');
+  const { data: selectedSales } = useSalesByDate(selectedDate, activeBranch?.id);
 
   // Formateadores
   const currencyFormatter = (value: number) => `$${value.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
@@ -80,11 +85,11 @@ export default function DashboardPage() {
       {/* Stats cards (Métricas Principales) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Ventas Hoy */}
-        <div className="stat-card">
+         <div role="button" tabIndex={0} onClick={() => setSelectedDate(new Date().toISOString().slice(0, 10))} className="stat-card text-left hover:border-primary/50 transition-colors">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-emerald-500" />
-            </div>
+         </div>
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Hoy</span>
           </div>
           <div>
@@ -147,8 +152,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Gráfico de Ventas Semanales */}
         <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-             <h2 className="text-lg font-bold">Ventas de los últimos 7 días</h2>
+           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+              <h2 className="text-lg font-bold">Ventas de los últimos 7 días</h2>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarDays className="w-4 h-4" />
+                <span>Ver fecha</span>
+                <input type="date" value={calendarDate} onChange={(event) => { setCalendarDate(event.target.value); setSelectedDate(event.target.value || null); }} className="rounded-lg border border-border bg-background px-2 py-1 text-foreground" />
+              </label>
           </div>
           <div className="flex-1 min-h-[300px]">
             {loadingWeekly ? (
@@ -160,7 +170,7 @@ export default function DashboardPage() {
                </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                 <BarChart data={weeklyData} onClick={(state: any) => { const date = state?.activePayload?.[0]?.payload?.date; if (date) setSelectedDate(date); }} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border/50" />
                   <XAxis 
                     dataKey="date" 
@@ -189,7 +199,16 @@ export default function DashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             )}
-          </div>
+       {selectedDate && (
+         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+           <div className="bg-card rounded-2xl p-6 w-full max-w-2xl max-h-[85vh] overflow-auto space-y-4">
+             <div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-bold">Ventas del {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-AR')}</h2><p className="text-sm text-muted-foreground">{selectedSales?.total || 0} ventas registradas</p></div><button type="button" onClick={() => setSelectedDate(null)} aria-label="Cerrar"><X className="w-5 h-5" /></button></div>
+             {!selectedSales ? <p className="py-8 text-center text-muted-foreground">Cargando ventas...</p> : selectedSales.data.length === 0 ? <p className="py-8 text-center text-muted-foreground">No hay ventas para esta fecha.</p> : <div className="space-y-2">{selectedSales.data.map((sale: import('@api/sales.types').Sale) => <div key={sale.id} className="border border-border rounded-xl p-3 flex justify-between gap-4"><div><p className="font-semibold">Venta #{sale.id.slice(0, 8).toUpperCase()}</p><p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} · {sale.payment_method}</p><p className="text-xs text-muted-foreground">{sale.items?.length || 0} artículo(s)</p></div><p className="font-bold text-primary">{currencyFormatter(Number(sale.total))}</p></div>)}</div>}
+             <button type="button" onClick={() => setSelectedDate(null)} className="w-full py-2 border border-border rounded-xl">Cerrar</button>
+           </div>
+         </div>
+       )}
+     </div>
         </div>
 
         {/* Top Productos (Dona) */}

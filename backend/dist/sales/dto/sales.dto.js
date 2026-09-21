@@ -221,6 +221,12 @@ class ListSalesQueryDto {
 }
 exports.ListSalesQueryDto = ListSalesQueryDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'ID de la sucursal' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ListSalesQueryDto.prototype, "branch_id", void 0);
+__decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: 1 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),

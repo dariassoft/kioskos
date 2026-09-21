@@ -107,6 +107,7 @@ export interface ListSalesQuery {
   payment_status?: PaymentStatus
   start_date?: string
   end_date?: string
+  branch_id?: string
 }
 
 export interface SalesListResponse {
@@ -131,4 +132,3 @@ export interface CreatePaymentAccountDto {
   value: string
   is_active?: boolean
 }
-

@@ -28,3 +28,9 @@ export const useInventoryValuation = (branchId?: string) => {
     queryFn: () => reportsApi.getInventoryValuation(branchId),
   });
 };
+
+export const useSalesByDate = (date: string | null, branchId?: string) => useQuery({
+  queryKey: ['reports', 'sales-by-date', date, branchId],
+  queryFn: () => reportsApi.getSalesByDate({ start_date: date || undefined, end_date: date || undefined, branch_id: branchId }),
+  enabled: Boolean(date),
+});

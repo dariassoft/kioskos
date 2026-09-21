@@ -1450,6 +1450,12 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - Una venta enviada con `payment_status: confirmed` se confirma dentro de `createSale`; el frontend no debe volver a verificarla después de subir un comprobante.
 - `verifySale` es idempotente: si la venta ya está confirmada, devuelve la venta sin generar un error ni duplicar asientos contables.
 
+### 10.6 | Septiembre 2026 — Detalle de ventas en Dashboard
+
+- La serie de ventas de los últimos siete días incluye siempre el día actual y completa los días sin ventas con valor cero.
+- La tarjeta `Ingresos de hoy`, cada barra del gráfico y el calendario del Dashboard abren el detalle de ventas de la fecha seleccionada.
+- El detalle reutiliza `GET /sales` con rango de fechas, paginación y `branch_id`, manteniendo el aislamiento por tenant y sucursal.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1468,3 +1474,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.0 | Sept 2026 | **Fase 14 completada: Producción y Fraccionamiento.** `Product.product_type` (standard/raw_material/fractionated/elaborated), recetas con insumos aproximados, órdenes de producción multi-output con transacción atómica de stock, prorrateo de costos, seguimiento calculado no bloqueante de materias primas, calculadora de requerimientos, página `/production` (Producciones + Recetas), selector de tipo en modal de producto. Migración `AddProductionModule`. `quickSearch` del POS excluye materias primas. |
 | 10.1 | Sept 2026 | Registro del incidente DNS de `dokploy-network` y corrección permanente mediante upstream explícito `kioskos_api`; CRUD de unidades, categorías y marcas; creación manual y automática de órdenes de compra desde reposición. |
 | 10.2 | Sept 2026 | Corrección del flujo de pagos confirmados del POS: se evita la doble verificación de transferencias con comprobante y se hace idempotente la confirmación. |
+| 10.3 | Sept 2026 | Dashboard: la gráfica incluye el día actual y permite consultar el detalle de ventas desde hoy, cada día del gráfico o un calendario. |

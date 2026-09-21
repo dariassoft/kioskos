@@ -326,6 +326,10 @@ export class SalesService {
       qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });
     }
 
+    if (query.branch_id) {
+      qb.andWhere('sale.branch_id = :branchId', { branchId: query.branch_id });
+    }
+
     if (query.start_date) {
       // Usar >= para incluir el inicio del día
       qb.andWhere('sale.created_at >= :startDate', { 
