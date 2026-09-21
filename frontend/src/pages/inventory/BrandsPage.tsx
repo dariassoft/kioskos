@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Plus, Award, Loader2, X, Search, Trash2, Pencil } from 'lucide-react'
 import { useBrands, useCreateBrand, useUpdateBrand, useDeleteBrand } from '@hooks/useInventory'
 import type { Brand } from '@api/inventory.types'
+import ConfirmModal from '@components/ConfirmModal'
 
 const brandSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -67,6 +68,7 @@ export default function BrandsPage() {
   const [search, setSearch] = useState('')
   const { data: brands = [], isLoading } = useBrands()
   const deleteBrand = useDeleteBrand()
+  const [deleting, setDeleting] = useState<Brand | null>(null)
 
   const filteredBrands = brands.filter((b: Brand) => b.name.toLowerCase().includes(search.toLowerCase()))
 
@@ -124,7 +126,7 @@ export default function BrandsPage() {
                </button>
                <button 
                 className="absolute top-2 right-2 p-1.5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
-                 onClick={() => window.confirm(`¿Eliminar ${brand.name}?`) && deleteBrand.mutate(brand.id)}
+                  onClick={() => setDeleting(brand)}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -134,6 +136,7 @@ export default function BrandsPage() {
       )}
 
        {showModal && <BrandModal brand={editing} onClose={() => setShowModal(false)} />}
+       <ConfirmModal isOpen={!!deleting} title="Eliminar marca" message={deleting ? `¿Eliminar ${deleting.name}? Los productos asociados quedarán sin marca.` : ''} onClose={() => setDeleting(null)} onConfirm={() => deleting && deleteBrand.mutate(deleting.id, { onSuccess: () => setDeleting(null) })} isPending={deleteBrand.isPending} />
     </div>
   )
 }

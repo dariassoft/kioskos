@@ -81,7 +81,7 @@ __decorate([
 ], CreatePurchaseOrderDto.prototype, "supplier_id", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, class_validator_1.IsUUID)('all'),
+    (0, class_validator_1.Matches)(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: 'branch_id debe tener formato UUID' }),
     __metadata("design:type", String)
 ], CreatePurchaseOrderDto.prototype, "branch_id", void 0);
 __decorate([

@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Plus, Tag, Loader2, X, Pencil, Trash2 } from 'lucide-react'
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@hooks/useInventory'
 import type { Category } from '@api/inventory.types'
+import ConfirmModal from '@components/ConfirmModal'
 
 const CATEGORY_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
@@ -94,6 +95,7 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | undefined>()
   const { data: categories = [], isLoading } = useCategories()
   const deleteCategory = useDeleteCategory()
+  const [deleting, setDeleting] = useState<Category | null>(null)
 
   return (
     <div className="space-y-4">
@@ -134,13 +136,14 @@ export default function CategoriesPage() {
               </div>
                <span className="font-medium text-foreground text-sm truncate flex-1">{cat.name}</span>
                <button title="Editar" onClick={() => { setEditing(cat); setShowModal(true) }} className="p-1 text-muted-foreground hover:text-primary"><Pencil className="w-3.5 h-3.5" /></button>
-               <button title="Eliminar" onClick={() => window.confirm(`¿Eliminar ${cat.name}?`) && deleteCategory.mutate(cat.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button title="Eliminar" onClick={() => setDeleting(cat)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>
       )}
 
        {showModal && <CategoryModal category={editing} onClose={() => setShowModal(false)} />}
+       <ConfirmModal isOpen={!!deleting} title="Eliminar categoría" message={deleting ? `¿Eliminar ${deleting.name}? Los productos asociados quedarán sin categoría.` : ''} onClose={() => setDeleting(null)} onConfirm={() => deleting && deleteCategory.mutate(deleting.id, { onSuccess: () => setDeleting(null) })} isPending={deleteCategory.isPending} />
     </div>
   )
 }

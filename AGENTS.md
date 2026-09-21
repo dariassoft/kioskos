@@ -1427,6 +1427,12 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 *Última actualización: Septiembre 2026 | Versión del documento: 10.0 — Fase 14: Producción y Fraccionamiento*
 *Basado en los documentos de planificación 01 al 08 del proyecto Kioskos & Despenzas y en el inventario real del código (backend + frontend).*
 
+### 10.2 | Septiembre 2026 — Mejoras de UX y órdenes de compra
+
+- Las eliminaciones de unidades, categorías y marcas deben confirmarse mediante modal visual de la aplicación; no usar `window.confirm`.
+- El formulario de órdenes de compra diferencia explícitamente producto, cantidad y costo unitario, muestra el total estimado y permite quitar líneas antes de guardar.
+- Las sucursales sembradas pueden utilizar UUID determinísticos sin versión; el DTO de órdenes valida el formato UUID sin exigir una versión UUID específica.
+
 ---
 
 ### 📝 CHANGELOG

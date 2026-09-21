@@ -1,6 +1,6 @@
 import {
   IsString, IsNotEmpty, IsOptional, IsUUID,
-  IsNumber, Min, IsEnum, ValidateNested, ArrayMinSize,
+  IsNumber, Min, IsEnum, ValidateNested, ArrayMinSize, Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -66,7 +66,7 @@ export class CreatePurchaseOrderDto {
   supplier_id: string;
 
   @ApiProperty()
-  @IsUUID('all')
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: 'branch_id debe tener formato UUID' })
   branch_id: string;
 
   @ApiProperty({ type: [CreatePurchaseOrderItemDto] })
