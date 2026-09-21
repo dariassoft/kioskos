@@ -75,3 +75,14 @@ export class CreatePurchaseOrderDto {
   @ArrayMinSize(1)
   items: CreatePurchaseOrderItemDto[];
 }
+
+export class CreatePurchasePaymentDto {
+  @IsNumber() @Min(0.01) @Type(() => Number)
+  amount: number;
+
+  @IsEnum(['cash', 'transfer', 'bank'])
+  payment_method: 'cash' | 'transfer' | 'bank';
+
+  @IsOptional() @IsString()
+  notes?: string;
+}

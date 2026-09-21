@@ -49,6 +49,12 @@ let PurchasesController = class PurchasesController {
     cancelOrder(id, tenantId) {
         return this.purchasesService.cancelOrder(id, tenantId);
     }
+    listPayments(id, tenantId) {
+        return this.purchasesService.listPayments(id, tenantId);
+    }
+    createPayment(id, dto, tenantId) {
+        return this.purchasesService.createPayment(id, dto, tenantId);
+    }
 };
 exports.PurchasesController = PurchasesController;
 __decorate([
@@ -130,6 +136,25 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], PurchasesController.prototype, "cancelOrder", null);
+__decorate([
+    (0, common_1.Get)('orders/:id/payments'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], PurchasesController.prototype, "listPayments", null);
+__decorate([
+    (0, common_1.Post)('orders/:id/payments'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, purchases_dto_1.CreatePurchasePaymentDto, String]),
+    __metadata("design:returntype", void 0)
+], PurchasesController.prototype, "createPayment", null);
 exports.PurchasesController = PurchasesController = __decorate([
     (0, swagger_1.ApiTags)('purchases'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),

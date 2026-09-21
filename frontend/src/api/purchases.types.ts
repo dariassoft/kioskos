@@ -31,6 +31,8 @@ export interface PurchaseOrder {
   items?: PurchaseOrderItem[];
 }
 
+export interface PurchasePayment { id: string; amount: number; payment_method: 'cash' | 'transfer' | 'bank'; notes?: string | null; created_at: string }
+
 export interface CreatePurchaseOrderDto {
   supplier_id: string;
   branch_id: string;

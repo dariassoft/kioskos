@@ -20,13 +20,16 @@ const event_emitter_1 = require("@nestjs/event-emitter");
 const supplier_entity_1 = require("./entities/supplier.entity");
 const purchase_order_entity_1 = require("./entities/purchase-order.entity");
 const purchase_order_item_entity_1 = require("./entities/purchase-order-item.entity");
+const purchase_payment_entity_1 = require("./entities/purchase-payment.entity");
 const purchase_received_event_1 = require("./events/purchase-received.event");
 const inventory_service_1 = require("../inventory/inventory.service");
+const purchase_payment_created_event_1 = require("./events/purchase-payment-created.event");
 let PurchasesService = class PurchasesService {
-    constructor(supplierRepo, orderRepo, orderItemRepo, inventoryService, eventEmitter) {
+    constructor(supplierRepo, orderRepo, orderItemRepo, paymentRepo, inventoryService, eventEmitter) {
         this.supplierRepo = supplierRepo;
         this.orderRepo = orderRepo;
         this.orderItemRepo = orderItemRepo;
+        this.paymentRepo = paymentRepo;
         this.inventoryService = inventoryService;
         this.eventEmitter = eventEmitter;
     }
@@ -112,6 +115,24 @@ let PurchasesService = class PurchasesService {
         this.eventEmitter.emit('purchase.received', new purchase_received_event_1.PurchaseReceivedEvent(tenantId, order.id, order.total, order.branch_id));
         return order;
     }
+    async listPayments(orderId, tenantId) {
+        await this.findOneOrder(orderId, tenantId);
+        return this.paymentRepo.find({ where: { purchase_order_id: orderId, tenant_id: tenantId }, order: { created_at: 'DESC' } });
+    }
+    async createPayment(orderId, dto, tenantId) {
+        const order = await this.findOneOrder(orderId, tenantId);
+        if (order.status !== purchase_order_entity_1.PurchaseOrderStatus.RECEIVED)
+            throw new common_1.BadRequestException('La orden debe estar recibida antes de registrar un pago');
+        const paid = await this.paymentRepo.createQueryBuilder('payment')
+            .select('COALESCE(SUM(payment.amount), 0)', 'total').where('payment.purchase_order_id = :orderId AND payment.tenant_id = :tenantId', { orderId, tenantId }).getRawOne();
+        const remaining = Number(order.total) - Number(paid?.total || 0);
+        if (Number(dto.amount) > remaining + 0.01)
+            throw new common_1.BadRequestException(`El pago excede el saldo pendiente de $${remaining.toFixed(2)}`);
+        const paymentEntity = this.paymentRepo.create({ tenant_id: tenantId, purchase_order_id: order.id, supplier_id: order.supplier_id, amount: dto.amount, payment_method: dto.payment_method, notes: dto.notes || null });
+        const payment = await this.paymentRepo.save(paymentEntity);
+        this.eventEmitter.emit('purchase.payment.created', new purchase_payment_created_event_1.PurchasePaymentCreatedEvent(tenantId, payment.id, order.id, Number(payment.amount), payment.payment_method));
+        return payment;
+    }
     async cancelOrder(id, tenantId) {
         const order = await this.findOneOrder(id, tenantId);
         if (order.status === purchase_order_entity_1.PurchaseOrderStatus.RECEIVED) {
@@ -127,7 +148,9 @@ exports.PurchasesService = PurchasesService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(supplier_entity_1.Supplier)),
     __param(1, (0, typeorm_1.InjectRepository)(purchase_order_entity_1.PurchaseOrder)),
     __param(2, (0, typeorm_1.InjectRepository)(purchase_order_item_entity_1.PurchaseOrderItem)),
+    __param(3, (0, typeorm_1.InjectRepository)(purchase_payment_entity_1.PurchasePayment)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         inventory_service_1.InventoryService,

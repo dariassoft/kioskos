@@ -1433,6 +1433,12 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - El formulario de órdenes de compra diferencia explícitamente producto, cantidad y costo unitario, muestra el total estimado y permite quitar líneas antes de guardar.
 - Las sucursales sembradas pueden utilizar UUID determinísticos sin versión; el DTO de órdenes valida el formato UUID sin exigir una versión UUID específica.
 
+### 10.3 | Septiembre 2026 — Pagos a proveedores
+
+- Recibir una orden de compra significa ingresar la mercadería y reconocer la deuda; no implica que el proveedor haya sido pagado.
+- La recepción registra `Mercadería` contra `Proveedores`. Los pagos se registran por separado, admiten pagos parciales y generan `Proveedores` contra `Caja` o `Bancos` según el medio elegido.
+- El frontend muestra la acción `Registrar pago al proveedor` únicamente en órdenes recibidas.
+
 ---
 
 ### 📝 CHANGELOG

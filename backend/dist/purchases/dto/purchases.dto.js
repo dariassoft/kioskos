@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreatePurchaseOrderDto = exports.CreatePurchaseOrderItemDto = exports.UpdateSupplierDto = exports.CreateSupplierDto = void 0;
+exports.CreatePurchasePaymentDto = exports.CreatePurchaseOrderDto = exports.CreatePurchaseOrderItemDto = exports.UpdateSupplierDto = exports.CreateSupplierDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -91,4 +91,22 @@ __decorate([
     (0, class_validator_1.ArrayMinSize)(1),
     __metadata("design:type", Array)
 ], CreatePurchaseOrderDto.prototype, "items", void 0);
+class CreatePurchasePaymentDto {
+}
+exports.CreatePurchasePaymentDto = CreatePurchasePaymentDto;
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreatePurchasePaymentDto.prototype, "amount", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(['cash', 'transfer', 'bank']),
+    __metadata("design:type", String)
+], CreatePurchasePaymentDto.prototype, "payment_method", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePurchasePaymentDto.prototype, "notes", void 0);
 //# sourceMappingURL=purchases.dto.js.map

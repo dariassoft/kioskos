@@ -17,3 +17,8 @@ export declare class CreatePurchaseOrderDto {
     branch_id: string;
     items: CreatePurchaseOrderItemDto[];
 }
+export declare class CreatePurchasePaymentDto {
+    amount: number;
+    payment_method: 'cash' | 'transfer' | 'bank';
+    notes?: string;
+}

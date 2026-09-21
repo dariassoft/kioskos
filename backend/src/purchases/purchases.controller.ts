@@ -10,7 +10,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles, UserRole } from '../common/decorators/roles.decorator';
 import { GetTenantId } from '../common/decorators/get-tenant.decorator';
 
-import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto } from './dto/purchases.dto';
+import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto, CreatePurchasePaymentDto } from './dto/purchases.dto';
 
 @ApiTags('purchases')
 @ApiBearerAuth('JWT-auth')
@@ -100,5 +100,17 @@ export class PurchasesController {
     @GetTenantId() tenantId: string,
   ) {
     return this.purchasesService.cancelOrder(id, tenantId);
+  }
+
+  @Get('orders/:id/payments')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  listPayments(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.purchasesService.listPayments(id, tenantId);
+  }
+
+  @Post('orders/:id/payments')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  createPayment(@Param('id') id: string, @Body() dto: CreatePurchasePaymentDto, @GetTenantId() tenantId: string) {
+    return this.purchasesService.createPayment(id, dto, tenantId);
   }
 }

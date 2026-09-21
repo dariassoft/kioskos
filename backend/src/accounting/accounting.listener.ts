@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { AccountingService } from '@accounting/accounting.service';
 import { SaleCompletedEvent } from '@sales/events/sale-completed.event';
 import { PurchaseReceivedEvent } from '@purchases/events/purchase-received.event';
+import { PurchasePaymentCreatedEvent } from '@purchases/events/purchase-payment-created.event';
 import { PaymentMethod, PaymentStatus, Sale } from '@sales/entities/sale.entity';
 
 @Injectable()
@@ -51,8 +52,8 @@ export class AccountingListener {
 
     // Debe (Aumento de activo: Mercadería)
     entries.push({ account_name: 'Mercadería', debit: event.total, credit: 0 });
-    // Haber (Reducción de activo/Aumento de pasivo) - Asumimos pago en caja para mantenerlo simple.
-    entries.push({ account_name: 'Caja/Banco', debit: 0, credit: event.total });
+    // La recepción reconoce la deuda; el pago se registra en un asiento separado.
+    entries.push({ account_name: 'Proveedores', debit: 0, credit: event.total });
 
     await this.accountingService.createEntry(
       event.tenantId,
@@ -60,6 +61,15 @@ export class AccountingListener {
       entries,
       event.purchaseOrderId,
     );
+  }
+
+  @OnEvent('purchase.payment.created')
+  async handlePurchasePayment(event: PurchasePaymentCreatedEvent) {
+    const account = event.paymentMethod === 'cash' ? 'Caja' : 'Bancos';
+    await this.accountingService.createEntry(event.tenantId, `Pago a proveedor por orden ${event.purchaseOrderId}`, [
+      { account_name: 'Proveedores', debit: event.amount, credit: 0 },
+      { account_name: account, debit: 0, credit: event.amount },
+    ], event.paymentId);
   }
 
   @OnEvent('expense.created')

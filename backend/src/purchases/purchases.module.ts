@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Supplier } from './entities/supplier.entity';
 import { PurchaseOrder } from './entities/purchase-order.entity';
 import { PurchaseOrderItem } from './entities/purchase-order-item.entity';
+import { PurchasePayment } from './entities/purchase-payment.entity';
 
 import { PurchasesService } from './purchases.service';
 import { PurchasesController } from './purchases.controller';
@@ -12,7 +13,7 @@ import { InventoryModule } from '../inventory/inventory.module'; // Importante p
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Supplier, PurchaseOrder, PurchaseOrderItem]),
+    TypeOrmModule.forFeature([Supplier, PurchaseOrder, PurchaseOrderItem, PurchasePayment]),
     InventoryModule,
   ],
   controllers: [PurchasesController],

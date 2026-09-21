@@ -10,10 +10,12 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Supplier } from './entities/supplier.entity';
 import { PurchaseOrder, PurchaseOrderStatus } from './entities/purchase-order.entity';
 import { PurchaseOrderItem } from './entities/purchase-order-item.entity';
+import { PurchasePayment, PurchasePaymentMethod } from './entities/purchase-payment.entity';
 
-import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto } from './dto/purchases.dto';
+import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto, CreatePurchasePaymentDto } from './dto/purchases.dto';
 import { PurchaseReceivedEvent } from './events/purchase-received.event';
 import { InventoryService } from '../inventory/inventory.service';
+import { PurchasePaymentCreatedEvent } from './events/purchase-payment-created.event';
 
 @Injectable()
 export class PurchasesService {
@@ -24,6 +26,8 @@ export class PurchasesService {
     private readonly orderRepo: Repository<PurchaseOrder>,
     @InjectRepository(PurchaseOrderItem)
     private readonly orderItemRepo: Repository<PurchaseOrderItem>,
+    @InjectRepository(PurchasePayment)
+    private readonly paymentRepo: Repository<PurchasePayment>,
     private readonly inventoryService: InventoryService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -150,6 +154,24 @@ export class PurchasesService {
     );
 
     return order;
+  }
+
+  async listPayments(orderId: string, tenantId: string): Promise<PurchasePayment[]> {
+    await this.findOneOrder(orderId, tenantId);
+    return this.paymentRepo.find({ where: { purchase_order_id: orderId, tenant_id: tenantId }, order: { created_at: 'DESC' } });
+  }
+
+  async createPayment(orderId: string, dto: CreatePurchasePaymentDto, tenantId: string): Promise<PurchasePayment> {
+    const order = await this.findOneOrder(orderId, tenantId);
+    if (order.status !== PurchaseOrderStatus.RECEIVED) throw new BadRequestException('La orden debe estar recibida antes de registrar un pago');
+    const paid = await this.paymentRepo.createQueryBuilder('payment')
+      .select('COALESCE(SUM(payment.amount), 0)', 'total').where('payment.purchase_order_id = :orderId AND payment.tenant_id = :tenantId', { orderId, tenantId }).getRawOne<{ total: string }>();
+    const remaining = Number(order.total) - Number(paid?.total || 0);
+    if (Number(dto.amount) > remaining + 0.01) throw new BadRequestException(`El pago excede el saldo pendiente de $${remaining.toFixed(2)}`);
+    const paymentEntity = this.paymentRepo.create({ tenant_id: tenantId, purchase_order_id: order.id, supplier_id: order.supplier_id, amount: dto.amount, payment_method: dto.payment_method as PurchasePaymentMethod, notes: dto.notes || null });
+    const payment = await this.paymentRepo.save(paymentEntity);
+    this.eventEmitter.emit('purchase.payment.created', new PurchasePaymentCreatedEvent(tenantId, payment.id, order.id, Number(payment.amount), payment.payment_method));
+    return payment;
   }
 
   async cancelOrder(id: string, tenantId: string): Promise<PurchaseOrder> {

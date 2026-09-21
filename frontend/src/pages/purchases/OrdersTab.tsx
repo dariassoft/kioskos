@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Package, Search, Plus, CheckCircle2, Factory, Sparkles, Trash2 } from 'lucide-react';
-import { useOrders, useReceiveOrder, useCreateOrder, useSuppliers } from '@hooks/usePurchases';
+import { useOrders, useReceiveOrder, useCreateOrder, useSuppliers, useCreatePurchasePayment } from '@hooks/usePurchases';
 import { useProducts } from '@hooks/useInventory';
 import { useBranchStore } from '@store/branch.store';
 import ReplenishmentAssistant from '@components/ReplenishmentAssistant';
@@ -41,6 +41,10 @@ export default function OrdersTab() {
   const [isModalOpen, setModalOpen] = useState(false);
   const [isAssistantOpen, setAssistantOpen] = useState(false);
   const [suggestedItems, setSuggestedItems] = useState<{ product_id: string; quantity: number; unit_cost: number }[]>([]);
+  const [payingOrder, setPayingOrder] = useState<PurchaseOrder | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'bank'>('cash');
+  const createPayment = useCreatePurchasePayment();
 
   // Filtrar por sucursal actual y búsqueda local (ej: prov o total)
   const branchOrders = orders.filter((o: PurchaseOrder) => o.branch_id === activeBranch?.id);
@@ -126,10 +130,10 @@ export default function OrdersTab() {
                    </button>
                  )}
                  {isReceived && (
-                   <p className="w-full py-2.5 text-center text-sm font-semibold text-muted-foreground bg-accent/50 rounded-xl flex items-center justify-center gap-2">
+                   <div className="space-y-2"><button onClick={() => { setPayingOrder(order); setPaymentAmount(Number(order.total)); }} className="w-full py-2.5 text-sm font-bold text-primary bg-primary/10 rounded-xl">Registrar pago al proveedor</button><p className="w-full py-2 text-center text-xs font-semibold text-muted-foreground bg-accent/50 rounded-xl flex items-center justify-center gap-2">
                      <CheckCircle2 className="w-4 h-4 text-green-500"/>
-                     Stock ya ingresado
-                   </p>
+                     Stock ingresado; pago independiente
+                   </p></div>
                  )}
               </div>
             );
@@ -139,6 +143,7 @@ export default function OrdersTab() {
       
        <CreatePOModal isOpen={isModalOpen} suggested={suggestedItems} onClose={() => setModalOpen(false)} />
        <ReplenishmentAssistant isOpen={isAssistantOpen} onClose={() => setAssistantOpen(false)} onGenerate={(items) => { setSuggestedItems(items); setModalOpen(true) }} />
+       {payingOrder && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="bg-card rounded-2xl p-6 w-full max-w-sm space-y-4"><h2 className="text-xl font-bold">Registrar pago a proveedor</h2><p className="text-sm text-muted-foreground">Orden #{payingOrder.id.slice(0, 8)} · Total ${Number(payingOrder.total).toLocaleString('es-AR')}</p><label className="block text-sm">Importe<input type="number" min="0.01" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(Number(e.target.value))} className="mt-1 w-full p-3 bg-background border border-border rounded-xl" /></label><label className="block text-sm">Medio<select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)} className="mt-1 w-full p-3 bg-background border border-border rounded-xl"><option value="cash">Efectivo</option><option value="transfer">Transferencia</option><option value="bank">Banco</option></select></label><div className="flex gap-2"><button onClick={() => setPayingOrder(null)} className="flex-1 py-2 border rounded-xl">Cancelar</button><button disabled={paymentAmount <= 0 || createPayment.isPending} onClick={() => createPayment.mutate({ id: payingOrder.id, amount: paymentAmount, payment_method: paymentMethod }, { onSuccess: () => setPayingOrder(null) })} className="flex-1 py-2 bg-primary text-primary-foreground rounded-xl">Guardar pago</button></div></div></div>}
     </div>
   );
 }

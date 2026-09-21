@@ -21,6 +21,7 @@ const typeorm_2 = require("typeorm");
 const accounting_service_1 = require("./accounting.service");
 const sale_completed_event_1 = require("../sales/events/sale-completed.event");
 const purchase_received_event_1 = require("../purchases/events/purchase-received.event");
+const purchase_payment_created_event_1 = require("../purchases/events/purchase-payment-created.event");
 const sale_entity_1 = require("../sales/entities/sale.entity");
 let AccountingListener = AccountingListener_1 = class AccountingListener {
     constructor(accountingService, saleRepo, tenantRepo) {
@@ -44,8 +45,15 @@ let AccountingListener = AccountingListener_1 = class AccountingListener {
         this.logger.log(`Registrando asiento contable para Compra ${event.purchaseOrderId}`);
         const entries = [];
         entries.push({ account_name: 'Mercadería', debit: event.total, credit: 0 });
-        entries.push({ account_name: 'Caja/Banco', debit: 0, credit: event.total });
+        entries.push({ account_name: 'Proveedores', debit: 0, credit: event.total });
         await this.accountingService.createEntry(event.tenantId, `Compra de mercadería reabastecida en sucursal ${event.branchId}`, entries, event.purchaseOrderId);
+    }
+    async handlePurchasePayment(event) {
+        const account = event.paymentMethod === 'cash' ? 'Caja' : 'Bancos';
+        await this.accountingService.createEntry(event.tenantId, `Pago a proveedor por orden ${event.purchaseOrderId}`, [
+            { account_name: 'Proveedores', debit: event.amount, credit: 0 },
+            { account_name: account, debit: 0, credit: event.amount },
+        ], event.paymentId);
     }
     async handleExpenseCreatedEvent(event) {
         this.logger.log(`Registrando asiento contable para Gasto ${event.expenseId}`);
@@ -116,6 +124,12 @@ __decorate([
     __metadata("design:paramtypes", [purchase_received_event_1.PurchaseReceivedEvent]),
     __metadata("design:returntype", Promise)
 ], AccountingListener.prototype, "handlePurchaseReceivedEvent", null);
+__decorate([
+    (0, event_emitter_1.OnEvent)('purchase.payment.created'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [purchase_payment_created_event_1.PurchasePaymentCreatedEvent]),
+    __metadata("design:returntype", Promise)
+], AccountingListener.prototype, "handlePurchasePayment", null);
 __decorate([
     (0, event_emitter_1.OnEvent)('expense.created'),
     __metadata("design:type", Function),

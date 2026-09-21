@@ -93,3 +93,12 @@ export const useCancelOrder = () => {
     onError: (error: any) => toast.error(error?.response?.data?.message || 'Error al cancelar la orden'),
   });
 };
+
+export const useCreatePurchasePayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amount, payment_method, notes }: { id: string; amount: number; payment_method: 'cash' | 'transfer' | 'bank'; notes?: string }) => purchasesApi.createPayment(id, { amount, payment_method, notes }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }); toast.success('Pago a proveedor registrado'); },
+    onError: (error: any) => toast.error(error?.response?.data?.message || 'Error al registrar el pago'),
+  });
+};
