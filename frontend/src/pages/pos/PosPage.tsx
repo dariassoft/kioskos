@@ -657,7 +657,7 @@ export default function PosPage() {
             </button>
           </div>
           <p className="text-[10px] md:text-xs text-muted-foreground font-medium uppercase tracking-wider">
-             {searchQuery ? `${productsCache.length} productos encontrados` : '5 productos más vendidos'}
+             {searchQuery ? `${productsCache.length} productos encontrados` : '10 productos más vendidos'}
           </p>
         </div>
 

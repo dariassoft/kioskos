@@ -443,13 +443,14 @@ let InventoryService = class InventoryService {
                 .innerJoin('sales', 'popularSale', 'popularSale.id = popularItem.sale_id')
                 .andWhere('popularSale.tenant_id = :tenantId', { tenantId })
                 .andWhere('popularSale.status = :completedStatus', { completedStatus: 'completed' })
+                .andWhere(branchId ? 'popularSale.branch_id = :popularBranchId' : '1 = 1', { popularBranchId: branchId })
                 .addGroupBy('p.id')
                 .orderBy('SUM(popularItem.quantity)', 'DESC');
         }
         if (branchId) {
             qb.leftJoinAndMapOne('p.inventory', inventory_entity_1.Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId', { branchId });
         }
-        return qb.limit(query.trim() ? 20 : 5).getMany();
+        return qb.limit(query.trim() ? 20 : 10).getMany();
     }
 };
 exports.InventoryService = InventoryService;

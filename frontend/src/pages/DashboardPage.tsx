@@ -32,9 +32,17 @@ export default function DashboardPage() {
 
   // Formateadores
   const currencyFormatter = (value: number) => `$${value.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+  const localDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const dateFormatter = (dateStr: string) => {
-    const d = new Date(dateStr);
-    // Ajustar zona horaria local o simple slice
+    // Las fechas del gráfico son días calendario, no instantes UTC.
+    // Crear la fecha en local evita que Argentina retroceda un día.
+    const [year, month, day] = dateStr.slice(0, 10).split('-').map(Number);
+    const d = new Date(year, month - 1, day);
     return d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' });
   };
 
@@ -85,7 +93,7 @@ export default function DashboardPage() {
       {/* Stats cards (Métricas Principales) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Ventas Hoy */}
-         <div role="button" tabIndex={0} onClick={() => setSelectedDate(new Date().toISOString().slice(0, 10))} className="stat-card text-left hover:border-primary/50 transition-colors">
+         <div role="button" tabIndex={0} onClick={() => setSelectedDate(localDateString())} className="stat-card text-left hover:border-primary/50 transition-colors">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-emerald-500" />
