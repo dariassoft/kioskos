@@ -244,6 +244,24 @@ async function bootstrap() {
   });
 
   // ==========================================
+  // DEBUG — Log de cada request que llega al backend.
+  // Sirve para distinguir "el request nunca llegó al api" (problema de red/nginx)
+  // vs "llegó y falló adentro" (problema de código). Se ve en los logs del contenedor.
+  // Desactivar en producción con API_REQUEST_LOG=false
+  // ==========================================
+  if (configService.get('API_REQUEST_LOG') !== 'false') {
+    app.use((req: any, res: any, next: any) => {
+      const start = Date.now();
+      res.on('finish', () => {
+        const ms = Date.now() - start;
+        console.log(`[REQ] ${req.method} ${req.originalUrl} → ${res.statusCode} (${ms}ms)`);
+      });
+      next();
+    });
+    console.log('🔍 [DEBUG] Request logger activo (API_REQUEST_LOG)');
+  }
+
+  // ==========================================
   // ARRANQUE
   // ==========================================
   const port = Number(configService.get('APP_PORT') || 3000);
