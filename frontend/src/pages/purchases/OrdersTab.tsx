@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, Search, Plus, CheckCircle2, Factory, Sparkles, Trash2 } from 'lucide-react';
+import { Package, Search, Plus, CheckCircle2, Factory, Sparkles, Trash2, LayoutGrid, List, Eye } from 'lucide-react';
 import { useOrders, useReceiveOrder, useCreateOrder, useSuppliers, useCreatePurchasePayment } from '@hooks/usePurchases';
 import { useProducts } from '@hooks/useInventory';
 import { useBranchStore } from '@store/branch.store';
@@ -44,6 +44,8 @@ export default function OrdersTab() {
   const [payingOrder, setPayingOrder] = useState<PurchaseOrder | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'bank'>('cash');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [detailOrder, setDetailOrder] = useState<PurchaseOrder | null>(null);
   const createPayment = useCreatePurchasePayment();
 
   // Filtrar por sucursal actual y búsqueda local (ej: prov o total)
@@ -62,6 +64,10 @@ export default function OrdersTab() {
             />
           </div>
           <div className="flex gap-2">
+            <div className="flex rounded-xl border border-border p-1 bg-background">
+              <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : ''}`} aria-label="Vista grilla"><LayoutGrid className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : ''}`} aria-label="Vista listado"><List className="w-4 h-4" /></button>
+            </div>
             <button
               onClick={() => setAssistantOpen(true)}
               className="px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-sm bg-indigo-600/10 text-indigo-600 hover:bg-indigo-600/20 shadow-sm border border-indigo-200/50 transition-all dark:border-indigo-800/50 animate-pulse hover:animate-none"
@@ -87,14 +93,16 @@ export default function OrdersTab() {
           <p className="text-lg font-medium">No hay órdenes de compra en esta sucursal</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'}>
           {branchOrders.map((order: PurchaseOrder) => {
             const isReceived = order.status === 'received';
             const isCancelled = order.status === 'cancelled';
             const isPending = order.status === 'pending';
+            const isPaid = order.payment_status === 'paid';
+            const paidAmount = Number(order.paid_amount || 0);
 
             return (
-              <div key={order.id} className="bg-card border border-border rounded-2xl p-5 hover:shadow-md transition-shadow flex flex-col">
+              <div key={order.id} className={`bg-card border border-border rounded-2xl p-5 hover:shadow-md transition-shadow ${viewMode === 'grid' ? 'flex flex-col' : 'flex flex-wrap items-center gap-4'}`}>
                  <div className="flex justify-between items-start mb-3">
                    <div className="flex flex-col">
                       <span className="text-xs text-muted-foreground font-mono">#{order.id.slice(0,8).toUpperCase()}</span>
@@ -112,7 +120,7 @@ export default function OrdersTab() {
                    </div>
                  </div>
 
-                 <div className="flex-1 bg-muted/30 rounded-xl p-3 mb-4 flex justify-between items-center">
+                 <div className="flex-1 bg-muted/30 rounded-xl p-3 mb-4 flex justify-between items-center min-w-40">
                     <div>
                       <p className="text-xs text-muted-foreground">Costo Total</p>
                       <p className="text-lg font-extrabold text-primary">${Number(order.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>
@@ -130,11 +138,12 @@ export default function OrdersTab() {
                    </button>
                  )}
                  {isReceived && (
-                   <div className="space-y-2"><button onClick={() => { setPayingOrder(order); setPaymentAmount(Number(order.total)); }} className="w-full py-2.5 text-sm font-bold text-primary bg-primary/10 rounded-xl">Registrar pago al proveedor</button><p className="w-full py-2 text-center text-xs font-semibold text-muted-foreground bg-accent/50 rounded-xl flex items-center justify-center gap-2">
+                   <div className="space-y-2 min-w-48"><p className="text-xs text-muted-foreground">Pagado: <b>${paidAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</b> / ${Number(order.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p>{!isPaid ? <button onClick={() => { setPayingOrder(order); setPaymentAmount(Number(order.total) - paidAmount); }} className="w-full py-2.5 text-sm font-bold text-primary bg-primary/10 rounded-xl">Registrar pago al proveedor</button> : <p className="w-full py-2.5 text-center text-sm font-bold text-green-600 bg-green-500/10 rounded-xl">Orden pagada</p>}<p className="w-full py-2 text-center text-xs font-semibold text-muted-foreground bg-accent/50 rounded-xl flex items-center justify-center gap-2">
                      <CheckCircle2 className="w-4 h-4 text-green-500"/>
                      Stock ingresado; pago independiente
                    </p></div>
                  )}
+                 <button onClick={() => setDetailOrder(order)} className="w-full py-2 text-sm border border-border rounded-xl flex items-center justify-center gap-2"><Eye className="w-4 h-4" /> Ver detalle</button>
               </div>
             );
           })}
@@ -144,6 +153,7 @@ export default function OrdersTab() {
        <CreatePOModal isOpen={isModalOpen} suggested={suggestedItems} onClose={() => setModalOpen(false)} />
        <ReplenishmentAssistant isOpen={isAssistantOpen} onClose={() => setAssistantOpen(false)} onGenerate={(items) => { setSuggestedItems(items); setModalOpen(true) }} />
        {payingOrder && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="bg-card rounded-2xl p-6 w-full max-w-sm space-y-4"><h2 className="text-xl font-bold">Registrar pago a proveedor</h2><p className="text-sm text-muted-foreground">Orden #{payingOrder.id.slice(0, 8)} · Total ${Number(payingOrder.total).toLocaleString('es-AR')}</p><label className="block text-sm">Importe<input type="number" min="0.01" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(Number(e.target.value))} className="mt-1 w-full p-3 bg-background border border-border rounded-xl" /></label><label className="block text-sm">Medio<select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as typeof paymentMethod)} className="mt-1 w-full p-3 bg-background border border-border rounded-xl"><option value="cash">Efectivo</option><option value="transfer">Transferencia</option><option value="bank">Banco</option></select></label><div className="flex gap-2"><button onClick={() => setPayingOrder(null)} className="flex-1 py-2 border rounded-xl">Cancelar</button><button disabled={paymentAmount <= 0 || createPayment.isPending} onClick={() => createPayment.mutate({ id: payingOrder.id, amount: paymentAmount, payment_method: paymentMethod }, { onSuccess: () => setPayingOrder(null) })} className="flex-1 py-2 bg-primary text-primary-foreground rounded-xl">Guardar pago</button></div></div></div>}
+       {detailOrder && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="bg-card rounded-2xl p-6 w-full max-w-lg space-y-4"><div className="flex justify-between"><h2 className="text-xl font-bold">Detalle de orden</h2><button onClick={() => setDetailOrder(null)} className="text-muted-foreground">Cerrar</button></div><p className="text-sm text-muted-foreground">Orden #{detailOrder.id.slice(0, 8).toUpperCase()} · {detailOrder.supplier?.name || 'Proveedor'} · {new Date(detailOrder.created_at).toLocaleDateString('es-AR')}</p><div className="space-y-2 max-h-64 overflow-auto">{(detailOrder.items || []).map((item, index) => <div key={item.id || index} className="flex justify-between border-b border-border pb-2"><span>{item.product?.name || `Producto ${item.product_id.slice(0, 8)}`}<small className="block text-muted-foreground">{item.quantity} × ${Number(item.unit_cost).toLocaleString('es-AR')}</small></span><b>${Number(item.subtotal).toLocaleString('es-AR')}</b></div>)}</div><div className="flex justify-between font-bold border-t border-border pt-3"><span>Total</span><span>${Number(detailOrder.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div><button onClick={() => setDetailOrder(null)} className="w-full py-2 border rounded-xl">Cerrar</button></div></div>}
     </div>
   );
 }

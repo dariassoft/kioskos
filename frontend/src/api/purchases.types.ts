@@ -29,6 +29,8 @@ export interface PurchaseOrder {
   created_at: string;
   supplier?: Supplier;
   items?: PurchaseOrderItem[];
+  paid_amount?: number;
+  payment_status?: 'paid' | 'pending';
 }
 
 export interface PurchasePayment { id: string; amount: number; payment_method: 'cash' | 'transfer' | 'bank'; notes?: string | null; created_at: string }

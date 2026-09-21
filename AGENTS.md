@@ -1439,6 +1439,12 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - La recepción registra `Mercadería` contra `Proveedores`. Los pagos se registran por separado, admiten pagos parciales y generan `Proveedores` contra `Caja` o `Bancos` según el medio elegido.
 - El frontend muestra la acción `Registrar pago al proveedor` únicamente en órdenes recibidas.
 
+### 10.4 | Septiembre 2026 — Estado contable y visualización de órdenes
+
+- La recepción de una orden registra `Mercadería` (Debe) contra `Proveedores` (Haber), reconociendo la deuda; el pago posterior registra `Proveedores` (Debe) contra `Caja` o `Bancos` (Haber). Por eso el libro muestra $32.000 de movimientos para una compra de $16.000, pero la deuda queda en cero: no es un pago duplicado.
+- Las órdenes acumulan los pagos realizados y se muestran como `Pendiente` o `Pagada`; al completar el total se deshabilita la acción de registrar otro pago.
+- Compras permite alternar entre vista grilla y listado, además de abrir el detalle de cada orden con sus líneas, costos y estado de pago.
+
 ---
 
 ### 📝 CHANGELOG

@@ -70,11 +70,23 @@ export class PurchasesService {
   // ==========================================
 
   async findAllOrders(tenantId: string): Promise<PurchaseOrder[]> {
-    return this.orderRepo.find({
+    const orders = await this.orderRepo.find({
       where: { tenant_id: tenantId },
-      relations: ['supplier'],
+      relations: ['supplier', 'items'],
       order: { created_at: 'DESC' },
     });
+    const payments = await this.paymentRepo.createQueryBuilder('payment')
+      .select('payment.purchase_order_id', 'orderId')
+      .addSelect('COALESCE(SUM(payment.amount), 0)', 'paidAmount')
+      .where('payment.tenant_id = :tenantId', { tenantId })
+      .groupBy('payment.purchase_order_id')
+      .getRawMany<{ orderId: string; paidAmount: string }>();
+    const paidByOrder = new Map(payments.map((payment) => [payment.orderId, Number(payment.paidAmount)]));
+    return orders.map((order) => ({
+      ...order,
+      paid_amount: paidByOrder.get(order.id) || 0,
+      payment_status: Number(paidByOrder.get(order.id) || 0) >= Number(order.total) - 0.01 ? 'paid' : 'pending',
+    })) as PurchaseOrder[];
   }
 
   async findOneOrder(id: string, tenantId: string): Promise<PurchaseOrder> {
