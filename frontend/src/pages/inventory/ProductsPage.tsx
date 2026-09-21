@@ -75,11 +75,13 @@ function ProductModal({
       
       return {
         name: product.name,
-        description: product.description,
-        barcode: product.barcode,
-        internal_code: product.internal_code,
-        category_id: product.category_id,
-        unit_id: product.unit_id,
+        description: product.description ?? '',
+        // Estos campos son opcionales y la API puede devolverlos como null.
+        // El formulario debe entregarle strings vacíos a Zod para no bloquear la edición.
+        barcode: product.barcode ?? '',
+        internal_code: product.internal_code ?? '',
+        category_id: product.category_id ?? '',
+        unit_id: product.unit_id ?? '',
         cost_price: product.cost_price,
         min_stock_alert: product.min_stock_alert,
         image_url: product.image_url ?? '',
