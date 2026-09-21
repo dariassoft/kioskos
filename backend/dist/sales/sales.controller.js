@@ -42,6 +42,9 @@ let SalesController = class SalesController {
     createSale(dto, tenantId, req) {
         return this.salesService.createSale(dto, tenantId, req.user.id);
     }
+    createReturn(id, dto, tenantId) {
+        return this.salesService.createReturn(id, dto, tenantId);
+    }
     verifySalePayment(id, tenantId) {
         return this.salesService.verifySale(id, tenantId);
     }
@@ -135,6 +138,17 @@ __decorate([
     __metadata("design:paramtypes", [sales_dto_1.CreateSaleDto, String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesController.prototype, "createSale", null);
+__decorate([
+    (0, common_1.Post)(':id/returns'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Registrar devolución parcial o anulación total de una venta' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, sales_dto_1.CreateSaleReturnDto, String]),
+    __metadata("design:returntype", void 0)
+], SalesController.prototype, "createReturn", null);
 __decorate([
     (0, common_1.Patch)(':id/verify-payment'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER, roles_decorator_1.UserRole.CASHIER),

@@ -22,6 +22,15 @@ export class SaleItem {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   subtotal: number;
 
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  vat_rate: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  net_subtotal: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  vat_amount: number;
+
   @ManyToOne(() => Sale, (sale) => sale.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sale_id' })
   sale: Sale;

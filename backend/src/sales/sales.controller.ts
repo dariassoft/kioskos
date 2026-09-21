@@ -19,6 +19,7 @@ import {
   CreateCustomerDto,
   UpdateCustomerDto,
   ListSalesQueryDto,
+  CreateSaleReturnDto,
 } from './dto/sales.dto';
 
 import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
@@ -93,6 +94,13 @@ export class SalesController {
     @Request() req: any,
   ) {
     return this.salesService.createSale(dto, tenantId, req.user.id);
+  }
+
+  @Post(':id/returns')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Registrar devolución parcial o anulación total de una venta' })
+  createReturn(@Param('id') id: string, @Body() dto: CreateSaleReturnDto, @GetTenantId() tenantId: string) {
+    return this.salesService.createReturn(id, dto, tenantId);
   }
 
   @Patch(':id/verify-payment')

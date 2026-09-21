@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuthStore } from '@store/auth.store';
 import { useBranchStore } from '@store/branch.store';
 import { 
-  TrendingUp, ShoppingBag, Package, Users, ArrowUpRight, BarChart3, Database, CalendarDays, X
+  TrendingUp, ShoppingBag, Package, Users, ArrowUpRight, BarChart3, Database, CalendarDays, X, RotateCcw
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -15,6 +15,8 @@ import {
   useInventoryValuation
   ,useSalesByDate
 } from '@hooks/useReports';
+import { useCreateSaleReturn } from '@hooks/useSales';
+import type { Sale } from '@api/sales.types';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316'];
 
@@ -29,6 +31,7 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarDate, setCalendarDate] = useState('');
   const { data: selectedSales } = useSalesByDate(selectedDate, activeBranch?.id);
+  const [returnSale, setReturnSale] = useState<Sale | null>(null);
 
   // Formateadores
   const currencyFormatter = (value: number) => `$${value.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
@@ -211,11 +214,12 @@ export default function DashboardPage() {
          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
            <div className="bg-card rounded-2xl p-6 w-full max-w-2xl max-h-[85vh] overflow-auto space-y-4">
              <div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-bold">Ventas del {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-AR')}</h2><p className="text-sm text-muted-foreground">{selectedSales?.total || 0} ventas registradas</p></div><button type="button" onClick={() => setSelectedDate(null)} aria-label="Cerrar"><X className="w-5 h-5" /></button></div>
-             {!selectedSales ? <p className="py-8 text-center text-muted-foreground">Cargando ventas...</p> : selectedSales.data.length === 0 ? <p className="py-8 text-center text-muted-foreground">No hay ventas para esta fecha.</p> : <div className="space-y-2">{selectedSales.data.map((sale: import('@api/sales.types').Sale) => <div key={sale.id} className="border border-border rounded-xl p-3 flex justify-between gap-4"><div><p className="font-semibold">Venta #{sale.id.slice(0, 8).toUpperCase()}</p><p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} · {sale.payment_method}</p><p className="text-xs text-muted-foreground">{sale.items?.length || 0} artículo(s)</p></div><p className="font-bold text-primary">{currencyFormatter(Number(sale.total))}</p></div>)}</div>}
+             {!selectedSales ? <p className="py-8 text-center text-muted-foreground">Cargando ventas...</p> : selectedSales.data.length === 0 ? <p className="py-8 text-center text-muted-foreground">No hay ventas para esta fecha.</p> : <div className="space-y-2">{selectedSales.data.map((sale: Sale) => <div key={sale.id} className="border border-border rounded-xl p-3 flex justify-between gap-4"><div><p className="font-semibold">Venta #{sale.id.slice(0, 8).toUpperCase()}</p><p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} · {sale.payment_method}</p><p className="text-xs text-muted-foreground">{sale.items?.length || 0} artículo(s)</p></div><div className="text-right"><p className="font-bold text-primary">{currencyFormatter(Number(sale.total))}</p>{sale.status !== 'refunded' && <button onClick={() => setReturnSale(sale)} className="mt-1 text-xs text-destructive font-bold inline-flex items-center gap-1"><RotateCcw className="w-3 h-3" /> Devolver</button>}</div></div>)}</div>}
              <button type="button" onClick={() => setSelectedDate(null)} className="w-full py-2 border border-border rounded-xl">Cerrar</button>
            </div>
          </div>
-       )}
+      )}
+      {returnSale && <SaleReturnModal sale={returnSale} onClose={() => setReturnSale(null)} />}
      </div>
         </div>
 
@@ -312,4 +316,16 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function SaleReturnModal({ sale, onClose }: { sale: Sale; onClose: () => void }) {
+  const createReturn = useCreateSaleReturn();
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [reason, setReason] = useState('');
+  const submit = () => {
+    const items = sale.items.filter((item) => Number(quantities[item.product_id] || 0) > 0).map((item) => ({ product_id: item.product_id, quantity: Number(quantities[item.product_id]) }));
+    if (!items.length || !reason.trim()) return;
+    createReturn.mutate({ id: sale.id, data: { items, reason: reason.trim() } }, { onSuccess: onClose });
+  };
+  return <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4"><div className="bg-card rounded-2xl p-6 w-full max-w-lg space-y-4"><div className="flex justify-between items-center"><h2 className="text-xl font-bold">Devolver venta</h2><button onClick={onClose}><X className="w-5 h-5" /></button></div><div className="space-y-2 max-h-52 overflow-auto">{sale.items.map((item) => <label key={item.product_id} className="flex gap-3 items-center border-b border-border pb-2"><span className="flex-1 text-sm">{item.product?.name || item.product_id.slice(0, 8)}<small className="block text-muted-foreground">Vendidas: {item.quantity}</small></span><input type="number" min="0" max={Number(item.quantity)} step="0.01" value={quantities[item.product_id] || ''} onChange={(e) => setQuantities({ ...quantities, [item.product_id]: Number(e.target.value) })} className="w-24 p-2 bg-background border border-border rounded-lg" /></label>)}</div><textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motivo de la devolución" className="w-full p-3 bg-background border border-border rounded-xl" /><div className="flex gap-2"><button onClick={onClose} className="flex-1 py-2 border rounded-xl">Cancelar</button><button onClick={submit} disabled={createReturn.isPending} className="flex-1 py-2 bg-destructive text-white rounded-xl font-bold">Confirmar devolución</button></div></div></div>;
 }

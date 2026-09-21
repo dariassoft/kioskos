@@ -2,11 +2,13 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Sale } from './entities/sale.entity';
 import { SaleItem } from './entities/sale-item.entity';
+import { SaleReturn } from './entities/sale-return.entity';
+import { SaleReturnItem } from './entities/sale-return-item.entity';
 import { CashRegister } from './entities/cash-register.entity';
 import { Customer } from './entities/customer.entity';
 import { PaymentAccount } from './entities/payment-account.entity';
 import { Branch } from '@inventory/entities/branch.entity';
-import { CreateSaleDto, OpenCashRegisterDto, CloseCashRegisterDto, CreateCustomerDto, UpdateCustomerDto, ListSalesQueryDto } from './dto/sales.dto';
+import { CreateSaleDto, OpenCashRegisterDto, CloseCashRegisterDto, CreateCustomerDto, UpdateCustomerDto, ListSalesQueryDto, CreateSaleReturnDto } from './dto/sales.dto';
 import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
 import { InventoryService } from '@inventory/inventory.service';
 import { ElectronicInvoicingService } from '@electronic-invoicing/electronic-invoicing.service';
@@ -17,10 +19,12 @@ export declare class SalesService {
     private readonly customerRepo;
     private readonly branchRepo;
     private readonly paymentAccountRepo;
+    private readonly saleReturnRepo;
+    private readonly saleReturnItemRepo;
     private readonly inventoryService;
     private readonly electronicInvoicingService;
     private readonly eventEmitter;
-    constructor(saleRepo: Repository<Sale>, saleItemRepo: Repository<SaleItem>, cashRegisterRepo: Repository<CashRegister>, customerRepo: Repository<Customer>, branchRepo: Repository<Branch>, paymentAccountRepo: Repository<PaymentAccount>, inventoryService: InventoryService, electronicInvoicingService: ElectronicInvoicingService, eventEmitter: EventEmitter2);
+    constructor(saleRepo: Repository<Sale>, saleItemRepo: Repository<SaleItem>, cashRegisterRepo: Repository<CashRegister>, customerRepo: Repository<Customer>, branchRepo: Repository<Branch>, paymentAccountRepo: Repository<PaymentAccount>, saleReturnRepo: Repository<SaleReturn>, saleReturnItemRepo: Repository<SaleReturnItem>, inventoryService: InventoryService, electronicInvoicingService: ElectronicInvoicingService, eventEmitter: EventEmitter2);
     openCashRegister(dto: OpenCashRegisterDto, tenantId: string, userId: string): Promise<CashRegister>;
     closeCashRegister(branchId: string, dto: CloseCashRegisterDto, tenantId: string, userId: string): Promise<CashRegister>;
     getActiveRegister(tenantId: string, branchId: string, userId: string): Promise<CashRegister | null>;
@@ -28,6 +32,7 @@ export declare class SalesService {
     revertSalePayment(saleId: string, tenantId: string): Promise<Sale>;
     uploadVoucher(saleId: string, imageUrl: string, tenantId: string): Promise<Sale>;
     createSale(dto: CreateSaleDto, tenantId: string, userId: string): Promise<Sale>;
+    createReturn(saleId: string, dto: CreateSaleReturnDto, tenantId: string): Promise<SaleReturn>;
     listSales(tenantId: string, query: ListSalesQueryDto): Promise<{
         data: Sale[];
         total: number;

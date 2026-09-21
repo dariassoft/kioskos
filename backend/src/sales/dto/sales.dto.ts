@@ -187,6 +187,31 @@ export class CreateSaleDto {
   invoice_doc_nro?: string;
 }
 
+export class CreateSaleReturnItemDto {
+  @ApiProperty()
+  @IsUUID('all')
+  product_id: string;
+
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  quantity: number;
+}
+
+export class CreateSaleReturnDto {
+  @ApiProperty({ type: [CreateSaleReturnItemDto] })
+  @ValidateNested({ each: true })
+  @Type(() => CreateSaleReturnItemDto)
+  @ArrayMinSize(1)
+  items: CreateSaleReturnItemDto[];
+
+  @ApiProperty({ example: 'Cliente devolvió el producto' })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+}
+
 // ==========================================
 // FILTROS / LISTADOS
 // ==========================================

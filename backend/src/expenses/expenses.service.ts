@@ -8,12 +8,14 @@ import { Repository, Between } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { Expense } from './entities/expense.entity';
+import { ExpenseStatus } from './entities/expense.entity';
 import { ExpenseCategory } from './entities/expense-category.entity';
 import {
   CreateExpenseCategoryDto, UpdateExpenseCategoryDto,
   CreateExpenseDto, UpdateExpenseDto,
 } from './dto/expenses.dto';
 import { ExpenseCreatedEvent } from './events/expense-created.event';
+import { ExpenseVoidedEvent } from './events/expense-voided.event';
 
 @Injectable()
 export class ExpensesService {
@@ -145,17 +147,42 @@ export class ExpensesService {
   }
 
   async update(id: string, dto: UpdateExpenseDto, tenantId: string): Promise<Expense> {
-    await this.findOne(id, tenantId);
+    const existing = await this.findOne(id, tenantId);
+    if (existing.status === ExpenseStatus.VOIDED) throw new BadRequestException('No se puede editar un gasto anulado');
     if (dto.category_id) {
       await this.findOneCategory(dto.category_id, tenantId);
     }
+    // Un gasto ya contabilizado no se pisa silenciosamente: se revierte su
+    // asiento anterior y luego se registra el nuevo importe como movimiento separado.
+    const category = existing.category || await this.findOneCategory(existing.category_id, tenantId);
+    this.eventEmitter.emit('expense.voided', new ExpenseVoidedEvent(
+      tenantId, existing.id, Number(existing.amount), category.name, existing.payment_method, existing.branch_id, 'Corrección del gasto',
+    ));
     await this.expenseRepo.update({ id, tenant_id: tenantId }, dto as any);
+    const updated = await this.findOne(id, tenantId);
+    const updatedCategory = updated.category || await this.findOneCategory(updated.category_id, tenantId);
+    this.eventEmitter.emit('expense.created', new ExpenseCreatedEvent(
+      tenantId, updated.id, Number(updated.amount), updatedCategory.name, updated.payment_method, updated.branch_id,
+    ));
+    return updated;
+  }
+
+  async voidExpense(id: string, reason: string, tenantId: string): Promise<Expense> {
+    const expense = await this.findOne(id, tenantId);
+    if (expense.status === ExpenseStatus.VOIDED) throw new BadRequestException('El gasto ya está anulado');
+    const category = expense.category || await this.findOneCategory(expense.category_id, tenantId);
+    expense.status = ExpenseStatus.VOIDED;
+    expense.void_reason = reason;
+    expense.voided_at = new Date();
+    const saved = await this.expenseRepo.save(expense);
+    this.eventEmitter.emit('expense.voided', new ExpenseVoidedEvent(
+      tenantId, saved.id, Number(saved.amount), category.name, saved.payment_method, saved.branch_id, reason,
+    ));
     return this.findOne(id, tenantId);
   }
 
-  async remove(id: string, tenantId: string): Promise<void> {
-    const expense = await this.findOne(id, tenantId);
-    await this.expenseRepo.remove(expense);
+  async remove(id: string, tenantId: string): Promise<Expense> {
+    return this.voidExpense(id, 'Anulado desde el listado de gastos', tenantId);
   }
 
   async getSummary(tenantId: string, startDate?: string, endDate?: string) {
@@ -167,6 +194,7 @@ export class ExpensesService {
       .addSelect('SUM(expense.amount)', 'total')
       .addSelect('COUNT(expense.id)', 'count')
       .where('expense.tenant_id = :tenantId', { tenantId })
+      .andWhere('expense.status = :activeStatus', { activeStatus: ExpenseStatus.ACTIVE })
       .groupBy('expense.category_id')
       .addGroupBy('category.name')
       .addGroupBy('category.color');
@@ -182,7 +210,8 @@ export class ExpensesService {
       .createQueryBuilder('expense')
       .select('SUM(expense.amount)', 'total')
       .addSelect('COUNT(expense.id)', 'count')
-      .where('expense.tenant_id = :tenantId', { tenantId });
+      .where('expense.tenant_id = :tenantId', { tenantId })
+      .andWhere('expense.status = :activeStatus', { activeStatus: ExpenseStatus.ACTIVE });
 
     if (startDate && endDate) {
       totalQb.andWhere('expense.date >= :startDate AND expense.date <= :endDate', { startDate, endDate });

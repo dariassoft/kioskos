@@ -41,6 +41,18 @@ __decorate([
     __metadata("design:type", Number)
 ], SaleItem.prototype, "subtotal", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], SaleItem.prototype, "vat_rate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], SaleItem.prototype, "net_subtotal", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], SaleItem.prototype, "vat_amount", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => sale_entity_1.Sale, (sale) => sale.items, { onDelete: 'CASCADE' }),
     (0, typeorm_1.JoinColumn)({ name: 'sale_id' }),
     __metadata("design:type", sale_entity_1.Sale)

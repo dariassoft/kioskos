@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { purchasesApi } from '../api/purchases.api';
-import type { CreateSupplierDto, CreatePurchaseOrderDto } from '../api/purchases.types';
+import type { CreateSupplierDto, CreatePurchaseOrderDto, PurchaseReturnDto } from '../api/purchases.types';
 import toast from 'react-hot-toast';
 
 export const useSuppliers = () => {
@@ -9,6 +9,12 @@ export const useSuppliers = () => {
     queryFn: purchasesApi.getSuppliers,
   });
 };
+
+export const useSupplierAccount = (supplierId?: string) => useQuery({
+  queryKey: ['supplier-account', supplierId],
+  queryFn: () => purchasesApi.getSupplierAccount(supplierId as string),
+  enabled: Boolean(supplierId),
+});
 
 export const useCreateSupplier = () => {
   const queryClient = useQueryClient();
@@ -70,7 +76,7 @@ export const useCreateOrder = () => {
 export const useReceiveOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => purchasesApi.receiveOrder(id),
+    mutationFn: ({ id, data }: { id: string; data?: CreatePurchaseOrderDto }) => purchasesApi.receiveOrder(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       // Invalidate inventory because stock increased
@@ -79,6 +85,15 @@ export const useReceiveOrder = () => {
       toast.success('Orden recibida. Stock y Contabilidad actualizados.', { duration: 4000 });
     },
     onError: (error: any) => toast.error(error?.response?.data?.message || 'Error al recibir la orden'),
+  });
+};
+
+export const useUpdateOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreatePurchaseOrderDto }) => purchasesApi.updateOrder(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }); toast.success('Orden de compra actualizada'); },
+    onError: (error: any) => toast.error(error?.response?.data?.message || 'Error al actualizar la orden'),
   });
 };
 
@@ -100,5 +115,18 @@ export const useCreatePurchasePayment = () => {
     mutationFn: ({ id, amount, payment_method, notes }: { id: string; amount: number; payment_method: 'cash' | 'transfer' | 'bank'; notes?: string }) => purchasesApi.createPayment(id, { amount, payment_method, notes }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['purchase-orders'] }); toast.success('Pago a proveedor registrado'); },
     onError: (error: any) => toast.error(error?.response?.data?.message || 'Error al registrar el pago'),
+  });
+};
+
+export const useCreatePurchaseReturn = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: PurchaseReturnDto }) => purchasesApi.createReturn(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['inventoryByBranch'] });
+      toast.success('Devolución registrada y stock actualizado');
+    },
+    onError: (error: any) => toast.error(error?.response?.data?.message || 'Error al registrar la devolución'),
   });
 };

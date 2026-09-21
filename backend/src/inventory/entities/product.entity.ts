@@ -49,6 +49,9 @@ export class Product extends BaseKioskosEntity {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   cost_price: number; // Precio de costo (para calcular margen)
 
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 21 })
+  vat_rate: number; // Alícuota de IVA aplicable al producto
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   image_url: string | null;
 

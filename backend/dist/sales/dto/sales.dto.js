@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ListSalesQueryDto = exports.CreateSaleDto = exports.PaymentDetailsDto = exports.CreateSaleItemDto = exports.CloseCashRegisterDto = exports.OpenCashRegisterDto = exports.UpdateCustomerDto = exports.CreateCustomerDto = void 0;
+exports.ListSalesQueryDto = exports.CreateSaleReturnDto = exports.CreateSaleReturnItemDto = exports.CreateSaleDto = exports.PaymentDetailsDto = exports.CreateSaleItemDto = exports.CloseCashRegisterDto = exports.OpenCashRegisterDto = exports.UpdateCustomerDto = exports.CreateCustomerDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
@@ -217,6 +217,37 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateSaleDto.prototype, "invoice_doc_nro", void 0);
+class CreateSaleReturnItemDto {
+}
+exports.CreateSaleReturnItemDto = CreateSaleReturnItemDto;
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsUUID)('all'),
+    __metadata("design:type", String)
+], CreateSaleReturnItemDto.prototype, "product_id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 1 }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0.01),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateSaleReturnItemDto.prototype, "quantity", void 0);
+class CreateSaleReturnDto {
+}
+exports.CreateSaleReturnDto = CreateSaleReturnDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ type: [CreateSaleReturnItemDto] }),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => CreateSaleReturnItemDto),
+    (0, class_validator_1.ArrayMinSize)(1),
+    __metadata("design:type", Array)
+], CreateSaleReturnDto.prototype, "items", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Cliente devolvió el producto' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateSaleReturnDto.prototype, "reason", void 0);
 class ListSalesQueryDto {
 }
 exports.ListSalesQueryDto = ListSalesQueryDto;

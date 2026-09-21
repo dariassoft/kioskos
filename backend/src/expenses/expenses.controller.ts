@@ -13,6 +13,7 @@ import { GetTenantId } from '../common/decorators/get-tenant.decorator';
 import {
   CreateExpenseCategoryDto, UpdateExpenseCategoryDto,
   CreateExpenseDto, UpdateExpenseDto,
+  VoidExpenseDto,
 } from './dto/expenses.dto';
 
 @ApiTags('expenses')
@@ -142,5 +143,16 @@ export class ExpensesController {
     @GetTenantId() tenantId: string,
   ) {
     return this.expensesService.remove(id, tenantId);
+  }
+
+  @Post(':id/void')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Anular un gasto y revertir su asiento contable' })
+  voidExpense(
+    @Param('id') id: string,
+    @Body() dto: VoidExpenseDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.expensesService.voidExpense(id, dto.reason, tenantId);
   }
 }

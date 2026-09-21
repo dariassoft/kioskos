@@ -42,6 +42,14 @@ export declare class CreateSaleDto {
     invoice_doc_tipo?: number;
     invoice_doc_nro?: string;
 }
+export declare class CreateSaleReturnItemDto {
+    product_id: string;
+    quantity: number;
+}
+export declare class CreateSaleReturnDto {
+    items: CreateSaleReturnItemDto[];
+    reason: string;
+}
 export declare class ListSalesQueryDto {
     branch_id?: string;
     page?: number;

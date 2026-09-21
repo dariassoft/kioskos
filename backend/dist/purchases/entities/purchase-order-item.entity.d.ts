@@ -7,6 +7,9 @@ export declare class PurchaseOrderItem {
     quantity: number;
     unit_cost: number;
     subtotal: number;
+    vat_rate: number;
+    net_subtotal: number;
+    vat_amount: number;
     purchase_order: PurchaseOrder;
     product: Product;
 }

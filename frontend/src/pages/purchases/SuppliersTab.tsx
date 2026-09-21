@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Factory, Edit2, Trash2, X, Loader2 } from 'lucide-react';
-import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from '@hooks/usePurchases';
+import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier, useSupplierAccount } from '@hooks/usePurchases';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Supplier } from '@api/purchases.types';
+import type { Supplier, SupplierAccount } from '@api/purchases.types';
 import toast from 'react-hot-toast';
 
 const supplierSchema = z.object({
@@ -13,6 +13,8 @@ const supplierSchema = z.object({
   phone: z.string().optional().or(z.literal('')),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   tax_id: z.string().optional().or(z.literal('')),
+  current_account_enabled: z.boolean().optional(),
+  opening_balance: z.coerce.number().min(0).optional(),
 });
 
 type FormValues = z.infer<typeof supplierSchema>;
@@ -32,13 +34,13 @@ function SupplierModal({
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(supplierSchema),
-    defaultValues: supplier || { name: '', contact_name: '', phone: '', email: '', tax_id: '' },
+    defaultValues: supplier || { name: '', contact_name: '', phone: '', email: '', tax_id: '', current_account_enabled: false, opening_balance: 0 },
   });
 
   // Re-sync default values when supplier changes
   useEffect(() => {
     if (supplier) reset(supplier);
-    else reset({ name: '', contact_name: '', phone: '', email: '', tax_id: '' });
+    else reset({ name: '', contact_name: '', phone: '', email: '', tax_id: '', current_account_enabled: false, opening_balance: 0 });
   }, [supplier, reset]);
 
   const onSubmit = (data: FormValues) => {
@@ -105,6 +107,13 @@ function SupplierModal({
             <input {...register('email')} className="w-full px-4 py-2.5 bg-background border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/40" placeholder="proveedor@email.com" />
             {errors.email && <p className="text-destructive text-[10px] mt-1 font-bold">{errors.email.message}</p>}
           </div>
+          <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
+            <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" {...register('current_account_enabled')} /> Habilitar cuenta corriente</label>
+            <p className="text-[11px] text-muted-foreground">Permite consultar la deuda y los saldos a favor sin obligar a usarla en todos los proveedores.</p>
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest">Saldo inicial (opcional)
+              <input {...register('opening_balance')} type="number" min="0" step="0.01" className="mt-1 w-full px-3 py-2 bg-background border border-border rounded-xl" />
+            </label>
+          </div>
         </form>
 
         {/* Footer sticky */}
@@ -137,6 +146,8 @@ export default function SuppliersTab() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | undefined>();
+  const [accountSupplier, setAccountSupplier] = useState<Supplier | undefined>();
+  const { data: supplierAccount } = useSupplierAccount(accountSupplier?.id);
 
   const handleEdit = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
@@ -204,11 +215,12 @@ export default function SuppliersTab() {
                   <Edit2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-2 text-sm bg-muted/30 p-3 rounded-xl">
+               <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-2 text-sm bg-muted/30 p-3 rounded-xl">
                  <div className="min-w-0">
                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter mb-0.5">Contacto</p>
                    <p className="font-medium text-foreground truncate">{supplier.contact_name || '-'}</p>
-                 </div>
+               </div>
+               {supplier.current_account_enabled && <button onClick={() => setAccountSupplier(supplier)} className="mt-3 w-full py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold">Ver cuenta corriente</button>}
                  <div className="min-w-0">
                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter mb-0.5">Teléfono</p>
                    <p className="font-medium text-foreground truncate">{supplier.phone || '-'}</p>
@@ -220,6 +232,7 @@ export default function SuppliersTab() {
       )}
       
       <SupplierModal isOpen={isModalOpen} onClose={handleClose} supplier={selectedSupplier} />
+      {accountSupplier && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div className="bg-card rounded-2xl p-6 w-full max-w-lg space-y-4"><div className="flex justify-between items-center"><h2 className="text-xl font-bold">Cuenta corriente · {accountSupplier.name}</h2><button onClick={() => setAccountSupplier(undefined)}><X className="w-5 h-5" /></button></div><p className="text-2xl font-black text-primary">Saldo: ${Number(supplierAccount?.balance || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</p><div className="max-h-64 overflow-auto space-y-2">{supplierAccount?.entries?.map((entry: SupplierAccount['entries'][number]) => <div key={entry.id} className="flex justify-between border-b border-border pb-2 text-sm"><span>{entry.description}<small className="block text-muted-foreground">{new Date(entry.date).toLocaleDateString('es-AR')}</small></span><b className={entry.direction === 'debit' ? 'text-green-600' : 'text-destructive'}>{entry.direction === 'debit' ? '-' : '+'}${Number(entry.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</b></div>)}</div><button onClick={() => setAccountSupplier(undefined)} className="w-full py-2 border rounded-xl">Cerrar</button></div></div>}
     </div>
   );
 }

@@ -41,6 +41,7 @@ export interface Product {
   barcode?: string
   internal_code?: string
   cost_price: number
+  vat_rate: number
   is_active: boolean
   product_type?: 'standard' | 'raw_material' | 'fractionated' | 'elaborated'
   unit_id?: string

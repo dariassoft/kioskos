@@ -33,6 +33,7 @@ var PaymentStatus;
 var SaleStatus;
 (function (SaleStatus) {
     SaleStatus["COMPLETED"] = "completed";
+    SaleStatus["PARTIALLY_REFUNDED"] = "partially_refunded";
     SaleStatus["REFUNDED"] = "refunded";
     SaleStatus["PENDING"] = "pending";
 })(SaleStatus || (exports.SaleStatus = SaleStatus = {}));

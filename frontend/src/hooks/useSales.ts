@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import salesApi from '@api/sales.api'
-import type { Customer, CreateSaleDto, ListSalesQuery } from '@api/sales.types'
+import type { Customer, CreateSaleDto, ListSalesQuery, CreateSaleReturnDto } from '@api/sales.types'
 import toast from 'react-hot-toast'
 
 // ==========================================
@@ -78,6 +78,20 @@ export const useSalesList = (query: ListSalesQuery) =>
     queryKey: ['sales', query],
     queryFn: () => salesApi.listSales(query),
   })
+
+export const useCreateSaleReturn = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateSaleReturnDto }) => salesApi.createReturn(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sales'] })
+      qc.invalidateQueries({ queryKey: ['reports'] })
+      qc.invalidateQueries({ queryKey: ['inventoryByBranch'] })
+      toast.success('Devolución registrada y stock reintegrado')
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Error al registrar la devolución'),
+  })
+}
 
 // ==========================================
 // CLIENTES (Customers / Fiados)

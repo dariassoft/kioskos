@@ -6,6 +6,7 @@ export declare class CreateProductDto {
     unit_id?: string;
     category_id?: string;
     cost_price?: number;
+    vat_rate?: number;
     min_stock_alert?: number;
     image_url?: string;
     brand_id?: string;
@@ -22,6 +23,7 @@ export declare class UpdateProductDto {
     unit_id?: string;
     category_id?: string;
     cost_price?: number;
+    vat_rate?: number;
     image_url?: string;
     min_stock_alert?: number;
     is_active?: boolean;

@@ -41,6 +41,18 @@ __decorate([
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "subtotal", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrderItem.prototype, "vat_rate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrderItem.prototype, "net_subtotal", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrderItem.prototype, "vat_amount", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => purchase_order_entity_1.PurchaseOrder, (order) => order.items, { onDelete: 'CASCADE' }),
     (0, typeorm_1.JoinColumn)({ name: 'purchase_order_id' }),
     __metadata("design:type", purchase_order_entity_1.PurchaseOrder)

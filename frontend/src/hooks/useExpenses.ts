@@ -63,6 +63,19 @@ export function useDeleteExpense() {
   })
 }
 
+export function useVoidExpense() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => expensesApi.voidExpense(id, { reason }),
+    onSuccess: () => {
+      toast.success('Gasto anulado y asiento revertido')
+      qc.invalidateQueries({ queryKey: ['expenses'] })
+      qc.invalidateQueries({ queryKey: ['expenses-summary'] })
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || 'Error al anular el gasto'),
+  })
+}
+
 export function useCreateExpenseCategory() {
   const qc = useQueryClient()
   return useMutation({

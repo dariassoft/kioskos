@@ -43,8 +43,11 @@ let PurchasesController = class PurchasesController {
     createOrder(dto, tenantId) {
         return this.purchasesService.createOrder(dto, tenantId);
     }
-    receiveOrder(id, tenantId) {
-        return this.purchasesService.receiveOrder(id, tenantId);
+    updateOrder(id, dto, tenantId) {
+        return this.purchasesService.updateOrder(id, dto, tenantId);
+    }
+    receiveOrder(id, dto, tenantId) {
+        return this.purchasesService.receiveOrder(id, tenantId, dto);
     }
     cancelOrder(id, tenantId) {
         return this.purchasesService.cancelOrder(id, tenantId);
@@ -54,6 +57,12 @@ let PurchasesController = class PurchasesController {
     }
     createPayment(id, dto, tenantId) {
         return this.purchasesService.createPayment(id, dto, tenantId);
+    }
+    createReturn(id, dto, tenantId) {
+        return this.purchasesService.createReturn(id, dto, tenantId);
+    }
+    getSupplierAccount(id, tenantId) {
+        return this.purchasesService.getSupplierAccount(id, tenantId);
     }
 };
 exports.PurchasesController = PurchasesController;
@@ -117,13 +126,25 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], PurchasesController.prototype, "createOrder", null);
 __decorate([
+    (0, common_1.Patch)('orders/:id'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Editar una orden de compra pendiente' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, purchases_dto_1.UpdatePurchaseOrderDto, String]),
+    __metadata("design:returntype", void 0)
+], PurchasesController.prototype, "updateOrder", null);
+__decorate([
     (0, common_1.Post)('orders/:id/receive'),
     (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
     (0, swagger_1.ApiOperation)({ summary: 'Marcar orden como recibida e ingresar stock' }),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, purchases_dto_1.ReceivePurchaseOrderDto, String]),
     __metadata("design:returntype", void 0)
 ], PurchasesController.prototype, "receiveOrder", null);
 __decorate([
@@ -155,6 +176,27 @@ __decorate([
     __metadata("design:paramtypes", [String, purchases_dto_1.CreatePurchasePaymentDto, String]),
     __metadata("design:returntype", void 0)
 ], PurchasesController.prototype, "createPayment", null);
+__decorate([
+    (0, common_1.Post)('orders/:id/returns'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Registrar devolución parcial o total de mercadería al proveedor' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, purchases_dto_1.CreatePurchaseReturnDto, String]),
+    __metadata("design:returntype", void 0)
+], PurchasesController.prototype, "createReturn", null);
+__decorate([
+    (0, common_1.Get)('suppliers/:id/current-account'),
+    (0, roles_decorator_1.Roles)(roles_decorator_1.UserRole.ADMIN, roles_decorator_1.UserRole.MANAGER),
+    (0, swagger_1.ApiOperation)({ summary: 'Consultar cuenta corriente de un proveedor' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, get_tenant_decorator_1.GetTenantId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], PurchasesController.prototype, "getSupplierAccount", null);
 exports.PurchasesController = PurchasesController = __decorate([
     (0, swagger_1.ApiTags)('purchases'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),

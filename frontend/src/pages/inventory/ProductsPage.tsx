@@ -26,6 +26,7 @@ const productSchema = z.object({
   category_id: z.string().optional(),
   unit_id: z.string().optional(),
   cost_price: z.coerce.number().min(0).optional(),
+  vat_rate: z.coerce.number().min(0).max(100).optional(),
   min_stock_alert: z.coerce.number().min(0).optional(),
   image_url: z.string().optional(),
   brand_id: z.string().optional(),
@@ -69,7 +70,7 @@ function ProductModal({
   } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
     defaultValues: (() => {
-      if (!product) return { image_url: '', min_stock_alert: 5, product_type: 'standard' as const }
+      if (!product) return { image_url: '', min_stock_alert: 5, vat_rate: 21, product_type: 'standard' as const }
       
       const defaultPrice = product.prices?.find(p => p.price_list?.is_default) || product.prices?.[0]
       
@@ -83,6 +84,7 @@ function ProductModal({
         category_id: product.category_id ?? '',
         unit_id: product.unit_id ?? '',
         cost_price: product.cost_price,
+        vat_rate: product.vat_rate ?? 21,
         min_stock_alert: product.min_stock_alert,
         image_url: product.image_url ?? '',
         brand_id: product.brand_id ?? '',
@@ -186,7 +188,7 @@ function ProductModal({
   const handleSuggestMargin = () => {
     setValue('sale_margin', 35)
     if (watchedCost > 0) {
-      const suggestedPrice = Number(watchedCost) * 1.35
+      const suggestedPrice = Number(watchedCost) * 1.35 * (1 + Number(watch('vat_rate') || 0) / 100)
       setValue('sale_price', Number(suggestedPrice.toFixed(2)))
     }
     setPriceType('percent')
@@ -444,13 +446,23 @@ function ProductModal({
             <div className="p-5 bg-muted/20 border border-border rounded-2xl space-y-4 shadow-inner">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Costo Unitario ($)</label>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">Costo neto sin IVA ($)</label>
                   <input
                     {...register('cost_price')}
                     type="number" step="0.01"
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-base font-bold text-foreground focus:ring-2 focus:ring-primary/20"
                     placeholder="0.00"
                   />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5">IVA del producto (%)</label>
+                  <select {...register('vat_rate')} className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-base font-bold text-foreground">
+                    <option value="0">0%</option>
+                    <option value="10.5">10,5%</option>
+                    <option value="21">21%</option>
+                    <option value="27">27%</option>
+                  </select>
+                  <p className="text-[10px] text-muted-foreground mt-1">El precio por lista se interpreta como final con IVA.</p>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">

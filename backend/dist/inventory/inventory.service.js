@@ -92,8 +92,9 @@ let InventoryService = class InventoryService {
         const productEntity = this.productRepo.create({ ...cleanedData, tenant_id: tenantId });
         const savedProduct = await this.productRepo.save(productEntity);
         let finalPrice = Number(sale_price || 0);
-        if (!finalPrice && sale_margin && dto.cost_price) {
-            finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
+        if (!finalPrice && sale_margin !== undefined && dto.cost_price !== undefined) {
+            const vatRate = Number(dto.vat_rate || 0);
+            finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100) * (1 + vatRate / 100);
         }
         if (finalPrice > 0) {
             const defaultList = await this.priceListRepo.findOne({
@@ -119,7 +120,8 @@ let InventoryService = class InventoryService {
         await this.productRepo.update({ id, tenant_id: tenantId }, cleanedDto);
         let finalPrice = Number(sale_price || 0);
         if (!finalPrice && sale_margin !== undefined && dto.cost_price !== undefined) {
-            finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
+            const vatRate = Number(dto.vat_rate || 0);
+            finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100) * (1 + vatRate / 100);
         }
         if (finalPrice >= 0 && (sale_price !== undefined || sale_margin !== undefined)) {
             const defaultList = await this.priceListRepo.findOne({

@@ -8,6 +8,11 @@ export enum ExpensePaymentMethod {
   TRANSFER = 'transfer',
 }
 
+export enum ExpenseStatus {
+  ACTIVE = 'active',
+  VOIDED = 'voided',
+}
+
 @Entity('expenses')
 export class Expense extends BaseKioskosEntity {
   @Column({ type: 'varchar', length: 255 })
@@ -40,4 +45,13 @@ export class Expense extends BaseKioskosEntity {
 
   @Column({ type: 'longtext', nullable: true })
   receipt_image: string | null; // Foto del comprobante (base64)
+
+  @Column({ type: 'enum', enum: ExpenseStatus, default: ExpenseStatus.ACTIVE })
+  status: ExpenseStatus;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  void_reason: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  voided_at: Date | null;
 }

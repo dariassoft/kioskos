@@ -34,6 +34,18 @@ export class CreateSupplierDto {
   @IsString()
   @IsOptional()
   tax_id?: string;
+
+  @ApiPropertyOptional({ description: 'Habilita una cuenta corriente con este proveedor' })
+  @IsOptional()
+  @Type(() => Boolean)
+  current_account_enabled?: boolean;
+
+  @ApiPropertyOptional({ example: 0, description: 'Saldo inicial de la cuenta corriente' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  opening_balance?: number;
 }
 
 export class UpdateSupplierDto extends CreateSupplierDto {}
@@ -58,6 +70,13 @@ export class CreatePurchaseOrderItemDto {
   @Min(0)
   @Type(() => Number)
   unit_cost: number;
+
+  @ApiPropertyOptional({ example: 21, description: 'IVA de la línea. Si se omite se usa el IVA del producto.' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  vat_rate?: number;
 }
 
 export class CreatePurchaseOrderDto {
@@ -74,6 +93,51 @@ export class CreatePurchaseOrderDto {
   @Type(() => CreatePurchaseOrderItemDto)
   @ArrayMinSize(1)
   items: CreatePurchaseOrderItemDto[];
+}
+
+export class UpdatePurchaseOrderDto extends CreatePurchaseOrderDto {}
+
+export class ReceivePurchaseOrderDto {
+  @ApiProperty({ type: [CreatePurchaseOrderItemDto], description: 'Mercadería realmente entregada por el proveedor' })
+  @ValidateNested({ each: true })
+  @Type(() => CreatePurchaseOrderItemDto)
+  @ArrayMinSize(1)
+  items: CreatePurchaseOrderItemDto[];
+}
+
+export enum PurchaseReturnSettlementDto {
+  CREDIT_NOTE = 'credit_note',
+  CASH_REFUND = 'cash_refund',
+  BANK_REFUND = 'bank_refund',
+}
+
+export class CreatePurchaseReturnItemDto {
+  @ApiProperty()
+  @IsUUID('all')
+  product_id: string;
+
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  quantity: number;
+}
+
+export class CreatePurchaseReturnDto {
+  @ApiProperty({ type: [CreatePurchaseReturnItemDto] })
+  @ValidateNested({ each: true })
+  @Type(() => CreatePurchaseReturnItemDto)
+  @ArrayMinSize(1)
+  items: CreatePurchaseReturnItemDto[];
+
+  @ApiProperty({ example: 'Mercadería dañada' })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+
+  @ApiProperty({ enum: PurchaseReturnSettlementDto })
+  @IsEnum(PurchaseReturnSettlementDto)
+  settlement_method: PurchaseReturnSettlementDto;
 }
 
 export class CreatePurchasePaymentDto {

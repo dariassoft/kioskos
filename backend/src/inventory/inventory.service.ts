@@ -126,8 +126,9 @@ export class InventoryService {
     let finalPrice = Number(sale_price || 0);
     
     // Si no hay precio explícito pero sí un margen y costo, calculamos
-    if (!finalPrice && sale_margin && dto.cost_price) {
-      finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
+    if (!finalPrice && sale_margin !== undefined && dto.cost_price !== undefined) {
+      const vatRate = Number(dto.vat_rate || 0);
+      finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100) * (1 + vatRate / 100);
     }
 
     if (finalPrice > 0) {
@@ -160,7 +161,8 @@ export class InventoryService {
     // mantiene el formulario de edición consistente con el de creación.
     let finalPrice = Number(sale_price || 0);
     if (!finalPrice && sale_margin !== undefined && dto.cost_price !== undefined) {
-      finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
+      const vatRate = Number(dto.vat_rate || 0);
+      finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100) * (1 + vatRate / 100);
     }
     if (finalPrice >= 0 && (sale_price !== undefined || sale_margin !== undefined)) {
       const defaultList = await this.priceListRepo.findOne({

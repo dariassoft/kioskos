@@ -1,5 +1,5 @@
 import { SalesService } from './sales.service';
-import { CreateSaleDto, OpenCashRegisterDto, CloseCashRegisterDto, CreateCustomerDto, UpdateCustomerDto, ListSalesQueryDto } from './dto/sales.dto';
+import { CreateSaleDto, OpenCashRegisterDto, CloseCashRegisterDto, CreateCustomerDto, UpdateCustomerDto, ListSalesQueryDto, CreateSaleReturnDto } from './dto/sales.dto';
 import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
 export declare class SalesController {
     private readonly salesService;
@@ -14,6 +14,7 @@ export declare class SalesController {
         limit: number;
     }>;
     createSale(dto: CreateSaleDto, tenantId: string, req: any): Promise<import("./entities/sale.entity").Sale>;
+    createReturn(id: string, dto: CreateSaleReturnDto, tenantId: string): Promise<import("./entities/sale-return.entity").SaleReturn>;
     verifySalePayment(id: string, tenantId: string): Promise<import("./entities/sale.entity").Sale>;
     revertSalePayment(id: string, tenantId: string): Promise<import("./entities/sale.entity").Sale>;
     uploadVoucher(id: string, tenantId: string, file: Express.Multer.File): Promise<import("./entities/sale.entity").Sale>;

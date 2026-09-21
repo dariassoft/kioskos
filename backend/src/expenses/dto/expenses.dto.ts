@@ -139,3 +139,11 @@ export class UpdateExpenseDto {
   @IsOptional()
   receipt_image?: string;
 }
+
+export class VoidExpenseDto {
+  @ApiProperty({ example: 'Comprobante cargado por error' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  reason: string;
+}

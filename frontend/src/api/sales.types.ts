@@ -19,7 +19,7 @@ export type PaymentMethod =
   | 'credit_client'
 
 export type PaymentStatus = 'pending' | 'confirmed' | 'failed'
-export type SaleStatus = 'completed' | 'refunded' | 'pending'
+export type SaleStatus = 'completed' | 'partially_refunded' | 'refunded' | 'pending'
 
 export interface CashRegister {
   id: string
@@ -41,6 +41,10 @@ export interface SaleItem {
   quantity: number
   unit_price: number
   subtotal: number
+  vat_rate?: number
+  net_subtotal?: number
+  vat_amount?: number
+  product?: { name: string }
 }
 
 export interface Sale {
@@ -99,6 +103,11 @@ export interface CreateSaleDto {
   request_invoice?: boolean
   invoice_doc_tipo?: number
   invoice_doc_nro?: string
+}
+
+export interface CreateSaleReturnDto {
+  items: { product_id: string; quantity: number }[]
+  reason: string
 }
 
 export interface ListSalesQuery {

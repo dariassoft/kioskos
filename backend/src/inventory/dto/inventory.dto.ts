@@ -46,6 +46,13 @@ export class CreateProductDto {
   @Type(() => Number)
   cost_price?: number;
 
+  @ApiPropertyOptional({ example: 21, description: 'Alícuota de IVA del producto' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  vat_rate?: number;
+
   @ApiPropertyOptional({ example: 5.0, description: 'Umbral de stock mínimo para alertas' })
   @IsNumber()
   @Min(0)
@@ -127,6 +134,13 @@ export class UpdateProductDto {
   @IsOptional()
   @Type(() => Number)
   cost_price?: number;
+
+  @ApiPropertyOptional({ example: 21, description: 'Alícuota de IVA del producto' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  vat_rate?: number;
 
   @ApiPropertyOptional()
   @IsString()

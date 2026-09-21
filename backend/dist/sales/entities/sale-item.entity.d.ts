@@ -7,6 +7,9 @@ export declare class SaleItem {
     quantity: number;
     unit_price: number;
     subtotal: number;
+    vat_rate: number;
+    net_subtotal: number;
+    vat_amount: number;
     sale: Sale;
     product: Product;
 }

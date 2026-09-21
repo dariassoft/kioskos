@@ -13,6 +13,10 @@ const supplier_entity_1 = require("./entities/supplier.entity");
 const purchase_order_entity_1 = require("./entities/purchase-order.entity");
 const purchase_order_item_entity_1 = require("./entities/purchase-order-item.entity");
 const purchase_payment_entity_1 = require("./entities/purchase-payment.entity");
+const purchase_return_entity_1 = require("./entities/purchase-return.entity");
+const purchase_return_item_entity_1 = require("./entities/purchase-return-item.entity");
+const product_entity_1 = require("../inventory/entities/product.entity");
+const inventory_entity_1 = require("../inventory/entities/inventory.entity");
 const purchases_service_1 = require("./purchases.service");
 const purchases_controller_1 = require("./purchases.controller");
 const inventory_module_1 = require("../inventory/inventory.module");
@@ -22,7 +26,7 @@ exports.PurchasesModule = PurchasesModule;
 exports.PurchasesModule = PurchasesModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([supplier_entity_1.Supplier, purchase_order_entity_1.PurchaseOrder, purchase_order_item_entity_1.PurchaseOrderItem, purchase_payment_entity_1.PurchasePayment]),
+            typeorm_1.TypeOrmModule.forFeature([supplier_entity_1.Supplier, purchase_order_entity_1.PurchaseOrder, purchase_order_item_entity_1.PurchaseOrderItem, purchase_payment_entity_1.PurchasePayment, purchase_return_entity_1.PurchaseReturn, purchase_return_item_entity_1.PurchaseReturnItem, product_entity_1.Product, inventory_entity_1.Inventory]),
             inventory_module_1.InventoryModule,
         ],
         controllers: [purchases_controller_1.PurchasesController],

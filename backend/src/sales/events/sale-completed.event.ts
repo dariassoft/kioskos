@@ -6,5 +6,7 @@ export class SaleCompletedEvent {
     public readonly paymentMethod: string,
     public readonly branchId: string,
     public readonly cashierId: string,
+    public readonly netAmount?: number,
+    public readonly vatAmount?: number,
   ) {}
 }

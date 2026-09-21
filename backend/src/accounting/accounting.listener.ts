@@ -6,7 +6,10 @@ import { AccountingService } from '@accounting/accounting.service';
 import { SaleCompletedEvent } from '@sales/events/sale-completed.event';
 import { PurchaseReceivedEvent } from '@purchases/events/purchase-received.event';
 import { PurchasePaymentCreatedEvent } from '@purchases/events/purchase-payment-created.event';
+import { PurchaseReturnedEvent } from '@purchases/events/purchase-returned.event';
 import { PaymentMethod, PaymentStatus, Sale } from '@sales/entities/sale.entity';
+import { SaleReturnedEvent } from '@sales/events/sale-returned.event';
+import { ExpenseVoidedEvent } from '../expenses/events/expense-voided.event';
 
 @Injectable()
 export class AccountingListener {
@@ -33,8 +36,12 @@ export class AccountingListener {
 
     // Debe (Ingreso de dinero o derecho de cobro)
     entries.push({ account_name: debitAccount, debit: event.total, credit: 0 });
-    // Haber (Ventas)
-    entries.push({ account_name: 'Ventas', debit: 0, credit: event.total });
+    // El precio de venta se almacena bruto; separamos IVA para no mezclarlo
+    // con el ingreso propio del comercio.
+    const netAmount = Number(event.netAmount ?? event.total);
+    const vatAmount = Number(event.vatAmount ?? 0);
+    entries.push({ account_name: 'Ventas', debit: 0, credit: netAmount });
+    if (vatAmount > 0) entries.push({ account_name: 'IVA Débito Fiscal', debit: 0, credit: vatAmount });
 
     await this.accountingService.createEntry(
       event.tenantId,
@@ -50,8 +57,9 @@ export class AccountingListener {
 
     const entries: { account_name: string; debit?: number; credit?: number }[] = [];
 
-    // Debe (Aumento de activo: Mercadería)
-    entries.push({ account_name: 'Mercadería', debit: event.total, credit: 0 });
+    // Debe: mercadería neta e IVA crédito fiscal.
+    entries.push({ account_name: 'Mercadería', debit: Number(event.netAmount ?? event.total), credit: 0 });
+    if (Number(event.vatAmount ?? 0) > 0) entries.push({ account_name: 'IVA Crédito Fiscal', debit: Number(event.vatAmount), credit: 0 });
     // La recepción reconoce la deuda; el pago se registra en un asiento separado.
     entries.push({ account_name: 'Proveedores', debit: 0, credit: event.total });
 
@@ -61,6 +69,34 @@ export class AccountingListener {
       entries,
       event.purchaseOrderId,
     );
+  }
+
+  @OnEvent('sale.returned')
+  async handleSaleReturnedEvent(event: SaleReturnedEvent) {
+    const sale = await this.saleRepo.findOne({ where: { id: event.saleId, tenant_id: event.tenantId } });
+    if (!sale) return;
+    const debitAccount = this.resolveDebitAccount(sale.payment_method, sale.payment_status);
+    const entries: { account_name: string; debit?: number; credit?: number }[] = [
+      { account_name: 'Ventas', debit: event.netAmount, credit: 0 },
+    ];
+    if (event.vatAmount > 0) entries.push({ account_name: 'IVA Débito Fiscal', debit: event.vatAmount, credit: 0 });
+    entries.push({ account_name: debitAccount, debit: 0, credit: event.total });
+    await this.accountingService.createEntry(event.tenantId, `Devolución de venta ${event.saleId}`, entries, event.saleReturnId);
+  }
+
+  @OnEvent('purchase.returned')
+  async handlePurchaseReturnedEvent(event: PurchaseReturnedEvent) {
+    const entries: { account_name: string; debit?: number; credit?: number }[] = [
+      { account_name: 'Proveedores', debit: event.total, credit: 0 },
+      { account_name: 'Mercadería', debit: 0, credit: event.netAmount },
+    ];
+    if (event.vatAmount > 0) entries.push({ account_name: 'IVA Crédito Fiscal', debit: 0, credit: event.vatAmount });
+    if (event.refundAmount > 0) {
+      const account = event.settlementMethod === 'cash_refund' ? 'Caja' : 'Bancos';
+      entries.push({ account_name: account, debit: event.refundAmount, credit: 0 });
+      entries.push({ account_name: 'Proveedores', debit: 0, credit: event.refundAmount });
+    }
+    await this.accountingService.createEntry(event.tenantId, `Devolución a proveedor por orden ${event.purchaseOrderId}`, entries, event.purchaseReturnId);
   }
 
   @OnEvent('purchase.payment.created')
@@ -102,6 +138,16 @@ export class AccountingListener {
       entries,
       event.expenseId,
     );
+  }
+
+  @OnEvent('expense.voided')
+  async handleExpenseVoidedEvent(event: ExpenseVoidedEvent) {
+    const methodLabels: Record<string, string> = { cash: 'Caja', card: 'Tarjetas', transfer: 'Bancos' };
+    const creditAccount = methodLabels[event.paymentMethod] || 'Caja/Banco';
+    await this.accountingService.createEntry(event.tenantId, `Anulación de gasto: ${event.categoryName} (${event.reason})`, [
+      { account_name: creditAccount, debit: event.amount, credit: 0 },
+      { account_name: `Gastos - ${event.categoryName}`, debit: 0, credit: event.amount },
+    ], event.expenseId);
   }
 
   @OnEvent('stock.adjusted')

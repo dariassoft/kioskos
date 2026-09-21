@@ -1472,6 +1472,17 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - La búsqueda rápida con `q=` vacío calcula la popularidad mediante un subquery correlacionado, filtrando tenant, ventas completadas y sucursal.
 - No usar `GROUP BY p.id` junto con la selección completa de productos y relaciones: MySQL en producción puede tener `ONLY_FULL_GROUP_BY` habilitado y devolver `500`.
 
+### 10.10 | Septiembre 2026 — Devoluciones, anulaciones, recepción real, cuentas corrientes e IVA
+
+- **No se borran movimientos contabilizados.** Una venta se devuelve mediante `POST /sales/:id/returns`, que admite devolución parcial o anulación total por líneas. El documento conserva motivo y cantidades, reintegra stock, reduce la deuda del cliente si era fiado, actualiza el estado a `partially_refunded` o `refunded` y genera asientos inversos sin duplicar la venta original.
+- **Los gastos se anulan, no se eliminan.** `POST /expenses/:id/void` conserva el comprobante con `status=voided`, motivo y fecha de anulación, y genera la reversa del asiento original. Las ediciones de un gasto ya contabilizado primero revierten el importe anterior y luego registran el nuevo importe; los resúmenes excluyen gastos anulados.
+- **Las órdenes pendientes se pueden editar.** `PATCH /purchases/orders/:id` reemplaza sus líneas y recalcula el total solo mientras la orden está pendiente. Al recibir una orden se puede enviar la mercadería realmente entregada mediante `POST /purchases/orders/:id/receive`: se aceptan cantidades menores, mayores o productos no pedidos, y se contabiliza únicamente la recepción real.
+- **Una orden recibida no se reescribe.** Las diferencias posteriores se registran como devolución parcial o total mediante `POST /purchases/orders/:id/returns`. La devolución reduce stock y la deuda con el proveedor, y admite `credit_note` (saldo a favor), `cash_refund` o `bank_refund`; si la orden ya estaba pagada, el crédito o reintegro evita alterar pagos históricos.
+- **Cuentas corrientes de proveedores son opt-in.** `suppliers.current_account_enabled` no se activa por defecto. Cuando está habilitada, el saldo se calcula como saldo inicial + recepciones - pagos - notas de crédito + reintegros; la consulta `/purchases/suppliers/:id/current-account` muestra el detalle cronológico. Recibir mercadería sigue reconociendo deuda y pagar sigue siendo una operación separada.
+- **IVA por producto y por línea.** `products.vat_rate` admite alícuotas diferentes (por ejemplo `0`, `10.5`, `21` y `27`). En compras, `unit_cost` es neto sin IVA, `vat_amount` es el impuesto y `subtotal`/`purchase_orders.total` es el importe final bruto. La recepción actualiza el costo neto vigente del producto; si se calcula el precio con margen, el precio de lista se obtiene como costo neto + margen + IVA y se interpreta como precio final.
+- **IVA en ventas y contabilidad.** El precio POS/lista es bruto y cada `sale_items` conserva `vat_rate`, `net_subtotal` y `vat_amount`. Los asientos separan `Ventas` de `IVA Débito Fiscal`, las compras separan `Mercadería` de `IVA Crédito Fiscal`, y las devoluciones invierten ambas partes. Las columnas nuevas dejan IVA `0` en líneas históricas para no modificar comprobantes ya contabilizados.
+- **Migración:** `AddReturnsSupplierAccountsAndVat1800000000000` crea las columnas fiscales, estados de anulación, cuentas corrientes y tablas `purchase_returns`, `purchase_return_items`, `sale_returns` y `sale_return_items`. En producción se debe ejecutar mediante el flujo normal de migraciones antes de utilizar estas pantallas.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1494,3 +1505,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.4 | Sept 2026 | POS: al abrir la ventana de ventas se muestran automáticamente los diez productos más vendidos de la sucursal; la búsqueda manual permanece disponible. |
 | 10.5 | Sept 2026 | Dashboard: se corrige el desplazamiento de fechas causado por interpretar días calendario como UTC. |
 | 10.6 | Sept 2026 | POS: se corrige el error `500` de sugerencias populares causado por `GROUP BY` incompatible con `ONLY_FULL_GROUP_BY`; se usa un subquery correlacionado. |
+| 10.7 | Sept 2026 | Devoluciones parciales/totales de compras y ventas, anulaciones auditables de gastos, recepción real de órdenes, cuentas corrientes opcionales de proveedores e IVA por producto con desglose neto/bruto y asientos inversos. |

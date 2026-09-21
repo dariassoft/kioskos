@@ -1,13 +1,13 @@
 import { useState, useMemo, useRef } from 'react'
 import {
-  Receipt, Plus, X, Trash2, Edit2, Loader2,
+  Receipt, Plus, X, Trash2, Edit2, Loader2, Ban,
   Banknote, CreditCard, ArrowLeftRight, Camera, Eye,
   Palette, Tag,
 } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS, type ExpensePaymentMethod, type Expense, type ExpenseCategory } from '@api/expenses.api'
 import {
   useExpenses, useExpenseCategories, useExpenseSummary,
-  useCreateExpense, useUpdateExpense, useDeleteExpense,
+  useCreateExpense, useUpdateExpense, useVoidExpense,
   useCreateExpenseCategory, useUpdateExpenseCategory, useDeleteExpenseCategory,
   useSeedExpenseCategories,
 } from '@hooks/useExpenses'
@@ -55,11 +55,12 @@ function ExpensesTab() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [modal, setModal] = useState<{ open: boolean; expense: Expense | null }>({ open: false, expense: null })
   const [receiptModal, setReceiptModal] = useState<string | null>(null)
+  const [voidingExpense, setVoidingExpense] = useState<Expense | null>(null)
 
   const { data: expenses = [], isLoading } = useExpenses({ start_date: startDate, end_date: endDate, category_id: categoryFilter || undefined })
   const { data: categories = [] } = useExpenseCategories()
   const { data: summary } = useExpenseSummary({ start_date: startDate, end_date: endDate })
-  const deleteMut = useDeleteExpense()
+  const voidMut = useVoidExpense()
 
   const fmt = (v: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(v)
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
@@ -140,7 +141,7 @@ function ExpensesTab() {
                   const cat = catMap.get(exp.category_id)
                   const MethodIcon = PAYMENT_ICONS[exp.payment_method] || Banknote
                   return (
-                    <tr key={exp.id} className="hover:bg-muted/30 transition-colors">
+                    <tr key={exp.id} className={`hover:bg-muted/30 transition-colors ${exp.status === 'voided' ? 'opacity-60' : ''}`}>
                       <td className="px-4 py-3 whitespace-nowrap font-medium">{new Date(exp.date + 'T12:00:00').toLocaleDateString('es-AR')}</td>
                       <td className="px-4 py-3">
                         <p className="font-medium text-foreground">{exp.description}</p>
@@ -158,7 +159,7 @@ function ExpensesTab() {
                           <span className="text-xs font-medium">{PAYMENT_METHOD_LABELS[exp.payment_method]}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-rose-600">{fmt(Number(exp.amount))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-rose-600">{fmt(Number(exp.amount))}{exp.status === 'voided' && <span className="block text-[10px] text-destructive uppercase">Anulado</span>}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px]">
                         {exp.notes && <p className="line-clamp-2">{exp.notes}</p>}
                         {exp.receipt_image && (
@@ -170,10 +171,10 @@ function ExpensesTab() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setModal({ open: true, expense: exp })}
-                            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground"><Edit2 className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => { if (confirm('¿Eliminar este gasto?')) deleteMut.mutate(exp.id) }}
-                            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                          {exp.status === 'active' && <button onClick={() => setModal({ open: true, expense: exp })}
+                            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground"><Edit2 className="w-3.5 h-3.5" /></button>}
+                          {exp.status === 'active' && <button onClick={() => setVoidingExpense(exp)}
+                            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Anular gasto"><Ban className="w-3.5 h-3.5" /></button>}
                         </div>
                       </td>
                     </tr>
@@ -186,6 +187,7 @@ function ExpensesTab() {
       </div>
 
       {modal.open && <ExpenseModal expense={modal.expense} categories={categories} onClose={() => setModal({ open: false, expense: null })} />}
+      {voidingExpense && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><div className="bg-card rounded-2xl p-6 w-full max-w-md space-y-4"><div className="flex justify-between items-center"><h2 className="text-xl font-bold">Anular gasto</h2><button onClick={() => setVoidingExpense(null)}><X className="w-5 h-5" /></button></div><p className="text-sm text-muted-foreground">Esta acción conserva el gasto y revierte su asiento contable.</p><textarea id="void-reason" placeholder="Motivo obligatorio" className="w-full p-3 bg-background border border-border rounded-xl" /><div className="flex gap-2"><button onClick={() => setVoidingExpense(null)} className="flex-1 py-2 border rounded-xl">Cancelar</button><button onClick={() => { const reason = (document.getElementById('void-reason') as HTMLTextAreaElement)?.value.trim(); if (!reason) return; voidMut.mutate({ id: voidingExpense.id, reason }, { onSuccess: () => setVoidingExpense(null) }) }} disabled={voidMut.isPending} className="flex-1 py-2 bg-destructive text-white rounded-xl font-bold">Confirmar anulación</button></div></div></div>}
       {receiptModal && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setReceiptModal(null)}>
           <div className="max-w-2xl max-h-[80vh] overflow-auto bg-card rounded-2xl p-2" onClick={(e) => e.stopPropagation()}>

@@ -32,6 +32,9 @@ export interface Expense {
   receipt_image: string | null
   created_at: string
   updated_at: string
+  status: 'active' | 'voided'
+  void_reason?: string | null
+  voided_at?: string | null
 }
 
 export interface ExpenseSummary {
@@ -61,6 +64,8 @@ export interface CreateCategoryPayload {
   name: string
   color?: string
 }
+
+export interface VoidExpensePayload { reason: string }
 
 const expensesApi = {
   // Categorías
@@ -94,6 +99,9 @@ const expensesApi = {
 
   deleteExpense: (id: string): Promise<void> =>
     apiClient.delete(`/expenses/${id}`).then(() => undefined),
+
+  voidExpense: (id: string, data: VoidExpensePayload): Promise<Expense> =>
+    apiClient.post(`/expenses/${id}/void`, data).then((r) => r.data),
 
   getSummary: (params?: { start_date?: string; end_date?: string }): Promise<ExpenseSummary> =>
     apiClient.get('/expenses/summary', { params }).then((r) => r.data),

@@ -6,5 +6,7 @@ export declare class Supplier extends BaseKioskosEntity {
     phone: string;
     email: string;
     tax_id: string;
+    current_account_enabled: boolean;
+    opening_balance: number;
     purchase_orders: PurchaseOrder[];
 }

@@ -21,6 +21,7 @@ export enum PaymentStatus {
 
 export enum SaleStatus {
   COMPLETED = 'completed',
+  PARTIALLY_REFUNDED = 'partially_refunded',
   REFUNDED = 'refunded',
   PENDING = 'pending',
 }

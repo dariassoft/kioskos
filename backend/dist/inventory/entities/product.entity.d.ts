@@ -19,6 +19,7 @@ export declare class Product extends BaseKioskosEntity {
     unit_id: string;
     category_id: string;
     cost_price: number;
+    vat_rate: number;
     image_url: string | null;
     brand_id: string;
     supplier_id: string;

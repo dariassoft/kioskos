@@ -37,6 +37,14 @@ __decorate([
     __metadata("design:type", String)
 ], Supplier.prototype, "tax_id", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], Supplier.prototype, "current_account_enabled", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Supplier.prototype, "opening_balance", void 0);
+__decorate([
     (0, typeorm_1.OneToMany)(() => purchase_order_entity_1.PurchaseOrder, (order) => order.supplier),
     __metadata("design:type", Array)
 ], Supplier.prototype, "purchase_orders", void 0);

@@ -5,15 +5,18 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { Sale, PaymentMethod, PaymentStatus, SaleStatus } from './entities/sale.entity';
 import { SaleItem } from './entities/sale-item.entity';
+import { SaleReturn } from './entities/sale-return.entity';
+import { SaleReturnItem } from './entities/sale-return-item.entity';
 import { CashRegister } from './entities/cash-register.entity';
 import { Customer } from './entities/customer.entity';
 import { PaymentAccount } from './entities/payment-account.entity';
 import { Branch } from '@inventory/entities/branch.entity';
+import { Inventory } from '@inventory/entities/inventory.entity';
 
 import {
   CreateSaleDto,
@@ -22,6 +25,7 @@ import {
   CreateCustomerDto,
   UpdateCustomerDto,
   ListSalesQueryDto,
+  CreateSaleReturnDto,
 } from './dto/sales.dto';
 
 import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-account.dto';
@@ -29,6 +33,7 @@ import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-
 import { InventoryService } from '@inventory/inventory.service';
 import { ElectronicInvoicingService } from '@electronic-invoicing/electronic-invoicing.service';
 import { SaleCompletedEvent } from '@sales/events/sale-completed.event';
+import { SaleReturnedEvent } from '@sales/events/sale-returned.event';
 
 @Injectable()
 export class SalesService {
@@ -45,6 +50,10 @@ export class SalesService {
     private readonly branchRepo: Repository<Branch>,
     @InjectRepository(PaymentAccount)
     private readonly paymentAccountRepo: Repository<PaymentAccount>,
+    @InjectRepository(SaleReturn)
+    private readonly saleReturnRepo: Repository<SaleReturn>,
+    @InjectRepository(SaleReturnItem)
+    private readonly saleReturnItemRepo: Repository<SaleReturnItem>,
     private readonly inventoryService: InventoryService,
     private readonly electronicInvoicingService: ElectronicInvoicingService,
     private readonly eventEmitter: EventEmitter2,
@@ -186,9 +195,8 @@ export class SalesService {
     await this.assertBranchExists(dto.branch_id, tenantId);
 
     // 2. Validar propiedad de cada producto antes de procesar la venta
-    for (const item of dto.items) {
-      await this.inventoryService.findOneProduct(item.product_id, tenantId);
-    }
+    const products = new Map<string, Awaited<ReturnType<InventoryService['findOneProduct']>>>();
+    for (const item of dto.items) products.set(item.product_id, await this.inventoryService.findOneProduct(item.product_id, tenantId));
 
     // 3. Validar que la caja esté abierta
     const activeRegister = await this.getActiveRegister(tenantId, dto.branch_id, userId);
@@ -209,6 +217,12 @@ export class SalesService {
     }
 
     const total = dto.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.unit_price)), 0);
+    const netAmount = dto.items.reduce((acc, item) => {
+      const rate = Number(products.get(item.product_id)?.vat_rate || 0);
+      const gross = Number(item.quantity) * Number(item.unit_price);
+      return acc + (rate > 0 ? gross / (1 + rate / 100) : gross);
+    }, 0);
+    const vatAmount = total - netAmount;
 
     const paymentStatus = this.resolvePaymentStatus(dto.payment_method, dto.payment_status, dto.payment_details?.mp_payment_status);
 
@@ -261,6 +275,17 @@ export class SalesService {
         quantity: item.quantity,
         unit_price: item.unit_price,
         subtotal: Number(item.quantity) * Number(item.unit_price),
+        vat_rate: Number(products.get(item.product_id)?.vat_rate || 0),
+        net_subtotal: (() => {
+          const gross = Number(item.quantity) * Number(item.unit_price);
+          const rate = Number(products.get(item.product_id)?.vat_rate || 0);
+          return rate > 0 ? gross / (1 + rate / 100) : gross;
+        })(),
+        vat_amount: (() => {
+          const gross = Number(item.quantity) * Number(item.unit_price);
+          const rate = Number(products.get(item.product_id)?.vat_rate || 0);
+          return rate > 0 ? gross - gross / (1 + rate / 100) : 0;
+        })(),
       }),
     );
 
@@ -279,7 +304,7 @@ export class SalesService {
     // 8. Emitir evento para el módulo contable
     this.eventEmitter.emit(
       'sale.completed',
-      new SaleCompletedEvent(tenantId, savedSale.id, total, dto.payment_method, dto.branch_id, userId),
+      new SaleCompletedEvent(tenantId, savedSale.id, total, dto.payment_method, dto.branch_id, userId, netAmount, vatAmount),
     );
 
     if (paymentStatus === PaymentStatus.CONFIRMED) {
@@ -307,6 +332,65 @@ export class SalesService {
     }
 
     return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] }) as Promise<Sale>;
+  }
+
+  async createReturn(saleId: string, dto: CreateSaleReturnDto, tenantId: string): Promise<SaleReturn> {
+    const sale = await this.saleRepo.findOne({ where: { id: saleId, tenant_id: tenantId }, relations: ['items', 'customer'] });
+    if (!sale) throw new NotFoundException('Venta no encontrada');
+    if (sale.status === SaleStatus.PENDING) throw new BadRequestException('No se puede devolver una venta pendiente');
+
+    const previous = await this.saleReturnItemRepo.createQueryBuilder('item')
+      .innerJoin('item.sale_return', 'saleReturn')
+      .select('item.product_id', 'productId')
+      .addSelect('COALESCE(SUM(item.quantity), 0)', 'quantity')
+      .where('saleReturn.sale_id = :saleId AND saleReturn.tenant_id = :tenantId', { saleId, tenantId })
+      .groupBy('item.product_id')
+      .getRawMany<{ productId: string; quantity: string }>();
+    const returnedByProduct = new Map(previous.map((row) => [row.productId, Number(row.quantity)]));
+    const saleLines = new Map(sale.items.map((item) => [item.product_id, item]));
+    const seen = new Set<string>();
+    const returnLines = dto.items.map((requested) => {
+      if (seen.has(requested.product_id)) throw new BadRequestException('No repitas el mismo producto en una devolución');
+      seen.add(requested.product_id);
+      const line = saleLines.get(requested.product_id);
+      if (!line) throw new BadRequestException('El producto no pertenece a esta venta');
+      const available = Number(line.quantity) - (returnedByProduct.get(requested.product_id) || 0);
+      if (Number(requested.quantity) > available + 0.0001) throw new BadRequestException(`La devolución supera la cantidad vendida de ${line.product?.name || requested.product_id}`);
+      const gross = Number(requested.quantity) * Number(line.unit_price);
+      const rate = Number(line.vat_rate || 0);
+      const net = rate > 0 ? gross / (1 + rate / 100) : gross;
+      return { requested, line, gross, net, vat: gross - net };
+    });
+    const total = returnLines.reduce((sum, item) => sum + item.gross, 0);
+    const netAmount = returnLines.reduce((sum, item) => sum + item.net, 0);
+    const vatAmount = total - netAmount;
+
+    const result = await this.saleReturnRepo.manager.transaction(async (manager: EntityManager) => {
+      for (const item of returnLines) {
+        const inventory = await manager.findOne(Inventory, { where: { product_id: item.requested.product_id, branch_id: sale.branch_id, tenant_id: tenantId } });
+        if (!inventory) throw new BadRequestException('No existe stock registrado para devolver este producto');
+        await manager.update(Inventory, inventory.id, { stock_quantity: Number(inventory.stock_quantity) + Number(item.requested.quantity), last_restock_date: new Date() });
+      }
+      const saleReturn = manager.create(SaleReturn, { tenant_id: tenantId, sale_id: sale.id, branch_id: sale.branch_id, total, net_amount: netAmount, vat_amount: vatAmount, reason: dto.reason });
+      const savedReturn = await manager.save(saleReturn);
+      const items = returnLines.map((item) => manager.create(SaleReturnItem, {
+        tenant_id: tenantId, sale_return_id: savedReturn.id, product_id: item.requested.product_id,
+        quantity: item.requested.quantity, unit_price: item.line.unit_price, vat_rate: item.line.vat_rate || 0,
+        net_subtotal: item.net, vat_amount: item.vat, subtotal: item.gross,
+      }));
+      await manager.save(items);
+      const previousReturned = Array.from(returnedByProduct.values()).reduce((sum, quantity) => sum + quantity, 0);
+      const newReturned = previousReturned + returnLines.reduce((sum, item) => sum + Number(item.requested.quantity), 0);
+      const soldQuantity = sale.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+      await manager.update(Sale, { id: sale.id, tenant_id: tenantId }, { status: newReturned >= soldQuantity - 0.0001 ? SaleStatus.REFUNDED : SaleStatus.PARTIALLY_REFUNDED });
+      if (sale.payment_method === PaymentMethod.CREDIT_CLIENT && sale.customer_id) {
+        const customer = await manager.findOne(Customer, { where: { id: sale.customer_id, tenant_id: tenantId } });
+        if (customer) await manager.update(Customer, customer.id, { current_debt: Math.max(0, Number(customer.current_debt) - total) });
+      }
+      return savedReturn;
+    });
+    this.eventEmitter.emit('sale.returned', new SaleReturnedEvent(tenantId, result.id, sale.id, total, netAmount, vatAmount, sale.branch_id));
+    return this.saleReturnRepo.findOne({ where: { id: result.id, tenant_id: tenantId }, relations: ['items'] }) as Promise<SaleReturn>;
   }
 
   async listSales(

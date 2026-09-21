@@ -10,7 +10,15 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles, UserRole } from '../common/decorators/roles.decorator';
 import { GetTenantId } from '../common/decorators/get-tenant.decorator';
 
-import { CreateSupplierDto, UpdateSupplierDto, CreatePurchaseOrderDto, CreatePurchasePaymentDto } from './dto/purchases.dto';
+import {
+  CreateSupplierDto,
+  UpdateSupplierDto,
+  CreatePurchaseOrderDto,
+  UpdatePurchaseOrderDto,
+  ReceivePurchaseOrderDto,
+  CreatePurchasePaymentDto,
+  CreatePurchaseReturnDto,
+} from './dto/purchases.dto';
 
 @ApiTags('purchases')
 @ApiBearerAuth('JWT-auth')
@@ -82,14 +90,26 @@ export class PurchasesController {
     return this.purchasesService.createOrder(dto, tenantId);
   }
 
+  @Patch('orders/:id')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Editar una orden de compra pendiente' })
+  updateOrder(
+    @Param('id') id: string,
+    @Body() dto: UpdatePurchaseOrderDto,
+    @GetTenantId() tenantId: string,
+  ) {
+    return this.purchasesService.updateOrder(id, dto, tenantId);
+  }
+
   @Post('orders/:id/receive')
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   @ApiOperation({ summary: 'Marcar orden como recibida e ingresar stock' })
   receiveOrder(
     @Param('id') id: string,
+    @Body() dto: ReceivePurchaseOrderDto,
     @GetTenantId() tenantId: string,
   ) {
-    return this.purchasesService.receiveOrder(id, tenantId);
+    return this.purchasesService.receiveOrder(id, tenantId, dto);
   }
 
   @Post('orders/:id/cancel')
@@ -112,5 +132,19 @@ export class PurchasesController {
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   createPayment(@Param('id') id: string, @Body() dto: CreatePurchasePaymentDto, @GetTenantId() tenantId: string) {
     return this.purchasesService.createPayment(id, dto, tenantId);
+  }
+
+  @Post('orders/:id/returns')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Registrar devolución parcial o total de mercadería al proveedor' })
+  createReturn(@Param('id') id: string, @Body() dto: CreatePurchaseReturnDto, @GetTenantId() tenantId: string) {
+    return this.purchasesService.createReturn(id, dto, tenantId);
+  }
+
+  @Get('suppliers/:id/current-account')
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Consultar cuenta corriente de un proveedor' })
+  getSupplierAccount(@Param('id') id: string, @GetTenantId() tenantId: string) {
+    return this.purchasesService.getSupplierAccount(id, tenantId);
   }
 }

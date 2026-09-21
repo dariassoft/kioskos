@@ -19,6 +19,12 @@ export class Supplier extends BaseKioskosEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   tax_id: string;
 
+  @Column({ type: 'boolean', default: false })
+  current_account_enabled: boolean;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  opening_balance: number;
+
   @OneToMany(() => PurchaseOrder, (order) => order.supplier)
   purchase_orders: PurchaseOrder[];
 }
