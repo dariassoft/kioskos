@@ -110,12 +110,28 @@ let InventoryService = class InventoryService {
     }
     async updateProduct(id, dto, tenantId) {
         await this.findOneProduct(id, tenantId);
-        const cleanedDto = { ...dto };
+        const { sale_price, sale_margin, ...productData } = dto;
+        const cleanedDto = { ...productData };
         ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
             if (cleanedDto[key] === '')
                 cleanedDto[key] = null;
         });
         await this.productRepo.update({ id, tenant_id: tenantId }, cleanedDto);
+        let finalPrice = Number(sale_price || 0);
+        if (!finalPrice && sale_margin !== undefined && dto.cost_price !== undefined) {
+            finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
+        }
+        if (finalPrice >= 0 && (sale_price !== undefined || sale_margin !== undefined)) {
+            const defaultList = await this.priceListRepo.findOne({
+                where: { tenant_id: tenantId, is_default: true },
+            });
+            if (defaultList) {
+                await this.setProductPrice(id, {
+                    price_list_id: defaultList.id,
+                    price: finalPrice,
+                }, tenantId);
+            }
+        }
         return this.findOneProduct(id, tenantId);
     }
     async deleteProduct(id, tenantId) {

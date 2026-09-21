@@ -159,6 +159,19 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   product_type?: string;
+
+  @ApiPropertyOptional({ example: 1200, description: 'Precio de venta en la lista por defecto' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  sale_price?: number;
+
+  @ApiPropertyOptional({ example: 35, description: 'Margen de ganancia (%) para calcular el precio de venta' })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  sale_margin?: number;
 }
 
 export class SetPriceDto {

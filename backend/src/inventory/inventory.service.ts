@@ -148,12 +148,32 @@ export class InventoryService {
 
   async updateProduct(id: string, dto: UpdateProductDto, tenantId: string): Promise<Product> {
     await this.findOneProduct(id, tenantId);
-    const cleanedDto: any = { ...dto };
+    const { sale_price, sale_margin, ...productData } = dto;
+    const cleanedDto: any = { ...productData };
     ['unit_id', 'category_id', 'brand_id', 'supplier_id'].forEach(key => {
       if (cleanedDto[key] === '') cleanedDto[key] = null;
     });
 
     await this.productRepo.update({ id, tenant_id: tenantId }, cleanedDto as any);
+
+    // El precio de venta vive en ProductPrice, no en Product; actualizarlo aquí
+    // mantiene el formulario de edición consistente con el de creación.
+    let finalPrice = Number(sale_price || 0);
+    if (!finalPrice && sale_margin !== undefined && dto.cost_price !== undefined) {
+      finalPrice = Number(dto.cost_price) * (1 + Number(sale_margin) / 100);
+    }
+    if (finalPrice >= 0 && (sale_price !== undefined || sale_margin !== undefined)) {
+      const defaultList = await this.priceListRepo.findOne({
+        where: { tenant_id: tenantId, is_default: true },
+      });
+      if (defaultList) {
+        await this.setProductPrice(id, {
+          price_list_id: defaultList.id,
+          price: finalPrice,
+        }, tenantId);
+      }
+    }
+
     return this.findOneProduct(id, tenantId);
   }
 

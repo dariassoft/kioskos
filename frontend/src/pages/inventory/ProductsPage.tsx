@@ -205,6 +205,10 @@ function ProductModal({
     }
   }
 
+  const onInvalid = () => {
+    toast.error('Revisá los campos marcados antes de guardar')
+  }
+
   const isPending = createProduct.isPending || updateProduct.isPending
 
   return (
@@ -264,7 +268,7 @@ function ProductModal({
             <p className="mt-2 text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Imagen del producto</p>
           </div>
 
-          <form id="product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form id="product-form" onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-5">
             {/* Nombre */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Nombre <span className="text-destructive">*</span></label>

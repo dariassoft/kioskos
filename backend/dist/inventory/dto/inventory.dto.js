@@ -198,6 +198,21 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateProductDto.prototype, "product_type", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 1200, description: 'Precio de venta en la lista por defecto' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateProductDto.prototype, "sale_price", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 35, description: 'Margen de ganancia (%) para calcular el precio de venta' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateProductDto.prototype, "sale_margin", void 0);
 class SetPriceDto {
 }
 exports.SetPriceDto = SetPriceDto;

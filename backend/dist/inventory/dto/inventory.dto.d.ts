@@ -28,6 +28,8 @@ export declare class UpdateProductDto {
     brand_id?: string;
     supplier_id?: string;
     product_type?: string;
+    sale_price?: number;
+    sale_margin?: number;
 }
 export declare class SetPriceDto {
     price_list_id: string;
