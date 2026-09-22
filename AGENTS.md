@@ -1491,6 +1491,17 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - Nuevos endpoints paginados: `GET /sales/customers/current-accounts`, `GET /sales/customers/:id/current-account` y `GET /purchases/suppliers/current-accounts`. Se mantiene `GET /purchases/suppliers/:id/current-account` para compatibilidad con Compras.
 - La migración `AddCustomerAccountPayments1800000000000` debe ejecutarse en producción antes de registrar abonos de clientes o utilizar el historial completo de sus cuentas.
 
+### 10.12 | Septiembre 2026 — Relación entre fiados y cuentas corrientes de clientes
+
+- La cuenta corriente de un cliente es la visualización formal e histórica del mismo saldo que antes se mostraba como `Fiado`; no existen dos deudas separadas.
+- Las ventas con `payment_method = credit_client` aumentan `Customer.current_debt`, los abonos registrados desde cualquiera de las dos pantallas lo reducen y las devoluciones lo ajustan en sentido inverso.
+- `/customers` conserva la gestión operativa de clientes y fiados, mientras `/current-accounts` centraliza movimientos, cargos, abonos y saldo para consulta auditable.
+
+### 10.13 | Septiembre 2026 — Gráfico semanal con ingresos en cero
+
+- El reporte semanal normaliza el resultado de `DATE(sale.created_at)` tanto si el driver MySQL devuelve una cadena como si devuelve un objeto `Date`.
+- La comparación se realiza por clave de día calendario antes de completar los días sin ventas; así los importes agregados llegan a `DashboardPage` y no se convierten erróneamente en ceros.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1515,3 +1526,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.6 | Sept 2026 | POS: se corrige el error `500` de sugerencias populares causado por `GROUP BY` incompatible con `ONLY_FULL_GROUP_BY`; se usa un subquery correlacionado. |
 | 10.7 | Sept 2026 | Devoluciones parciales/totales de compras y ventas, anulaciones auditables de gastos, recepción real de órdenes, cuentas corrientes opcionales de proveedores e IVA por producto con desglose neto/bruto y asientos inversos. |
 | 10.8 | Sept 2026 | Nueva sección `/current-accounts` para consultar movimientos de clientes y proveedores; abonos de clientes auditables con persistencia, asiento contable y migración `AddCustomerAccountPayments`. |
+| 10.9 | Sept 2026 | Se aclara que las cuentas corrientes de clientes son los fiados existentes y se corrige la normalización de fechas del gráfico semanal para evitar ingresos en cero. |

@@ -18,6 +18,27 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const sale_entity_1 = require("../sales/entities/sale.entity");
 const inventory_entity_1 = require("../inventory/entities/inventory.entity");
+function calendarDateKey(value) {
+    if (value instanceof Date) {
+        return [
+            value.getUTCFullYear(),
+            String(value.getUTCMonth() + 1).padStart(2, '0'),
+            String(value.getUTCDate()).padStart(2, '0'),
+        ].join('-');
+    }
+    const text = String(value);
+    const datePrefix = /^(\d{4}-\d{2}-\d{2})/.exec(text)?.[1];
+    if (datePrefix)
+        return datePrefix;
+    const parsed = new Date(text);
+    if (Number.isNaN(parsed.getTime()))
+        return text.slice(0, 10);
+    return [
+        parsed.getUTCFullYear(),
+        String(parsed.getUTCMonth() + 1).padStart(2, '0'),
+        String(parsed.getUTCDate()).padStart(2, '0'),
+    ].join('-');
+}
 let ReportsService = class ReportsService {
     constructor(saleRepo, inventoryRepo) {
         this.saleRepo = saleRepo;
@@ -69,13 +90,17 @@ let ReportsService = class ReportsService {
             .andWhere('sale.created_at >= :date', { date: sevenDaysAgo });
         if (branchId)
             query.andWhere('sale.branch_id = :branchId', { branchId });
-        const results = await query.groupBy('DATE(sale.created_at)').orderBy('date', 'ASC').getRawMany();
+        const results = await query
+            .groupBy('DATE(sale.created_at)')
+            .orderBy('date', 'ASC')
+            .getRawMany();
+        const resultsByDate = new Map(results.map((result) => [calendarDateKey(result.date), result]));
         const chartData = [];
         for (let i = 0; i <= 6; i++) {
             const d = new Date(sevenDaysAgo);
             d.setDate(d.getDate() + i);
             const dateStr = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
-            const found = results.find((r) => String(r.date).slice(0, 10) === dateStr);
+            const found = resultsByDate.get(dateStr);
             chartData.push({
                 date: dateStr,
                 total: found ? Number(found.total) : 0,

@@ -1,9 +1,40 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, SelectQueryBuilder } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Sale } from '../sales/entities/sale.entity';
 import { Inventory } from '../inventory/entities/inventory.entity';
 // We just need raw SQL/TypeORM queries for aggregations, we do not need to inject large services.
+
+interface WeeklySalesRow {
+  date: string | Date;
+  total: string | number;
+  tickets: string | number;
+}
+
+function calendarDateKey(value: string | Date): string {
+  if (value instanceof Date) {
+    // MySQL puede devolver DATE(...) como Date en consultas raw. Usar UTC
+    // conserva el día calendario producido por la base y evita perderlo por
+    // una segunda conversión de zona horaria.
+    return [
+      value.getUTCFullYear(),
+      String(value.getUTCMonth() + 1).padStart(2, '0'),
+      String(value.getUTCDate()).padStart(2, '0'),
+    ].join('-');
+  }
+
+  const text = String(value);
+  const datePrefix = /^(\d{4}-\d{2}-\d{2})/.exec(text)?.[1];
+  if (datePrefix) return datePrefix;
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return text.slice(0, 10);
+  return [
+    parsed.getUTCFullYear(),
+    String(parsed.getUTCMonth() + 1).padStart(2, '0'),
+    String(parsed.getUTCDate()).padStart(2, '0'),
+  ].join('-');
+}
 
 @Injectable()
 export class ReportsService {
@@ -77,7 +108,11 @@ export class ReportsService {
 
     if (branchId) query.andWhere('sale.branch_id = :branchId', { branchId });
 
-    const results = await query.groupBy('DATE(sale.created_at)').orderBy('date', 'ASC').getRawMany();
+    const results = await query
+      .groupBy('DATE(sale.created_at)')
+      .orderBy('date', 'ASC')
+      .getRawMany<WeeklySalesRow>();
+    const resultsByDate = new Map(results.map((result) => [calendarDateKey(result.date), result]));
 
     // Fill missing days with 0
     const chartData = [];
@@ -86,7 +121,7 @@ export class ReportsService {
        d.setDate(d.getDate() + i);
         const dateStr = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
        
-        const found = results.find((r) => String(r.date).slice(0, 10) === dateStr);
+        const found = resultsByDate.get(dateStr);
        chartData.push({
          date: dateStr,
          total: found ? Number(found.total) : 0,
