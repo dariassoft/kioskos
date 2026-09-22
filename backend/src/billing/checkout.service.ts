@@ -82,6 +82,12 @@ export class CheckoutService {
     // Calcular prorrateo día 10
     const { prorated_amount } = this.billingService.calculateProration(finalPrice, new Date());
 
+    // Solo el plan gratuito puede activarse sin un pago confirmado. El cliente
+    // nunca puede convertir un plan pago en una prueba enviando `trial`.
+    if (dto.payment_method === 'trial' && Number(plan.price_monthly) > 0) {
+      throw new BadRequestException('El período de prueba solo está disponible para el plan gratuito');
+    }
+
     const temp_password_hash = await bcrypt.hash(dto.password, 12);
     const pending = this.pendingRepo.create({
       plan_id: dto.plan_id,
@@ -98,8 +104,9 @@ export class CheckoutService {
     });
     const savedPending = await this.pendingRepo.save(pending);
 
-    // Plan gratuito o Modo Trial -> activar directo
-    if (Number(plan.price_monthly) === 0 || dto.payment_method === 'trial') {
+
+    // Plan gratuito -> activar directo
+    if (Number(plan.price_monthly) === 0) {
       savedPending.status = PendingSubscriptionStatus.APPROVED;
       await this.pendingRepo.save(savedPending);
       await this.activateAccount(savedPending, dto.payment_method, promo);
@@ -404,11 +411,8 @@ export class CheckoutService {
   async adminApprovePending(pendingId: string): Promise<{ message: string }> {
     const pending = await this.pendingRepo.findOne({ where: { id: pendingId } });
     if (!pending) throw new NotFoundException('Pending no encontrado');
-    if (
-      pending.status === PendingSubscriptionStatus.APPROVED ||
-      pending.status === PendingSubscriptionStatus.MANUAL_APPROVED
-    ) {
-      throw new BadRequestException('Ya fue aprobado');
+    if (pending.status !== PendingSubscriptionStatus.MANUAL_PENDING) {
+      throw new BadRequestException('Solo se pueden aprobar transferencias pendientes de revisión');
     }
     pending.status = PendingSubscriptionStatus.MANUAL_APPROVED;
     await this.pendingRepo.save(pending);
@@ -424,11 +428,12 @@ export class CheckoutService {
   // ==========================================
   // SUPERADMIN: Listar pendientes manuales
   // ==========================================
-  async getManualPendingList(): Promise<PendingSubscription[]> {
-    return this.pendingRepo.find({
+  async getManualPendingList(): Promise<Partial<PendingSubscription>[]> {
+    const pending = await this.pendingRepo.find({
       where: { status: PendingSubscriptionStatus.MANUAL_PENDING },
       order: { created_at: 'ASC' },
     });
+    return pending.map(({ temp_password_hash: _passwordHash, ...safePending }) => safePending);
   }
   // ==========================================
   // INFO DE SANDBOX (testing)

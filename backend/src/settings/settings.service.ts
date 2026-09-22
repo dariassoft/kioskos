@@ -87,6 +87,9 @@ export class SettingsService {
   }
   async createUser(dto: CreateUserSettingsDto, tenantId: string): Promise<any> {
     await this.validateUserLimit(tenantId);
+    if (dto.branch_id && !(await this.branchRepo.findOne({ where: { id: dto.branch_id, tenant_id: tenantId } }))) {
+      throw new NotFoundException('La sucursal no pertenece al negocio actual');
+    }
     const existing = await this.userRepo.findOne({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Ya existe un usuario con ese email');
     const password_hash = await bcrypt.hash(dto.password, 12);
@@ -102,6 +105,9 @@ export class SettingsService {
   async updateUser(id: string, dto: UpdateUserSettingsDto, tenantId: string): Promise<any> {
     const user = await this.userRepo.findOne({ where: { id, tenant_id: tenantId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (dto.branch_id !== undefined && dto.branch_id !== null && !(await this.branchRepo.findOne({ where: { id: dto.branch_id, tenant_id: tenantId } }))) {
+      throw new NotFoundException('La sucursal no pertenece al negocio actual');
+    }
     if (dto.name !== undefined) user.name = dto.name;
     if (dto.role !== undefined) user.role = dto.role as any;
     if (dto.branch_id !== undefined) user.branch_id = dto.branch_id as string;

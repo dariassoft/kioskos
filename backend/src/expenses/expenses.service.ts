@@ -16,6 +16,7 @@ import {
 } from './dto/expenses.dto';
 import { ExpenseCreatedEvent } from './events/expense-created.event';
 import { ExpenseVoidedEvent } from './events/expense-voided.event';
+import { Branch } from '../inventory/entities/branch.entity';
 
 @Injectable()
 export class ExpensesService {
@@ -24,6 +25,8 @@ export class ExpensesService {
     private readonly expenseRepo: Repository<Expense>,
     @InjectRepository(ExpenseCategory)
     private readonly categoryRepo: Repository<ExpenseCategory>,
+    @InjectRepository(Branch)
+    private readonly branchRepo: Repository<Branch>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -122,6 +125,9 @@ export class ExpensesService {
   async create(dto: CreateExpenseDto, tenantId: string): Promise<Expense> {
     // Validar que la categoría pertenece al tenant
     const category = await this.findOneCategory(dto.category_id, tenantId);
+    if (dto.branch_id && !(await this.branchRepo.findOne({ where: { id: dto.branch_id, tenant_id: tenantId } }))) {
+      throw new NotFoundException('La sucursal no pertenece al negocio actual');
+    }
 
     const expense = this.expenseRepo.create({
       ...dto,
@@ -151,6 +157,9 @@ export class ExpensesService {
     if (existing.status === ExpenseStatus.VOIDED) throw new BadRequestException('No se puede editar un gasto anulado');
     if (dto.category_id) {
       await this.findOneCategory(dto.category_id, tenantId);
+    }
+    if (dto.branch_id !== undefined && dto.branch_id !== null && !(await this.branchRepo.findOne({ where: { id: dto.branch_id, tenant_id: tenantId } }))) {
+      throw new NotFoundException('La sucursal no pertenece al negocio actual');
     }
     // Un gasto ya contabilizado no se pisa silenciosamente: se revierte su
     // asiento anterior y luego se registra el nuevo importe como movimiento separado.

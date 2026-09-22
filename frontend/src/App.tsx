@@ -63,12 +63,13 @@ import UpcomingChargesPage from '@pages/superadmin/UpcomingChargesPage'
 function PrivateRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
   const { isAuthenticated, user } = useAuthStore()
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />
   }
 
-  if (roles && user && !roles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />
+  if (roles && !roles.includes(user.role)) {
+    const fallback = user.role === 'superadmin' ? '/superadmin' : user.role === 'cashier' ? '/pos' : '/dashboard'
+    return <Navigate to={fallback} replace />
   }
 
   return <>{children}</>
@@ -157,7 +158,7 @@ export default function App() {
            ==================================== */}
         <Route
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['admin', 'manager']}>
               <AdminLayout />
             </PrivateRoute>
           }

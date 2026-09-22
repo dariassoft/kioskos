@@ -16,7 +16,7 @@ import {
 import { TenantService } from './tenant.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SuperAdminGuard } from '../common/guards/superadmin.guard';
-import { TenantStatus } from './entities/tenant.entity';
+import { CreateTenantDto, UpdateTenantStatusDto } from './dto/tenant.dto';
 
 @ApiTags('tenants')
 @ApiBearerAuth('JWT-auth')
@@ -45,16 +45,16 @@ export class TenantController {
 
   @Post()
   @ApiOperation({ summary: '[SuperAdmin] Crear nuevo negocio' })
-  create(@Body() body: any) {
-    return this.tenantService.create(body);
+  create(@Body() dto: CreateTenantDto) {
+    return this.tenantService.create(dto);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: '[SuperAdmin] Activar/Suspender un negocio' })
   updateStatus(
     @Param('id') id: string,
-    @Body('status') status: TenantStatus,
+    @Body() dto: UpdateTenantStatusDto,
   ) {
-    return this.tenantService.updateStatus(id, status);
+    return this.tenantService.updateStatus(id, dto.status);
   }
 }

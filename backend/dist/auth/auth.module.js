@@ -17,6 +17,7 @@ const auth_controller_1 = require("./auth.controller");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const user_entity_1 = require("../tenants/entities/user.entity");
 const tenant_entity_1 = require("../tenants/entities/tenant.entity");
+const branch_entity_1 = require("../inventory/entities/branch.entity");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -34,7 +35,7 @@ exports.AuthModule = AuthModule = __decorate([
                     },
                 }),
             }),
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, tenant_entity_1.Tenant]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, tenant_entity_1.Tenant, branch_entity_1.Branch]),
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy],

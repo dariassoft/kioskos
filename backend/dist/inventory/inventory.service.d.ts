@@ -8,6 +8,7 @@ import { Category } from './entities/category.entity';
 import { PriceList } from './entities/price-list.entity';
 import { ProductPrice } from './entities/product-price.entity';
 import { Brand } from './entities/brand.entity';
+import { Supplier } from '../purchases/entities/supplier.entity';
 import { CreateProductDto, UpdateProductDto, SetPriceDto, UpdateStockDto, CreateBranchDto, CreateCategoryDto, CreateUnitDto, ProductQueryDto, BulkUpdatePriceDto, CreateBrandDto, TransferStockDto } from './dto/inventory.dto';
 export declare class InventoryService {
     private readonly productRepo;
@@ -18,8 +19,10 @@ export declare class InventoryService {
     private readonly brandRepo;
     private readonly priceListRepo;
     private readonly productPriceRepo;
+    private readonly supplierRepo;
     private readonly eventEmitter;
-    constructor(productRepo: Repository<Product>, inventoryRepo: Repository<Inventory>, branchRepo: Repository<Branch>, unitRepo: Repository<Unit>, categoryRepo: Repository<Category>, brandRepo: Repository<Brand>, priceListRepo: Repository<PriceList>, productPriceRepo: Repository<ProductPrice>, eventEmitter: EventEmitter2);
+    constructor(productRepo: Repository<Product>, inventoryRepo: Repository<Inventory>, branchRepo: Repository<Branch>, unitRepo: Repository<Unit>, categoryRepo: Repository<Category>, brandRepo: Repository<Brand>, priceListRepo: Repository<PriceList>, productPriceRepo: Repository<ProductPrice>, supplierRepo: Repository<Supplier>, eventEmitter: EventEmitter2);
+    private validateProductRelations;
     findAllProducts(tenantId: string, query: ProductQueryDto): Promise<{
         data: Product[];
         total: number;

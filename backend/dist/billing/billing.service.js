@@ -118,9 +118,12 @@ let BillingService = BillingService_1 = class BillingService {
         return results;
     }
     async changePlan(dto) {
-        const plan = await this.planRepo.findOne({ where: { id: dto.new_plan_id } });
+        const plan = await this.planRepo.findOne({ where: { id: dto.new_plan_id, is_active: true } });
         if (!plan)
-            throw new common_1.NotFoundException('Plan no encontrado');
+            throw new common_1.NotFoundException('Plan no encontrado o inactivo');
+        const tenant = await this.tenantRepo.findOne({ where: { id: dto.tenant_id } });
+        if (!tenant)
+            throw new common_1.NotFoundException('Tenant no encontrado');
         let subscription = await this.getActiveSubscription(dto.tenant_id);
         const today = new Date();
         const endDate = new Date(today);
@@ -151,8 +154,19 @@ let BillingService = BillingService_1 = class BillingService {
         const subscription = await this.getActiveSubscription(tenantId);
         if (!subscription)
             return false;
+        const tenant = await this.tenantRepo.findOne({ where: { id: tenantId } });
+        if (!tenant || tenant.status === tenant_entity_1.TenantStatus.SUSPENDED || tenant.status === tenant_entity_1.TenantStatus.PAST_DUE)
+            return false;
+        if (tenant.status === tenant_entity_1.TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date())
+            return false;
+        if (!subscription.end_date)
+            return false;
+        const subscriptionEnd = new Date(subscription.end_date);
+        subscriptionEnd.setHours(23, 59, 59, 999);
+        if (subscriptionEnd < new Date())
+            return false;
         const plan = await this.planRepo.findOne({ where: { id: subscription.plan_id } });
-        if (!plan || !plan.features)
+        if (!plan || !plan.is_active || !plan.features)
             return false;
         return plan.features[feature] === true;
     }
@@ -226,6 +240,11 @@ let BillingService = BillingService_1 = class BillingService {
         const plan = subscription
             ? await this.planRepo.findOne({ where: { id: subscription.plan_id } })
             : null;
+        const basicPlan = subscription
+            ? null
+            : await this.planRepo.findOne({ where: { is_active: true }, order: { price_monthly: 'ASC' } });
+        if (!subscription && !basicPlan)
+            throw new common_1.BadRequestException('No hay planes disponibles');
         const now = new Date();
         const periodStart = new Date(now);
         const periodEnd = new Date(now);
@@ -252,9 +271,6 @@ let BillingService = BillingService_1 = class BillingService {
             subscription.status = subscription_entity_1.SubscriptionStatus.ACTIVE;
         }
         else {
-            const basicPlan = await this.planRepo.findOne({ where: { is_active: true }, order: { price_monthly: 'ASC' } });
-            if (!basicPlan)
-                throw new common_1.BadRequestException('No hay planes disponibles');
             const endDate = new Date(now);
             endDate.setMonth(endDate.getMonth() + months);
             subscription = this.subscriptionRepo.create({

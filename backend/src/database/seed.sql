@@ -66,10 +66,17 @@ ON DUPLICATE KEY UPDATE id=id;
 -- 9. Planes de suscripcion
 INSERT INTO plans (id, name, description, price_monthly, max_branches, max_users, features, is_active)
 VALUES
-  ('plan-emprendedor-001', 'Emprendedor', 'Plan basico para arrancar', 0.00, 1, 1, '{"automated_accounting":false,"multi_branch":false,"reports_bi":false,"export_pdf_excel":false,"email_notifications":false,"electronic_invoicing":false}', 1),
-  ('plan-negocio-001', 'Negocio', 'Para comercios en crecimiento', 4999.00, 1, 3, '{"automated_accounting":true,"multi_branch":false,"reports_bi":true,"export_pdf_excel":true,"email_notifications":false,"electronic_invoicing":true}', 1),
-  ('plan-profesional-001', 'Profesional', 'Para cadenas y profesionales', 9999.00, 5, 99, '{"automated_accounting":true,"multi_branch":true,"reports_bi":true,"export_pdf_excel":true,"email_notifications":true,"electronic_invoicing":true}', 1)
-ON DUPLICATE KEY UPDATE id=id;
+  ('plan-emprendedor-001', 'Emprendedor', 'Operación diaria para iniciar un kiosco o despensa', 0.00, 1, 1, '{"pos_terminal":true,"inventory":true,"barcode_scanner":true,"categories_brands":true,"customers_credit":true,"purchases_suppliers":true,"current_accounts":true,"payment_integrations":true,"automated_accounting":false,"reports_bi":false,"export_pdf_excel":false,"email_notifications":false,"electronic_invoicing":false,"expenses_management":false,"supplier_current_accounts":false,"returns_and_vat":false,"production":false,"multi_branch":false}', 1),
+  ('plan-negocio-001', 'Negocio', 'Control integral para comercios en crecimiento', 4999.00, 1, 3, '{"pos_terminal":true,"inventory":true,"barcode_scanner":true,"categories_brands":true,"customers_credit":true,"purchases_suppliers":true,"current_accounts":true,"payment_integrations":true,"automated_accounting":true,"reports_bi":true,"export_pdf_excel":true,"email_notifications":false,"electronic_invoicing":true,"expenses_management":true,"supplier_current_accounts":true,"returns_and_vat":true,"production":true,"multi_branch":false}', 1),
+  ('plan-profesional-001', 'Profesional', 'Gestión avanzada para cadenas y operaciones con producción', 9999.00, 5, 99, '{"pos_terminal":true,"inventory":true,"barcode_scanner":true,"categories_brands":true,"customers_credit":true,"purchases_suppliers":true,"current_accounts":true,"payment_integrations":true,"automated_accounting":true,"reports_bi":true,"export_pdf_excel":true,"email_notifications":true,"electronic_invoicing":true,"expenses_management":true,"supplier_current_accounts":true,"returns_and_vat":true,"production":true,"multi_branch":true}', 1)
+ON DUPLICATE KEY UPDATE
+  name=VALUES(name),
+  description=VALUES(description),
+  price_monthly=VALUES(price_monthly),
+  max_branches=VALUES(max_branches),
+  max_users=VALUES(max_users),
+  features=VALUES(features),
+  is_active=VALUES(is_active);
 
 -- 10. Suscripcion del Demo al plan Negocio
 INSERT INTO subscriptions (id, tenant_id, plan_id, start_date, end_date, auto_renew)

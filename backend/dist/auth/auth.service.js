@@ -53,10 +53,14 @@ const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcryptjs"));
 const user_entity_1 = require("../tenants/entities/user.entity");
 const tenant_entity_1 = require("../tenants/entities/tenant.entity");
+const tenant_entity_2 = require("../tenants/entities/tenant.entity");
+const branch_entity_1 = require("../inventory/entities/branch.entity");
+const roles_decorator_1 = require("../common/decorators/roles.decorator");
 let AuthService = class AuthService {
-    constructor(userRepo, tenantRepo, jwtService) {
+    constructor(userRepo, tenantRepo, branchRepo, jwtService) {
         this.userRepo = userRepo;
         this.tenantRepo = tenantRepo;
+        this.branchRepo = branchRepo;
         this.jwtService = jwtService;
     }
     async login(dto) {
@@ -69,6 +73,12 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Credenciales incorrectas');
         }
         const tenant = await this.tenantRepo.findOne({ where: { id: user.tenant_id } });
+        if (!tenant || tenant.status === tenant_entity_2.TenantStatus.SUSPENDED || tenant.status === tenant_entity_2.TenantStatus.PAST_DUE) {
+            throw new common_1.UnauthorizedException('El negocio está suspendido o tiene la suscripción vencida');
+        }
+        if (tenant.status === tenant_entity_2.TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
+            throw new common_1.UnauthorizedException('El período de prueba del negocio ha finalizado');
+        }
         const payload = {
             sub: user.id,
             email: user.email,
@@ -91,17 +101,25 @@ let AuthService = class AuthService {
             },
         };
     }
-    async register(dto, tenantId) {
+    async register(dto, tenantId, role = roles_decorator_1.UserRole.CASHIER) {
         const existing = await this.userRepo.findOne({
             where: { email: dto.email },
         });
         if (existing) {
             throw new common_1.ConflictException('Ya existe un usuario con ese email');
         }
+        if (dto.branch_id) {
+            const branch = await this.branchRepo.findOne({
+                where: { id: dto.branch_id, tenant_id: tenantId },
+            });
+            if (!branch)
+                throw new common_1.ConflictException('La sucursal no pertenece al negocio actual');
+        }
         const password_hash = await bcrypt.hash(dto.password, 12);
         const user = this.userRepo.create({
             ...dto,
             password_hash,
+            role,
             tenant_id: tenantId,
         });
         await this.userRepo.save(user);
@@ -120,7 +138,9 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __param(1, (0, typeorm_1.InjectRepository)(tenant_entity_1.Tenant)),
+    __param(2, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         jwt_1.JwtService])
 ], AuthService);

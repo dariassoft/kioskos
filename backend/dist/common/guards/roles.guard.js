@@ -18,14 +18,14 @@ let RolesGuard = class RolesGuard {
         this.reflector = reflector;
     }
     canActivate(context) {
-        const requiredRoles = this.reflector.getAllAndOverride(roles_decorator_1.ROLES_KEY, [context.getHandler(), context.getClass()]);
-        if (!requiredRoles || requiredRoles.length === 0) {
-            return true;
-        }
         const request = context.switchToHttp().getRequest();
         const user = request.user;
         if (!user) {
-            throw new common_1.ForbiddenException('No autenticado');
+            throw new common_1.UnauthorizedException('No autenticado');
+        }
+        const requiredRoles = this.reflector.getAllAndOverride(roles_decorator_1.ROLES_KEY, [context.getHandler(), context.getClass()]);
+        if (!requiredRoles || requiredRoles.length === 0) {
+            return true;
         }
         const hasRole = requiredRoles.some((role) => user.role === role);
         if (!hasRole) {

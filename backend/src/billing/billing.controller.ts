@@ -9,6 +9,12 @@ import { SuperAdminGuard } from '../common/guards/superadmin.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles, UserRole } from '../common/decorators/roles.decorator';
 import { GetTenantId } from '../common/decorators/get-tenant.decorator';
+import {
+  ChangePlanAdminDto,
+  CreatePlanDto,
+  RegisterPaymentAdminDto,
+  UpdatePlanDto,
+} from './dto/billing.dto';
 
 @ApiTags('billing')
 @ApiBearerAuth('JWT-auth')
@@ -61,15 +67,15 @@ export class BillingController {
   @Post('plans')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiOperation({ summary: '[SuperAdmin] Crear nuevo plan' })
-  createPlan(@Body() body: any) {
-    return this.billingService.createPlan(body);
+  createPlan(@Body() dto: CreatePlanDto) {
+    return this.billingService.createPlan(dto);
   }
 
   @Patch('plans/:id')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiOperation({ summary: '[SuperAdmin] Actualizar un plan' })
-  updatePlan(@Param('id') id: string, @Body() body: any) {
-    return this.billingService.updatePlan(id, body);
+  updatePlan(@Param('id') id: string, @Body() dto: UpdatePlanDto) {
+    return this.billingService.updatePlan(id, dto);
   }
 
   @Patch('plans/:id/toggle')
@@ -99,8 +105,8 @@ export class BillingController {
   @Post('subscriptions/change-plan')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiOperation({ summary: '[SuperAdmin] Cambiar el plan de un tenant' })
-  changePlan(@Body() body: { tenant_id: string; new_plan_id: string }) {
-    return this.billingService.changePlan(body);
+  changePlan(@Body() dto: ChangePlanAdminDto) {
+    return this.billingService.changePlan(dto);
   }
 
   // ==========================================
@@ -154,14 +160,8 @@ export class BillingController {
   @Post('payments')
   @UseGuards(JwtAuthGuard, SuperAdminGuard)
   @ApiOperation({ summary: '[SuperAdmin] Registrar pago manual (extiende suscripción)' })
-  registerPayment(@Body() body: {
-    tenant_id: string;
-    amount: number;
-    payment_method: string;
-    notes?: string;
-    months?: number;
-  }) {
-    return this.billingService.registerPayment(body);
+  registerPayment(@Body() dto: RegisterPaymentAdminDto) {
+    return this.billingService.registerPayment(dto);
   }
 
   // ==========================================

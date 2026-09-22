@@ -117,7 +117,7 @@ let ReportsService = class ReportsService {
             .addSelect('SUM(item.subtotal)', 'revenue')
             .from('sale_items', 'item')
             .innerJoin('sales', 'sale', 'sale.id = item.sale_id')
-            .innerJoin('products', 'product', 'product.id = item.product_id')
+            .innerJoin('products', 'product', 'product.id = item.product_id AND product.tenant_id = :tenantId')
             .where('sale.tenant_id = :tenantId', { tenantId })
             .andWhere('sale.status = :status', { status: 'completed' });
         if (branchId)
@@ -136,9 +136,9 @@ let ReportsService = class ReportsService {
     async getInventoryValuation(tenantId, branchId) {
         const query = this.inventoryRepo
             .createQueryBuilder('inv')
-            .innerJoin('products', 'prod', 'prod.id = inv.product_id')
-            .innerJoin('product_prices', 'price', 'price.product_id = prod.id')
-            .innerJoin('price_lists', 'list', 'list.id = price.price_list_id AND list.is_default = true')
+            .innerJoin('products', 'prod', 'prod.id = inv.product_id AND prod.tenant_id = :tenantId')
+            .innerJoin('product_prices', 'price', 'price.product_id = prod.id AND price.price_list_id IN (SELECT tenantList.id FROM price_lists tenantList WHERE tenantList.tenant_id = :tenantId)')
+            .innerJoin('price_lists', 'list', 'list.id = price.price_list_id AND list.is_default = true AND list.tenant_id = :tenantId')
             .where('inv.tenant_id = :tenantId', { tenantId })
             .andWhere('inv.stock_quantity > 0');
         if (branchId)

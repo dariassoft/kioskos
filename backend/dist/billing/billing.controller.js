@@ -22,6 +22,7 @@ const superadmin_guard_1 = require("../common/guards/superadmin.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const get_tenant_decorator_1 = require("../common/decorators/get-tenant.decorator");
+const billing_dto_1 = require("./dto/billing.dto");
 let BillingController = class BillingController {
     constructor(billingService, promotionService) {
         this.billingService = billingService;
@@ -39,11 +40,11 @@ let BillingController = class BillingController {
     getPlans() {
         return this.billingService.getAllPlans();
     }
-    createPlan(body) {
-        return this.billingService.createPlan(body);
+    createPlan(dto) {
+        return this.billingService.createPlan(dto);
     }
-    updatePlan(id, body) {
-        return this.billingService.updatePlan(id, body);
+    updatePlan(id, dto) {
+        return this.billingService.updatePlan(id, dto);
     }
     togglePlan(id) {
         return this.billingService.togglePlanStatus(id);
@@ -54,8 +55,8 @@ let BillingController = class BillingController {
     getSubscription(tenantId) {
         return this.billingService.getActiveSubscription(tenantId);
     }
-    changePlan(body) {
-        return this.billingService.changePlan(body);
+    changePlan(dto) {
+        return this.billingService.changePlan(dto);
     }
     getMySubscription(tenantId) {
         return this.billingService.getActiveSubscription(tenantId);
@@ -72,8 +73,8 @@ let BillingController = class BillingController {
     getBillingHistory(tenantId) {
         return this.billingService.getBillingHistory(tenantId);
     }
-    registerPayment(body) {
-        return this.billingService.registerPayment(body);
+    registerPayment(dto) {
+        return this.billingService.registerPayment(dto);
     }
     getAllPromotions() {
         return this.promotionService.findAll();
@@ -131,7 +132,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '[SuperAdmin] Crear nuevo plan' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [billing_dto_1.CreatePlanDto]),
     __metadata("design:returntype", void 0)
 ], BillingController.prototype, "createPlan", null);
 __decorate([
@@ -141,7 +142,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, billing_dto_1.UpdatePlanDto]),
     __metadata("design:returntype", void 0)
 ], BillingController.prototype, "updatePlan", null);
 __decorate([
@@ -176,7 +177,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '[SuperAdmin] Cambiar el plan de un tenant' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [billing_dto_1.ChangePlanAdminDto]),
     __metadata("design:returntype", void 0)
 ], BillingController.prototype, "changePlan", null);
 __decorate([
@@ -235,7 +236,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '[SuperAdmin] Registrar pago manual (extiende suscripción)' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [billing_dto_1.RegisterPaymentAdminDto]),
     __metadata("design:returntype", void 0)
 ], BillingController.prototype, "registerPayment", null);
 __decorate([

@@ -18,7 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const tenant_service_1 = require("./tenant.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const superadmin_guard_1 = require("../common/guards/superadmin.guard");
-const tenant_entity_1 = require("./entities/tenant.entity");
+const tenant_dto_1 = require("./dto/tenant.dto");
 let TenantController = class TenantController {
     constructor(tenantService) {
         this.tenantService = tenantService;
@@ -32,11 +32,11 @@ let TenantController = class TenantController {
     findOne(id) {
         return this.tenantService.findOne(id);
     }
-    create(body) {
-        return this.tenantService.create(body);
+    create(dto) {
+        return this.tenantService.create(dto);
     }
-    updateStatus(id, status) {
-        return this.tenantService.updateStatus(id, status);
+    updateStatus(id, dto) {
+        return this.tenantService.updateStatus(id, dto.status);
     }
 };
 exports.TenantController = TenantController;
@@ -67,16 +67,16 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: '[SuperAdmin] Crear nuevo negocio' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [tenant_dto_1.CreateTenantDto]),
     __metadata("design:returntype", void 0)
 ], TenantController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id/status'),
     (0, swagger_1.ApiOperation)({ summary: '[SuperAdmin] Activar/Suspender un negocio' }),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)('status')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, tenant_dto_1.UpdateTenantStatusDto]),
     __metadata("design:returntype", void 0)
 ], TenantController.prototype, "updateStatus", null);
 exports.TenantController = TenantController = __decorate([

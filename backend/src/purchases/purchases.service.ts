@@ -90,11 +90,13 @@ export class PurchasesService {
   // ==========================================
 
   async findAllOrders(tenantId: string): Promise<PurchaseOrder[]> {
-    const orders = await this.orderRepo.find({
-      where: { tenant_id: tenantId },
-      relations: ['supplier', 'items', 'items.product'],
-      order: { created_at: 'DESC' },
-    });
+    const orders = await this.orderRepo.createQueryBuilder('order')
+      .leftJoinAndSelect('order.supplier', 'supplier', 'supplier.tenant_id = :tenantId')
+      .leftJoinAndSelect('order.items', 'items')
+      .leftJoinAndSelect('items.product', 'product', 'product.tenant_id = :tenantId')
+      .where('order.tenant_id = :tenantId', { tenantId })
+      .orderBy('order.created_at', 'DESC')
+      .getMany();
     const payments = await this.paymentRepo.createQueryBuilder('payment')
       .select('payment.purchase_order_id', 'orderId')
       .addSelect('COALESCE(SUM(payment.amount), 0)', 'paidAmount')
@@ -110,10 +112,12 @@ export class PurchasesService {
   }
 
   async findOneOrder(id: string, tenantId: string): Promise<PurchaseOrder> {
-    const order = await this.orderRepo.findOne({
-      where: { id, tenant_id: tenantId },
-      relations: ['supplier', 'items', 'items.product'],
-    });
+    const order = await this.orderRepo.createQueryBuilder('order')
+      .leftJoinAndSelect('order.supplier', 'supplier', 'supplier.tenant_id = :tenantId')
+      .leftJoinAndSelect('order.items', 'items')
+      .leftJoinAndSelect('items.product', 'product', 'product.tenant_id = :tenantId')
+      .where('order.id = :id AND order.tenant_id = :tenantId', { id, tenantId })
+      .getOne();
     if (!order) throw new NotFoundException('Orden de compra no encontrada');
     return order;
   }

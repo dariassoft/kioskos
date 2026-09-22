@@ -1216,14 +1216,23 @@ export class AccountingListener {
 
 | Característica | 🌱 Emprendedor | 🏪 Negocio | 🚀 Profesional |
 |---|:---:|:---:|:---:|
-| **Usuarios** | 1 (dueño) | Hasta 3 | Ilimitados |
-| **Sucursales** | 1 | 1 | 2+ |
-| **Reportes** | Últimos 30 días | Histórico | BI completo |
-| **Fiados (Cuentas corrientes)** | ✅ | ✅ | ✅ |
+| **Usuarios** | 1 (dueño) | Hasta 3 | Hasta 99 |
+| **Sucursales** | 1 | 1 | Hasta 5 |
+| **POS, caja y pagos del POS** | ✅ | ✅ | ✅ |
+| **Inventario, códigos, categorías y marcas** | ✅ | ✅ | ✅ |
+| **Compras y proveedores** | ✅ | ✅ | ✅ |
+| **Clientes, fiados y cuentas corrientes** | ✅ | ✅ | ✅ |
+| **Devoluciones y anulaciones** | ❌ | ✅ | ✅ |
+| **IVA por producto y comprobante** | ❌ | ✅ | ✅ |
 | **Contabilidad automática** | ❌ | ✅ | ✅ |
-| **Importación masiva** | ❌ | ✅ | ✅ |
+| **Gastos** | ❌ | ✅ | ✅ |
+| **Producción y fraccionamiento** | ❌ | ✅ | ✅ |
+| **Reportes y dashboard** | Básicos | Histórico | BI completo |
 | **Exportación PDF/Excel** | ❌ | ✅ | ✅ |
+| **Facturación electrónica AFIP** | ❌ | ✅ | ✅ |
 | **Alertas por Email** | ❌ | ❌ | ✅ |
+| **Sucursales** | 1 | 1 | Hasta 5 |
+| **Usuarios** | 1 | Hasta 3 | Hasta 99 |
 | **Soporte** | Email | Email | WhatsApp dedicado |
 
 La lógica de acceso a módulos se implementa con un **Guard en NestJS** que verifica la columna `features` (JSON) de la suscripción activa del tenant antes de cada endpoint.
@@ -1502,6 +1511,18 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - El reporte semanal normaliza el resultado de `DATE(sale.created_at)` tanto si el driver MySQL devuelve una cadena como si devuelve un objeto `Date`.
 - La comparación se realiza por clave de día calendario antes de completar los días sin ventas; así los importes agregados llegan a `DashboardPage` y no se convierten erróneamente en ceros.
 
+### 10.14 | Septiembre 2026 — Auditoría SuperAdmin y aislamiento multi-tenant
+
+- Cada negocio se identifica por el `tenant_id` derivado del JWT; el frontend nunca debe enviarlo como dato de negocio. Los endpoints de plataforma (`/tenants`, `/billing`, `/checkout/admin` y `/system-settings`) permanecen detrás de `JwtAuthGuard` + `SuperAdminGuard`.
+- `JwtStrategy` vuelve a cargar el usuario y el tenant en cada request, rechaza usuarios inactivos, tenants suspendidos o vencidos y verifica que el `tenant_id` del token coincida con el usuario. `RolesGuard` también falla cerrado si no existe usuario autenticado.
+- El registro autenticado de usuarios solo está disponible para `ADMIN`, fuerza el rol nuevo a `cashier` y valida que `branch_id` pertenezca al tenant actual. El rol administrativo inicial solo se asigna desde el seeder/provisionamiento interno, nunca desde el body público.
+- Productos, precios, stock, gastos y usuarios validan las relaciones `unit`, `category`, `brand`, `supplier`, `branch` y `price_list` contra el tenant actual. Las búsquedas y joins de inventario deben conservar el filtro de tenant incluso cuando se recibe un UUID válido de otro negocio.
+- La interfaz SuperAdmin es una frontera de navegación, no de seguridad: la autorización real está en el backend. Las rutas administrativas generales del frontend quedan limitadas a `admin` y `manager`; `cashier` solo entra al POS y SuperAdmin usa exclusivamente su panel.
+- El catálogo canónico de features es: `pos_terminal`, `inventory`, `barcode_scanner`, `categories_brands`, `customers_credit`, `purchases_suppliers`, `current_accounts`, `payment_integrations`, `automated_accounting`, `reports_bi`, `export_pdf_excel`, `email_notifications`, `electronic_invoicing`, `expenses_management`, `supplier_current_accounts`, `returns_and_vat`, `production` y `multi_branch`.
+- `isFeatureEnabled()` exige tenant habilitado, prueba vigente, suscripción no vencida y plan activo. Un plan desactivado no otorga nuevos accesos aunque una suscripción histórica siga marcada como activa.
+- El checkout no permite usar `payment_method = trial` para activar planes pagos; las aprobaciones manuales solo aceptan solicitudes `MANUAL_PENDING` y el listado administrativo no devuelve `temp_password_hash`.
+- Las columnas `tenant_id` deben reforzarse progresivamente con claves foráneas/índices compuestos en migraciones; las validaciones de servicio siguen siendo obligatorias porque las tablas de líneas (`sale_items`, `purchase_order_items`, `recipe_items`, etc.) heredan el aislamiento de su entidad raíz.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1527,3 +1548,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.7 | Sept 2026 | Devoluciones parciales/totales de compras y ventas, anulaciones auditables de gastos, recepción real de órdenes, cuentas corrientes opcionales de proveedores e IVA por producto con desglose neto/bruto y asientos inversos. |
 | 10.8 | Sept 2026 | Nueva sección `/current-accounts` para consultar movimientos de clientes y proveedores; abonos de clientes auditables con persistencia, asiento contable y migración `AddCustomerAccountPayments`. |
 | 10.9 | Sept 2026 | Se aclara que las cuentas corrientes de clientes son los fiados existentes y se corrige la normalización de fechas del gráfico semanal para evitar ingresos en cero. |
+| 10.10 | Sept 2026 | Auditoría SuperAdmin y multi-tenant: se cerró la creación privilegiada de usuarios, se validaron relaciones por tenant, se endurecieron entitlements, se actualizó el catálogo de módulos y se documentaron los planes actuales. |

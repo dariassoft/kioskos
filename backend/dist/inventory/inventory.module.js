@@ -21,6 +21,7 @@ const category_entity_1 = require("./entities/category.entity");
 const price_list_entity_1 = require("./entities/price-list.entity");
 const product_price_entity_1 = require("./entities/product-price.entity");
 const brand_entity_1 = require("./entities/brand.entity");
+const supplier_entity_1 = require("../purchases/entities/supplier.entity");
 const inventory_service_1 = require("./inventory.service");
 const inventory_controller_1 = require("./inventory.controller");
 const inventory_listener_1 = require("./inventory.listener");
@@ -40,6 +41,7 @@ exports.InventoryModule = InventoryModule = __decorate([
                 price_list_entity_1.PriceList,
                 product_price_entity_1.ProductPrice,
                 brand_entity_1.Brand,
+                supplier_entity_1.Supplier,
             ]),
             notifications_module_1.NotificationsModule,
             platform_express_1.MulterModule.register({

@@ -1,5 +1,5 @@
 import { TenantService } from './tenant.service';
-import { TenantStatus } from './entities/tenant.entity';
+import { CreateTenantDto, UpdateTenantStatusDto } from './dto/tenant.dto';
 export declare class TenantController {
     private readonly tenantService;
     constructor(tenantService: TenantService);
@@ -11,6 +11,6 @@ export declare class TenantController {
         suspended: number;
     }>;
     findOne(id: string): Promise<import("./entities/tenant.entity").Tenant>;
-    create(body: any): Promise<import("./entities/tenant.entity").Tenant>;
-    updateStatus(id: string, status: TenantStatus): Promise<import("./entities/tenant.entity").Tenant>;
+    create(dto: CreateTenantDto): Promise<import("./entities/tenant.entity").Tenant>;
+    updateStatus(id: string, dto: UpdateTenantStatusDto): Promise<import("./entities/tenant.entity").Tenant>;
 }

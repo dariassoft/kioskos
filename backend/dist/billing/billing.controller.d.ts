@@ -1,5 +1,6 @@
 import { BillingService } from './billing.service';
 import { PromotionService } from './promotion.service';
+import { ChangePlanAdminDto, CreatePlanDto, RegisterPaymentAdminDto, UpdatePlanDto } from './dto/billing.dto';
 export declare class BillingController {
     private readonly billingService;
     private readonly promotionService;
@@ -17,15 +18,12 @@ export declare class BillingController {
     getExpiring(days?: number): Promise<any[]>;
     getUpcomingCharges(days?: number): Promise<any[]>;
     getPlans(): Promise<import("./entities/plan.entity").Plan[]>;
-    createPlan(body: any): Promise<import("./entities/plan.entity").Plan>;
-    updatePlan(id: string, body: any): Promise<import("./entities/plan.entity").Plan>;
+    createPlan(dto: CreatePlanDto): Promise<import("./entities/plan.entity").Plan>;
+    updatePlan(id: string, dto: UpdatePlanDto): Promise<import("./entities/plan.entity").Plan>;
     togglePlan(id: string): Promise<import("./entities/plan.entity").Plan>;
     getAllSubscriptions(): Promise<any[]>;
     getSubscription(tenantId: string): Promise<import("./entities/subscription.entity").Subscription | null>;
-    changePlan(body: {
-        tenant_id: string;
-        new_plan_id: string;
-    }): Promise<import("./entities/subscription.entity").Subscription>;
+    changePlan(dto: ChangePlanAdminDto): Promise<import("./entities/subscription.entity").Subscription>;
     getMySubscription(tenantId: string): Promise<import("./entities/subscription.entity").Subscription | null>;
     cancelMySubscription(tenantId: string, body: {
         reason?: string;
@@ -36,13 +34,7 @@ export declare class BillingController {
     getMyBillingHistory(tenantId: string): Promise<import("./entities/billing-history.entity").BillingHistory[]>;
     getAllHistory(tenantId?: string): Promise<any[]>;
     getBillingHistory(tenantId: string): Promise<import("./entities/billing-history.entity").BillingHistory[]>;
-    registerPayment(body: {
-        tenant_id: string;
-        amount: number;
-        payment_method: string;
-        notes?: string;
-        months?: number;
-    }): Promise<import("./entities/billing-history.entity").BillingHistory>;
+    registerPayment(dto: RegisterPaymentAdminDto): Promise<import("./entities/billing-history.entity").BillingHistory>;
     getAllPromotions(): Promise<import("./entities/promotion.entity").Promotion[]>;
     createPromotion(body: any): Promise<import("./entities/promotion.entity").Promotion>;
     updatePromotion(id: string, body: any): Promise<import("./entities/promotion.entity").Promotion>;

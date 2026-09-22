@@ -116,8 +116,10 @@ export class BillingService {
   }
 
   async changePlan(dto: ChangePlanDto): Promise<Subscription> {
-    const plan = await this.planRepo.findOne({ where: { id: dto.new_plan_id } });
-    if (!plan) throw new NotFoundException('Plan no encontrado');
+    const plan = await this.planRepo.findOne({ where: { id: dto.new_plan_id, is_active: true } });
+    if (!plan) throw new NotFoundException('Plan no encontrado o inactivo');
+    const tenant = await this.tenantRepo.findOne({ where: { id: dto.tenant_id } });
+    if (!tenant) throw new NotFoundException('Tenant no encontrado');
 
     let subscription = await this.getActiveSubscription(dto.tenant_id);
     const today = new Date();
@@ -149,8 +151,15 @@ export class BillingService {
   async isFeatureEnabled(tenantId: string, feature: string): Promise<boolean> {
     const subscription = await this.getActiveSubscription(tenantId);
     if (!subscription) return false;
+    const tenant = await this.tenantRepo.findOne({ where: { id: tenantId } });
+    if (!tenant || tenant.status === TenantStatus.SUSPENDED || tenant.status === TenantStatus.PAST_DUE) return false;
+    if (tenant.status === TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) return false;
+    if (!subscription.end_date) return false;
+    const subscriptionEnd = new Date(subscription.end_date);
+    subscriptionEnd.setHours(23, 59, 59, 999);
+    if (subscriptionEnd < new Date()) return false;
     const plan = await this.planRepo.findOne({ where: { id: subscription.plan_id } });
-    if (!plan || !plan.features) return false;
+    if (!plan || !plan.is_active || !plan.features) return false;
     return plan.features[feature] === true;
   }
 
@@ -248,6 +257,10 @@ export class BillingService {
     const plan = subscription
       ? await this.planRepo.findOne({ where: { id: subscription.plan_id } })
       : null;
+    const basicPlan = subscription
+      ? null
+      : await this.planRepo.findOne({ where: { is_active: true }, order: { price_monthly: 'ASC' } });
+    if (!subscription && !basicPlan) throw new BadRequestException('No hay planes disponibles');
 
     // Crear registro de pago con período
     const now = new Date();
@@ -278,15 +291,13 @@ export class BillingService {
       subscription.next_billing_date = base;
       subscription.status = SubscriptionStatus.ACTIVE;
     } else {
-      const basicPlan = await this.planRepo.findOne({ where: { is_active: true }, order: { price_monthly: 'ASC' } });
-      if (!basicPlan) throw new BadRequestException('No hay planes disponibles');
       const endDate = new Date(now);
       endDate.setMonth(endDate.getMonth() + months);
       subscription = this.subscriptionRepo.create({
         tenant_id: dto.tenant_id,
-        plan_id: basicPlan.id,
-        locked_price: Number(basicPlan.price_monthly),
-        locked_plan_name: basicPlan.name,
+        plan_id: basicPlan!.id,
+        locked_price: Number(basicPlan!.price_monthly),
+        locked_plan_name: basicPlan!.name,
         billing_day: 10,
         start_date: now,
         end_date: endDate,

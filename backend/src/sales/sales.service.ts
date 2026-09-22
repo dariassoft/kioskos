@@ -238,12 +238,12 @@ export class SalesService {
       if (customer.credit_limit > 0 && newDebt > customer.credit_limit) {
         throw new ForbiddenException(`Límite de crédito excedido. Tope: $${customer.credit_limit}, Deuda acumulada: $${newDebt}`);
       }
-      await this.customerRepo.update(customer.id, { current_debt: newDebt });
+      await this.customerRepo.update({ id: customer.id, tenant_id: tenantId }, { current_debt: newDebt });
     }
 
     // 5. Acumular en ventas en efectivo de la caja activa si aplica
     if (dto.payment_method === PaymentMethod.CASH) {
-      await this.cashRegisterRepo.update(activeRegister.id, {
+      await this.cashRegisterRepo.update({ id: activeRegister.id, tenant_id: tenantId }, {
         cash_sales: Number(activeRegister.cash_sales) + total,
       });
     }
@@ -337,7 +337,7 @@ export class SalesService {
       }
     }
 
-    return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] }) as Promise<Sale>;
+    return this.saleRepo.findOne({ where: { id: savedSale.id, tenant_id: tenantId }, relations: ['items', 'customer'] }) as Promise<Sale>;
   }
 
   async createReturn(saleId: string, dto: CreateSaleReturnDto, tenantId: string): Promise<SaleReturn> {
@@ -391,7 +391,7 @@ export class SalesService {
       await manager.update(Sale, { id: sale.id, tenant_id: tenantId }, { status: newReturned >= soldQuantity - 0.0001 ? SaleStatus.REFUNDED : SaleStatus.PARTIALLY_REFUNDED });
       if (sale.payment_method === PaymentMethod.CREDIT_CLIENT && sale.customer_id) {
         const customer = await manager.findOne(Customer, { where: { id: sale.customer_id, tenant_id: tenantId } });
-        if (customer) await manager.update(Customer, customer.id, { current_debt: Math.max(0, Number(customer.current_debt) - total) });
+        if (customer) await manager.update(Customer, { id: customer.id, tenant_id: tenantId }, { current_debt: Math.max(0, Number(customer.current_debt) - total) });
       }
       return savedReturn;
     });
@@ -409,7 +409,7 @@ export class SalesService {
     const qb = this.saleRepo
       .createQueryBuilder('sale')
       .leftJoinAndSelect('sale.items', 'items')
-      .leftJoinAndSelect('sale.customer', 'customer')
+      .leftJoinAndSelect('sale.customer', 'customer', 'customer.tenant_id = :tenantId')
       .where('sale.tenant_id = :tenantId', { tenantId });
 
     if (query.payment_status) {

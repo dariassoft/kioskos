@@ -3,21 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@api/client'
 import toast from 'react-hot-toast'
 import { Plus, X, Edit2, ToggleLeft, ToggleRight, Users, GitBranch, Check } from 'lucide-react'
-import { FEATURE_LABELS } from '@/api/checkout.api'
+import { FEATURE_LABELS, PLAN_FEATURES } from '@/api/checkout.api'
 
-const FEATURES_LIST = [
-  { key: 'pos_terminal', label: FEATURE_LABELS['pos_terminal'] },
-  { key: 'inventory', label: FEATURE_LABELS['inventory'] },
-  { key: 'barcode_scanner', label: FEATURE_LABELS['barcode_scanner'] },
-  { key: 'customers_credit', label: FEATURE_LABELS['customers_credit'] },
-  { key: 'automated_accounting', label: FEATURE_LABELS['automated_accounting'] },
-  { key: 'multi_branch', label: FEATURE_LABELS['multi_branch'] },
-  { key: 'reports_bi', label: FEATURE_LABELS['reports_bi'] },
-  { key: 'export_pdf_excel', label: FEATURE_LABELS['export_pdf_excel'] },
-  { key: 'email_notifications', label: FEATURE_LABELS['email_notifications'] },
-  { key: 'electronic_invoicing', label: FEATURE_LABELS['electronic_invoicing'] },
-  { key: 'expenses_management', label: FEATURE_LABELS['expenses_management'] },
-]
+const FEATURES_LIST = PLAN_FEATURES.map((key) => ({ key, label: FEATURE_LABELS[key] }))
 
 const emptyForm = {
   name: '',
@@ -244,7 +232,7 @@ export default function PlansPage() {
                 Cancelar
               </button>
               <button onClick={() => savePlan.mutate(form)}
-                disabled={!form.name || !form.price_monthly || savePlan.isPending}
+                disabled={!form.name.trim() || form.price_monthly === '' || Number(form.price_monthly) < 0 || Number(form.max_users) < 1 || Number(form.max_branches) < 1 || savePlan.isPending}
                 className="flex-1 px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 disabled:opacity-50">
                 {savePlan.isPending ? 'Guardando...' : (modal.plan ? 'Guardar cambios' : 'Crear plan')}
               </button>

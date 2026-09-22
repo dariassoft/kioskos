@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 
 /**
  * Decorador para extraer el tenantId del request en controladores.
@@ -13,6 +13,10 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export const GetTenantId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string => {
     const request = ctx.switchToHttp().getRequest();
-    return (request.tenantId ?? request.user?.tenant_id ?? null) as string;
+    const tenantId = request.tenantId ?? request.user?.tenant_id;
+    if (!tenantId) {
+      throw new UnauthorizedException('No se pudo identificar el negocio actual');
+    }
+    return tenantId;
   },
 );

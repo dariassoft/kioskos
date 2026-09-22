@@ -12,6 +12,9 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { User } from '../tenants/entities/user.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
+import { TenantStatus } from '../tenants/entities/tenant.entity';
+import { Branch } from '../inventory/entities/branch.entity';
+import { UserRole } from '../common/decorators/roles.decorator';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 @Injectable()
@@ -21,6 +24,8 @@ export class AuthService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Tenant)
     private readonly tenantRepo: Repository<Tenant>,
+    @InjectRepository(Branch)
+    private readonly branchRepo: Repository<Branch>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -40,6 +45,12 @@ export class AuthService {
     }
 
     const tenant = await this.tenantRepo.findOne({ where: { id: user.tenant_id } });
+    if (!tenant || tenant.status === TenantStatus.SUSPENDED || tenant.status === TenantStatus.PAST_DUE) {
+      throw new UnauthorizedException('El negocio está suspendido o tiene la suscripción vencida');
+    }
+    if (tenant.status === TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
+      throw new UnauthorizedException('El período de prueba del negocio ha finalizado');
+    }
 
     const payload: JwtPayload = {
       sub: user.id,
@@ -73,6 +84,7 @@ export class AuthService {
   async register(
     dto: RegisterDto,
     tenantId: string,
+    role: UserRole = UserRole.CASHIER,
   ): Promise<{ access_token: string; user: object }> {
     const existing = await this.userRepo.findOne({
       where: { email: dto.email },
@@ -82,11 +94,19 @@ export class AuthService {
       throw new ConflictException('Ya existe un usuario con ese email');
     }
 
+    if (dto.branch_id) {
+      const branch = await this.branchRepo.findOne({
+        where: { id: dto.branch_id, tenant_id: tenantId },
+      });
+      if (!branch) throw new ConflictException('La sucursal no pertenece al negocio actual');
+    }
+
     const password_hash = await bcrypt.hash(dto.password, 12);
 
     const user = this.userRepo.create({
       ...dto,
       password_hash,
+      role,
       tenant_id: tenantId, // Siempre del JWT/contexto, nunca del body
     });
 

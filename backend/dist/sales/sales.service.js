@@ -164,10 +164,10 @@ let SalesService = class SalesService {
             if (customer.credit_limit > 0 && newDebt > customer.credit_limit) {
                 throw new common_1.ForbiddenException(`Límite de crédito excedido. Tope: $${customer.credit_limit}, Deuda acumulada: $${newDebt}`);
             }
-            await this.customerRepo.update(customer.id, { current_debt: newDebt });
+            await this.customerRepo.update({ id: customer.id, tenant_id: tenantId }, { current_debt: newDebt });
         }
         if (dto.payment_method === sale_entity_1.PaymentMethod.CASH) {
-            await this.cashRegisterRepo.update(activeRegister.id, {
+            await this.cashRegisterRepo.update({ id: activeRegister.id, tenant_id: tenantId }, {
                 cash_sales: Number(activeRegister.cash_sales) + total,
             });
         }
@@ -234,7 +234,7 @@ let SalesService = class SalesService {
                 console.error('Error generando factura AFIP:', err);
             }
         }
-        return this.saleRepo.findOne({ where: { id: savedSale.id }, relations: ['items', 'customer'] });
+        return this.saleRepo.findOne({ where: { id: savedSale.id, tenant_id: tenantId }, relations: ['items', 'customer'] });
     }
     async createReturn(saleId, dto, tenantId) {
         const sale = await this.saleRepo.findOne({ where: { id: saleId, tenant_id: tenantId }, relations: ['items', 'customer'] });
@@ -292,7 +292,7 @@ let SalesService = class SalesService {
             if (sale.payment_method === sale_entity_1.PaymentMethod.CREDIT_CLIENT && sale.customer_id) {
                 const customer = await manager.findOne(customer_entity_1.Customer, { where: { id: sale.customer_id, tenant_id: tenantId } });
                 if (customer)
-                    await manager.update(customer_entity_1.Customer, customer.id, { current_debt: Math.max(0, Number(customer.current_debt) - total) });
+                    await manager.update(customer_entity_1.Customer, { id: customer.id, tenant_id: tenantId }, { current_debt: Math.max(0, Number(customer.current_debt) - total) });
             }
             return savedReturn;
         });
@@ -305,7 +305,7 @@ let SalesService = class SalesService {
         const qb = this.saleRepo
             .createQueryBuilder('sale')
             .leftJoinAndSelect('sale.items', 'items')
-            .leftJoinAndSelect('sale.customer', 'customer')
+            .leftJoinAndSelect('sale.customer', 'customer', 'customer.tenant_id = :tenantId')
             .where('sale.tenant_id = :tenantId', { tenantId });
         if (query.payment_status) {
             qb.andWhere('sale.payment_status = :paymentStatus', { paymentStatus: query.payment_status });

@@ -52,14 +52,22 @@ export class ProductionService {
   // ==========================================
 
   async findAllRecipes(tenantId: string): Promise<Recipe[]> {
-    return this.recipeRepo.find({
-      where: { tenant_id: tenantId, is_active: true },
-      order: { name: 'ASC' },
-    });
+    return this.recipeRepo.createQueryBuilder('recipe')
+      .leftJoinAndSelect('recipe.output_product', 'outputProduct', 'outputProduct.tenant_id = :tenantId')
+      .leftJoinAndSelect('recipe.items', 'items')
+      .leftJoinAndSelect('items.product', 'itemProduct', 'itemProduct.tenant_id = :tenantId')
+      .where('recipe.tenant_id = :tenantId AND recipe.is_active = :active', { tenantId, active: true })
+      .orderBy('recipe.name', 'ASC')
+      .getMany();
   }
 
   async findOneRecipe(id: string, tenantId: string): Promise<Recipe> {
-    const recipe = await this.recipeRepo.findOne({ where: { id, tenant_id: tenantId } });
+    const recipe = await this.recipeRepo.createQueryBuilder('recipe')
+      .leftJoinAndSelect('recipe.output_product', 'outputProduct', 'outputProduct.tenant_id = :tenantId')
+      .leftJoinAndSelect('recipe.items', 'items')
+      .leftJoinAndSelect('items.product', 'itemProduct', 'itemProduct.tenant_id = :tenantId')
+      .where('recipe.id = :id AND recipe.tenant_id = :tenantId', { id, tenantId })
+      .getOne();
     if (!recipe) throw new NotFoundException(`Receta ${id} no encontrada`);
     return recipe;
   }
@@ -78,7 +86,7 @@ export class ProductionService {
       ? ProductType.FRACTIONATED
       : ProductType.ELABORATED;
     if (outputProduct.product_type === ProductType.STANDARD) {
-      await this.productRepo.update(outputProduct.id, { product_type: derivedType });
+      await this.productRepo.update({ id: outputProduct.id, tenant_id: tenantId }, { product_type: derivedType });
     }
 
     const recipe = this.recipeRepo.create({
@@ -153,9 +161,9 @@ export class ProductionService {
     const qb = this.orderRepo
       .createQueryBuilder('o')
       .leftJoinAndSelect('o.inputs', 'inputs')
-      .leftJoinAndSelect('inputs.product', 'inputProduct')
+      .leftJoinAndSelect('inputs.product', 'inputProduct', 'inputProduct.tenant_id = :tenantId')
       .leftJoinAndSelect('o.outputs', 'outputs')
-      .leftJoinAndSelect('outputs.product', 'outputProduct')
+      .leftJoinAndSelect('outputs.product', 'outputProduct', 'outputProduct.tenant_id = :tenantId')
       .leftJoinAndSelect('o.recipe', 'recipe')
       .where('o.tenant_id = :tenantId', { tenantId })
       .orderBy('o.created_at', 'DESC');
@@ -165,10 +173,14 @@ export class ProductionService {
   }
 
   async findOneOrder(id: string, tenantId: string): Promise<ProductionOrder> {
-    const order = await this.orderRepo.findOne({
-      where: { id, tenant_id: tenantId },
-      relations: ['inputs', 'inputs.product', 'outputs', 'outputs.product', 'recipe'],
-    });
+    const order = await this.orderRepo.createQueryBuilder('order')
+      .leftJoinAndSelect('order.inputs', 'inputs')
+      .leftJoinAndSelect('inputs.product', 'inputProduct', 'inputProduct.tenant_id = :tenantId')
+      .leftJoinAndSelect('order.outputs', 'outputs')
+      .leftJoinAndSelect('outputs.product', 'outputProduct', 'outputProduct.tenant_id = :tenantId')
+      .leftJoinAndSelect('order.recipe', 'recipe', 'recipe.tenant_id = :tenantId')
+      .where('order.id = :id AND order.tenant_id = :tenantId', { id, tenantId })
+      .getOne();
     if (!order) throw new NotFoundException(`Orden de producción ${id} no encontrada`);
     return order;
   }
@@ -253,12 +265,12 @@ export class ProductionService {
           });
           await manager.save(inv);
         }
-        await manager.update(Inventory, inv.id, {
+        await manager.update(Inventory, { id: inv.id, tenant_id: tenantId }, {
           stock_quantity: Number(inv.stock_quantity) + Number(line.quantity),
           last_restock_date: new Date(),
         });
         if (line.unit_cost > 0) {
-          await manager.update(Product, line.product_id, { cost_price: line.unit_cost });
+          await manager.update(Product, { id: line.product_id, tenant_id: tenantId }, { cost_price: line.unit_cost });
         }
       }
 
@@ -328,7 +340,7 @@ export class ProductionService {
           where: { product_id: input.product_id, branch_id: order.branch_id, tenant_id: tenantId },
         });
         if (inv) {
-          await manager.update(Inventory, inv.id, {
+          await manager.update(Inventory, { id: inv.id, tenant_id: tenantId }, {
             stock_quantity: Number(inv.stock_quantity) + Number(input.quantity),
           });
         }
@@ -344,10 +356,10 @@ export class ProductionService {
               `No se puede cancelar: "${output.product?.name}" ya vendió/consumió el stock producido`,
             );
           }
-          await manager.update(Inventory, inv.id, { stock_quantity: newQty });
+          await manager.update(Inventory, { id: inv.id, tenant_id: tenantId }, { stock_quantity: newQty });
         }
       }
-      await manager.update(ProductionOrder, id, {
+      await manager.update(ProductionOrder, { id, tenant_id: tenantId }, {
         status: ProductionStatus.CANCELLED,
         cancelled_at: new Date(),
       });

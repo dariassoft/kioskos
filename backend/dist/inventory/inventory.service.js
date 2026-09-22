@@ -25,10 +25,11 @@ const category_entity_1 = require("./entities/category.entity");
 const price_list_entity_1 = require("./entities/price-list.entity");
 const product_price_entity_1 = require("./entities/product-price.entity");
 const brand_entity_1 = require("./entities/brand.entity");
+const supplier_entity_1 = require("../purchases/entities/supplier.entity");
 const stock_reduced_event_1 = require("./events/stock-reduced.event");
 const inventory_dto_1 = require("./dto/inventory.dto");
 let InventoryService = class InventoryService {
-    constructor(productRepo, inventoryRepo, branchRepo, unitRepo, categoryRepo, brandRepo, priceListRepo, productPriceRepo, eventEmitter) {
+    constructor(productRepo, inventoryRepo, branchRepo, unitRepo, categoryRepo, brandRepo, priceListRepo, productPriceRepo, supplierRepo, eventEmitter) {
         this.productRepo = productRepo;
         this.inventoryRepo = inventoryRepo;
         this.branchRepo = branchRepo;
@@ -37,16 +38,32 @@ let InventoryService = class InventoryService {
         this.brandRepo = brandRepo;
         this.priceListRepo = priceListRepo;
         this.productPriceRepo = productPriceRepo;
+        this.supplierRepo = supplierRepo;
         this.eventEmitter = eventEmitter;
+    }
+    async validateProductRelations(data, tenantId) {
+        const relations = [
+            { id: data.unit_id, label: 'Unidad', exists: (id) => this.unitRepo.findOne({ where: { id, tenant_id: tenantId } }) },
+            { id: data.category_id, label: 'Categoría', exists: (id) => this.categoryRepo.findOne({ where: { id, tenant_id: tenantId } }) },
+            { id: data.brand_id, label: 'Marca', exists: (id) => this.brandRepo.findOne({ where: { id, tenant_id: tenantId } }) },
+            { id: data.supplier_id, label: 'Proveedor', exists: (id) => this.supplierRepo.findOne({ where: { id, tenant_id: tenantId } }) },
+        ];
+        for (const relation of relations) {
+            if (relation.id && !(await relation.exists(relation.id))) {
+                throw new common_1.NotFoundException(`${relation.label} no encontrada en el negocio actual`);
+            }
+        }
     }
     async findAllProducts(tenantId, query) {
         const { search, category_id, product_type, page = 1, limit = 25 } = query;
         const skip = (page - 1) * limit;
         const qb = this.productRepo.createQueryBuilder('p')
-            .leftJoinAndSelect('p.unit', 'unit')
-            .leftJoinAndSelect('p.category', 'category')
-            .leftJoinAndSelect('p.prices', 'prices')
-            .leftJoinAndSelect('prices.price_list', 'price_list')
+            .leftJoinAndSelect('p.unit', 'unit', 'unit.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.category', 'category', 'category.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.brand', 'brand', 'brand.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.supplier', 'supplier', 'supplier.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.prices', 'prices', 'prices.price_list_id IN (SELECT tenantList.id FROM price_lists tenantList WHERE tenantList.tenant_id = :tenantId)')
+            .leftJoinAndSelect('prices.price_list', 'price_list', 'price_list.tenant_id = :tenantId')
             .where('p.tenant_id = :tenantId', { tenantId })
             .andWhere('p.is_active = :active', { active: true });
         if (search) {
@@ -66,10 +83,15 @@ let InventoryService = class InventoryService {
         return { data, total, page, limit, pages: Math.ceil(total / limit) };
     }
     async findOneProduct(id, tenantId) {
-        const product = await this.productRepo.findOne({
-            where: { id, tenant_id: tenantId },
-            relations: ['unit', 'category', 'prices', 'prices.price_list'],
-        });
+        const product = await this.productRepo.createQueryBuilder('p')
+            .leftJoinAndSelect('p.unit', 'unit', 'unit.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.category', 'category', 'category.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.brand', 'brand', 'brand.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.supplier', 'supplier', 'supplier.tenant_id = :tenantId')
+            .leftJoinAndSelect('p.prices', 'prices', 'prices.price_list_id IN (SELECT tenantList.id FROM price_lists tenantList WHERE tenantList.tenant_id = :tenantId)')
+            .leftJoinAndSelect('prices.price_list', 'price_list', 'price_list.tenant_id = :tenantId')
+            .where('p.id = :id AND p.tenant_id = :tenantId', { id, tenantId })
+            .getOne();
         if (!product)
             throw new common_1.NotFoundException(`Producto ${id} no encontrado`);
         return product;
@@ -89,6 +111,7 @@ let InventoryService = class InventoryService {
             if (cleanedData[key] === '')
                 cleanedData[key] = null;
         });
+        await this.validateProductRelations(cleanedData, tenantId);
         const productEntity = this.productRepo.create({ ...cleanedData, tenant_id: tenantId });
         const savedProduct = await this.productRepo.save(productEntity);
         let finalPrice = Number(sale_price || 0);
@@ -117,6 +140,7 @@ let InventoryService = class InventoryService {
             if (cleanedDto[key] === '')
                 cleanedDto[key] = null;
         });
+        await this.validateProductRelations(cleanedDto, tenantId);
         await this.productRepo.update({ id, tenant_id: tenantId }, cleanedDto);
         let finalPrice = Number(sale_price || 0);
         if (!finalPrice && sale_margin !== undefined && dto.cost_price !== undefined) {
@@ -165,6 +189,9 @@ let InventoryService = class InventoryService {
             if (!defaultList)
                 throw new common_1.NotFoundException('No se encontró una lista de precios por defecto');
             targetListId = defaultList.id;
+        }
+        if (!(await this.priceListRepo.findOne({ where: { id: targetListId, tenant_id: tenantId } }))) {
+            throw new common_1.NotFoundException('Lista de precios no encontrada en el negocio actual');
         }
         const qb = this.productRepo.createQueryBuilder('p')
             .select('p.id')
@@ -284,6 +311,9 @@ let InventoryService = class InventoryService {
         if (from_branch_id === to_branch_id) {
             throw new common_1.BadRequestException('La sucursal de origen y destino no pueden ser la misma');
         }
+        await this.findOneProduct(product_id, tenantId);
+        await this.findOneBranch(from_branch_id, tenantId);
+        await this.findOneBranch(to_branch_id, tenantId);
         return this.inventoryRepo.manager.transaction(async (manager) => {
             const sourceInv = await manager.findOne(inventory_entity_1.Inventory, {
                 where: { product_id, branch_id: from_branch_id, tenant_id: tenantId },
@@ -432,8 +462,8 @@ let InventoryService = class InventoryService {
         const qb = this.productRepo
             .createQueryBuilder('p')
             .leftJoinAndSelect('p.prices', 'prices')
-            .leftJoinAndSelect('prices.price_list', 'pl', 'pl.is_default = :def', { def: true })
-            .leftJoinAndSelect('p.unit', 'unit')
+            .leftJoinAndSelect('prices.price_list', 'pl', 'pl.is_default = :def AND pl.tenant_id = :tenantId', { def: true, tenantId })
+            .leftJoinAndSelect('p.unit', 'unit', 'unit.tenant_id = :tenantId')
             .where('p.tenant_id = :tenantId', { tenantId })
             .andWhere('p.is_active = :active', { active: true })
             .andWhere('p.product_type != :rawType', { rawType: 'raw_material' });
@@ -458,7 +488,7 @@ let InventoryService = class InventoryService {
                 .orderBy('popularity', 'DESC');
         }
         if (branchId) {
-            qb.leftJoinAndMapOne('p.inventory', inventory_entity_1.Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId', { branchId });
+            qb.leftJoinAndMapOne('p.inventory', inventory_entity_1.Inventory, 'inv', 'inv.product_id = p.id AND inv.branch_id = :branchId AND inv.tenant_id = :tenantId', { branchId, tenantId });
         }
         return qb.limit(query.trim() ? 20 : 10).getMany();
     }
@@ -474,7 +504,9 @@ exports.InventoryService = InventoryService = __decorate([
     __param(5, (0, typeorm_1.InjectRepository)(brand_entity_1.Brand)),
     __param(6, (0, typeorm_1.InjectRepository)(price_list_entity_1.PriceList)),
     __param(7, (0, typeorm_1.InjectRepository)(product_price_entity_1.ProductPrice)),
+    __param(8, (0, typeorm_1.InjectRepository)(supplier_entity_1.Supplier)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

@@ -40,11 +40,37 @@ export const FEATURE_LABELS: Record<string, string> = {
   feature_accounting: 'Contabilidad',
   expenses_management: 'Gestión de Gastos',
   feature_expenses: 'Gestión de Gastos',
+  production: 'Producción y Fraccionamiento',
+  returns_and_vat: 'Devoluciones e IVA',
+  current_accounts: 'Cuentas Corrientes de Clientes',
+  supplier_current_accounts: 'Cuentas Corrientes de Proveedores',
+  payment_integrations: 'Pagos electrónicos y transferencias',
   // Alias literales (para casos de replace o keys en ingles puro con espacios)
   'pdf export': 'Exportación PDF/Excel',
   'email alerts': 'Alertas por Email',
   'reports history': 'Historial de Reportes',
 }
+
+export const PLAN_FEATURES = [
+  'pos_terminal',
+  'inventory',
+  'barcode_scanner',
+  'categories_brands',
+  'customers_credit',
+  'purchases_suppliers',
+  'current_accounts',
+  'payment_integrations',
+  'automated_accounting',
+  'reports_bi',
+  'export_pdf_excel',
+  'email_notifications',
+  'electronic_invoicing',
+  'expenses_management',
+  'supplier_current_accounts',
+  'returns_and_vat',
+  'production',
+  'multi_branch',
+] as const
 
 export interface StartCheckoutPayload {
   plan_id: string
