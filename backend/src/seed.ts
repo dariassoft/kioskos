@@ -31,11 +31,15 @@ async function bootstrap() {
     console.log('Creando Tenant principal...');
     let tenant = await tenantService.findAll().then(ts => ts.find(t => t.tax_id === '20-12345678-9'));
     if (!tenant) {
-      tenant = await tenantService.create({
+      const provisioned = await tenantService.create({
         business_name: 'Kiosko Demo Central',
         owner_email: 'demo@kioskos.com',
+        owner_name: 'Dueño Demo',
+        owner_password: 'password123',
         tax_id: '20-12345678-9',
+        plan_id: 'plan-negocio-001',
       });
+      tenant = provisioned.tenant;
     }
 
     console.log(`✅ Tenant Creado/Encontrado! ID: ${tenant.id}`);

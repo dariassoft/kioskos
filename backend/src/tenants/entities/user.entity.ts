@@ -14,8 +14,13 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 36 })
-  tenant_id: string;
+  /**
+   * Los usuarios operativos siempre pertenecen a un tenant. El SuperAdmin es
+   * una identidad de plataforma y deliberadamente no pertenece a ningún
+   * negocio.
+   */
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  tenant_id: string | null;
 
   @Column({ type: 'varchar', length: 36, nullable: true })
   branch_id: string;

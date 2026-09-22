@@ -146,8 +146,6 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const dataSource = app.get(DataSource);
 
-  await ensureAuxiliaryTables(dataSource);
-
   // ==========================================
   // AUTOMATIZACIÓN DE DB (MIGRACIONES Y SEED)
   // ==========================================
@@ -160,6 +158,10 @@ async function bootstrap() {
       console.error('❌ [DB] Error en migraciones:', error.message);
     }
   }
+
+  // Las tablas base y sus columnas deben existir antes de aplicar las
+  // reparaciones auxiliares heredadas de instalaciones anteriores.
+  await ensureAuxiliaryTables(dataSource);
 
   if (configService.get('DB_RUN_SEED') === 'true') {
     console.log('🌱 [DB] Ejecutando carga de datos iniciales (seed)...');

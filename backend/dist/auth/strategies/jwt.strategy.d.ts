@@ -21,7 +21,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
         id: string;
         email: string;
         role: string;
-        tenant_id: string;
+        tenant_id: string | undefined;
         name: string;
         referral_code: string | undefined;
     }>;

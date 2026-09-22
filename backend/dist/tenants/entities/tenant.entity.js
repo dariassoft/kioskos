@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Tenant = exports.TenantStatus = void 0;
+exports.Tenant = exports.PLATFORM_TENANT_ID = exports.TenantStatus = void 0;
 const typeorm_1 = require("typeorm");
 var TenantStatus;
 (function (TenantStatus) {
@@ -18,6 +18,7 @@ var TenantStatus;
     TenantStatus["TRIAL"] = "trial";
     TenantStatus["PAST_DUE"] = "past_due";
 })(TenantStatus || (exports.TenantStatus = TenantStatus = {}));
+exports.PLATFORM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 let Tenant = class Tenant {
 };
 exports.Tenant = Tenant;

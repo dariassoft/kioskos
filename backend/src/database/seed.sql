@@ -2,9 +2,9 @@
 -- SEED: Kioskos & Despenzas — Datos iniciales
 -- ============================================
 
--- 1. Tenant SISTEMA (para el SuperAdmin de la plataforma)
+-- 1. Registro técnico de plataforma. No es un negocio y no pertenece al SuperAdmin.
 INSERT INTO tenants (id, business_name, owner_email, tax_id, status)
-VALUES ('00000000-0000-0000-0000-000000000001', 'Kioskos & Despenzas SISTEMA', 'superadmin@kioskos.com', '00-00000000-0', 'active')
+VALUES ('00000000-0000-0000-0000-000000000001', 'Kioskos & Despenzas — Plataforma', 'platform@kioskos.com', NULL, 'active')
 ON DUPLICATE KEY UPDATE
   business_name=VALUES(business_name), owner_email=VALUES(owner_email), tax_id=VALUES(tax_id), status=VALUES(status);
 
@@ -12,7 +12,7 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO users (id, tenant_id, name, email, password_hash, role, is_active)
 VALUES (
   '00000000-0000-0000-0000-000000000010',
-  '00000000-0000-0000-0000-000000000001',
+  NULL,
   'Super Administrador',
   'superadmin@kioskos.com',
   '$2b$12$qvgXdS1kxeJcygM0dN44nOcgoD.HwSi7T8CASaROv1F4aZH74a/Km',

@@ -6,6 +6,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -53,8 +54,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
-  async getProfile(@GetTenantId() tenantId: string) {
-    // El tenantId ya está validado por el middleware
-    return { tenantId, message: 'Perfil obtenido correctamente' };
+  async getProfile(@Req() request: { user: { id: string } }) {
+    // SuperAdmin no tiene tenant_id: su perfil no debe depender del contexto
+    // de un negocio ni intentar resolver el registro técnico de la plataforma.
+    return this.authService.getProfile(request.user.id);
   }
 }

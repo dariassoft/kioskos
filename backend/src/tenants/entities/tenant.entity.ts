@@ -14,6 +14,9 @@ export enum TenantStatus {
   PAST_DUE = 'past_due',
 }
 
+/** Registro técnico legado de la plataforma; no es un negocio comercial. */
+export const PLATFORM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 @Entity('tenants')
 export class Tenant {
   @PrimaryGeneratedColumn('uuid')

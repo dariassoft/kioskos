@@ -32,8 +32,8 @@ let AuthController = class AuthController {
     async register(dto, tenantId) {
         return this.authService.register(dto, tenantId);
     }
-    async getProfile(tenantId) {
-        return { tenantId, message: 'Perfil obtenido correctamente' };
+    async getProfile(request) {
+        return this.authService.getProfile(request.user.id);
     }
 };
 exports.AuthController = AuthController;
@@ -66,9 +66,9 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Obtener perfil del usuario autenticado' }),
-    __param(0, (0, get_tenant_decorator_1.GetTenantId)()),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getProfile", null);
 exports.AuthController = AuthController = __decorate([

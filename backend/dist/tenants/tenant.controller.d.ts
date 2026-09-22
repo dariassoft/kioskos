@@ -11,6 +11,21 @@ export declare class TenantController {
         suspended: number;
     }>;
     findOne(id: string): Promise<import("./entities/tenant.entity").Tenant>;
-    create(dto: CreateTenantDto): Promise<import("./entities/tenant.entity").Tenant>;
+    create(dto: CreateTenantDto): Promise<{
+        tenant: import("./entities/tenant.entity").Tenant;
+        owner: {
+            id: string;
+            tenant_id: string | null;
+            branch_id: string;
+            name: string;
+            email: string;
+            role: string;
+            is_active: boolean;
+            created_at: Date;
+            updated_at: Date;
+        };
+        branch: import("../inventory/entities/branch.entity").Branch;
+        subscription: import("../billing/entities/subscription.entity").Subscription;
+    }>;
     updateStatus(id: string, dto: UpdateTenantStatusDto): Promise<import("./entities/tenant.entity").Tenant>;
 }

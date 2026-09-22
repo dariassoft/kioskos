@@ -6,13 +6,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThan, Between, LessThanOrEqual } from 'typeorm';
+import { Repository, MoreThan, LessThan, Between, LessThanOrEqual, Not } from 'typeorm';
 import { Plan } from './entities/plan.entity';
 import { Subscription, SubscriptionStatus } from './entities/subscription.entity';
 import { BillingHistory, PaymentStatus } from './entities/billing-history.entity';
 import { Promotion } from './entities/promotion.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Tenant, TenantStatus } from '../tenants/entities/tenant.entity';
+import { Tenant, TenantStatus, PLATFORM_TENANT_ID } from '../tenants/entities/tenant.entity';
 import { ConfigService } from '@nestjs/config';
 import MercadoPago, { PreApproval } from 'mercadopago';
 
@@ -93,6 +93,7 @@ export class BillingService {
 
   async getAllSubscriptionsWithDetails(): Promise<any[]> {
     const subscriptions = await this.subscriptionRepo.find({
+      where: { tenant_id: Not(PLATFORM_TENANT_ID) },
       order: { created_at: 'DESC' },
     });
 
@@ -116,6 +117,9 @@ export class BillingService {
   }
 
   async changePlan(dto: ChangePlanDto): Promise<Subscription> {
+    if (dto.tenant_id === PLATFORM_TENANT_ID) {
+      throw new BadRequestException('La plataforma no puede tener una suscripción comercial');
+    }
     const plan = await this.planRepo.findOne({ where: { id: dto.new_plan_id, is_active: true } });
     if (!plan) throw new NotFoundException('Plan no encontrado o inactivo');
     const tenant = await this.tenantRepo.findOne({ where: { id: dto.tenant_id } });
@@ -206,6 +210,7 @@ export class BillingService {
 
     const subs = await this.subscriptionRepo.find({
       where: {
+        tenant_id: Not(PLATFORM_TENANT_ID),
         status: SubscriptionStatus.ACTIVE,
         next_billing_date: Between(today, limit) as any,
       },
@@ -244,6 +249,9 @@ export class BillingService {
   // PAGOS Y BILLING HISTORY
   // ==========================================
   async registerPayment(dto: RegisterPaymentDto): Promise<BillingHistory> {
+    if (dto.tenant_id === PLATFORM_TENANT_ID) {
+      throw new BadRequestException('La plataforma no puede recibir pagos de suscripciones');
+    }
     const tenant = await this.tenantRepo.findOne({ where: { id: dto.tenant_id } });
     if (!tenant) throw new NotFoundException('Tenant no encontrado');
 
@@ -348,7 +356,7 @@ export class BillingService {
   }> {
     try {
       const activeSubscriptions = await this.subscriptionRepo.find({
-        where: { status: SubscriptionStatus.ACTIVE },
+        where: { tenant_id: Not(PLATFORM_TENANT_ID), status: SubscriptionStatus.ACTIVE },
       });
 
       // MRR se calcula con locked_price (precio que aceptó el suscriptor)
@@ -362,12 +370,15 @@ export class BillingService {
       soon.setDate(soon.getDate() + 7);
       const expiringSoon = await this.subscriptionRepo.count({
         where: {
+          tenant_id: Not(PLATFORM_TENANT_ID),
           status: SubscriptionStatus.ACTIVE,
           end_date: Between(today, soon) as any,
         },
       });
 
-      const totalTenants = await this.tenantRepo.count();
+      const totalTenants = await this.tenantRepo.count({
+        where: { id: Not(PLATFORM_TENANT_ID) },
+      });
 
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);

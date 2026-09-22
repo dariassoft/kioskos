@@ -52,7 +52,8 @@ export class SettingsController {
   ) {
     return this.settingsService.updateBranch(id, dto, tenantId);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Delete('branches/:id')
   @ApiOperation({ summary: 'Eliminar sucursal (no la principal)' })
@@ -89,14 +90,16 @@ export class SettingsController {
     return this.settingsService.updateUser(id, dto, tenantId);
   }
   // PERFIL DEL NEGOCIO
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Get('business')
   @ApiOperation({ summary: 'Obtener perfil del negocio + plan actual' })
   getBusinessProfile(@GetTenantId() tenantId: string) {
     return this.settingsService.getBusinessProfile(tenantId);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Patch('business')
   @ApiOperation({ summary: 'Actualizar datos del negocio' })

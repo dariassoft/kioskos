@@ -4,6 +4,7 @@ export declare enum TenantStatus {
     TRIAL = "trial",
     PAST_DUE = "past_due"
 }
+export declare const PLATFORM_TENANT_ID = "00000000-0000-0000-0000-000000000001";
 export declare class Tenant {
     id: string;
     business_name: string;

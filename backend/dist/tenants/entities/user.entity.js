@@ -20,8 +20,8 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 36 }),
-    __metadata("design:type", String)
+    (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),
+    __metadata("design:type", Object)
 ], User.prototype, "tenant_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 36, nullable: true }),

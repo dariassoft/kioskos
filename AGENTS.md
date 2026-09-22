@@ -1530,6 +1530,14 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - Solo un usuario con rol `admin` puede listar, crear o modificar usuarios desde `/settings/users`. El `tenant_id` siempre proviene del JWT y `branch_id` debe pertenecer al mismo tenant; nunca se permite asignar roles `superadmin` desde formularios o endpoints de negocio.
 - La cantidad de usuarios activos incluye al administrador propietario y se limita por `Subscription -> Plan.max_users`. Crear o reactivar usuarios requiere suscripción activa, plan activo y cupo disponible; al alcanzar el límite, el backend rechaza la operación y el frontend informa el cupo restante.
 
+### 10.16 | Septiembre 2026 — Identidad de plataforma y provisión de negocios
+
+- `superadmin@kioskos.com` es una identidad global de la plataforma: su `users.tenant_id` es `NULL`, no es dueño ni usuario operativo del registro técnico `Kioskos & Despenzas SISTEMA`, y nunca debe acceder a datos de un negocio mediante ese registro.
+- Cada negocio comercial tiene un `tenant_id` propio, un administrador propietario, una sucursal principal, su suscripción y sus usuarios; las relaciones de productos, sucursales, clientes, ventas, compras, gastos y demás datos deben validarse siempre contra el `tenant_id` derivado del JWT.
+- `POST /tenants` es una operación exclusiva de SuperAdmin y provisiona atómicamente negocio, administrador con rol `admin`, sucursal `Casa Central` y suscripción de prueba de 14 días sobre un plan activo. No acepta que el cliente elija estados, roles privilegiados ni `tenant_id`.
+- El SuperAdmin puede listar y habilitar/suspender negocios, registrar pagos manuales, crear/editar/desactivar planes y cambiar suscripciones; esas operaciones son de plataforma y deben permanecer protegidas por `JwtAuthGuard` + `SuperAdminGuard`.
+- Las migraciones se ejecutan antes de `ensureAuxiliaryTables`; una instalación nueva no debe intentar alterar tablas que todavía no fueron creadas.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1557,3 +1565,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.9 | Sept 2026 | Se aclara que las cuentas corrientes de clientes son los fiados existentes y se corrige la normalización de fechas del gráfico semanal para evitar ingresos en cero. |
 | 10.10 | Sept 2026 | Auditoría SuperAdmin y multi-tenant: se cerró la creación privilegiada de usuarios, se validaron relaciones por tenant, se endurecieron entitlements, se actualizó el catálogo de módulos y se documentaron los planes actuales. |
 | 10.11 | Sept 2026 | Se corrigió el login de la cuenta SuperAdmin de plataforma, se hizo reparable el seed de credenciales y se implementó la creación de usuarios del tenant con roles restringidos y límite según `max_users` del plan. |
+| 10.12 | Sept 2026 | Se separó físicamente la identidad SuperAdmin de cualquier tenant, se agregó provisión atómica de negocios de prueba y se documentó el alcance exclusivo del panel de plataforma. |

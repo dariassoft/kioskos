@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@api/client'
 import toast from 'react-hot-toast'
-import { Store, CheckCircle, XCircle } from 'lucide-react'
+import { Store, CheckCircle, XCircle, Plus, X } from 'lucide-react'
 
 type TenantStatus = 'active' | 'suspended' | 'trial' | 'past_due'
 
@@ -14,12 +15,54 @@ const statusConfig: Record<TenantStatus, { label: string; className: string }> =
 
 export default function TenantsPage() {
   const queryClient = useQueryClient()
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState({
+    business_name: '',
+    owner_name: '',
+    owner_email: '',
+    owner_password: '',
+    tax_id: '',
+    phone: '',
+    address: '',
+    plan_id: '',
+  })
 
   const { data: tenants = [], isLoading } = useQuery({
     queryKey: ['tenants'],
     queryFn: async () => {
       const res = await apiClient.get('/tenants')
       return res.data
+    },
+  })
+
+  const { data: plans = [] } = useQuery({
+    queryKey: ['billing-plans-for-tenant-provisioning'],
+    queryFn: async () => (await apiClient.get('/billing/plans')).data,
+  })
+
+  const createTenant = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        ...form,
+        tax_id: form.tax_id || undefined,
+        phone: form.phone || undefined,
+        address: form.address || undefined,
+      }
+      return (await apiClient.post('/tenants', payload)).data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+      queryClient.invalidateQueries({ queryKey: ['tenant-metrics'] })
+      setShowCreate(false)
+      setForm({
+        business_name: '', owner_name: '', owner_email: '', owner_password: '',
+        tax_id: '', phone: '', address: '', plan_id: '',
+      })
+      toast.success('Negocio creado con prueba de 14 días')
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message
+      toast.error(Array.isArray(message) ? message.join(', ') : message || 'No se pudo crear el negocio')
     },
   })
 
@@ -39,10 +82,17 @@ export default function TenantsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Negocios</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Gestión de todos los tenants de la plataforma
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Negocios</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Gestión de todos los tenants de la plataforma
+            </p>
+          </div>
+          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2 self-start">
+            <Plus className="w-4 h-4" /> Nuevo negocio de prueba
+          </button>
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -118,6 +168,73 @@ export default function TenantsPage() {
           </table>
         )}
       </div>
+
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Crear negocio de prueba</h2>
+                <p className="text-xs text-muted-foreground mt-1">Se crea el tenant, su admin, Casa Central y una prueba de 14 días.</p>
+              </div>
+              <button onClick={() => setShowCreate(false)} className="p-2 rounded-lg hover:bg-muted" aria-label="Cerrar">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-6"
+              onSubmit={(event) => {
+                event.preventDefault()
+                createTenant.mutate()
+              }}
+            >
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Nombre del negocio *</span>
+                <input required value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} className="input w-full" />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Plan *</span>
+                <select required value={form.plan_id} onChange={(e) => setForm({ ...form, plan_id: e.target.value })} className="input w-full">
+                  <option value="">Seleccionar plan</option>
+                  {plans.filter((plan: any) => plan.is_active).map((plan: any) => (
+                    <option key={plan.id} value={plan.id}>{plan.name} — ${Number(plan.price_monthly).toLocaleString('es-AR')}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Nombre del administrador *</span>
+                <input required value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} className="input w-full" />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Email del administrador *</span>
+                <input required type="email" value={form.owner_email} onChange={(e) => setForm({ ...form, owner_email: e.target.value })} className="input w-full" />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Contraseña inicial *</span>
+                <input required minLength={8} type="password" value={form.owner_password} onChange={(e) => setForm({ ...form, owner_password: e.target.value })} className="input w-full" />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">CUIT/CUIL</span>
+                <input value={form.tax_id} onChange={(e) => setForm({ ...form, tax_id: e.target.value })} className="input w-full" />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Teléfono</span>
+                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input w-full" />
+              </label>
+              <label className="space-y-1 text-sm sm:col-span-2">
+                <span className="text-muted-foreground">Dirección</span>
+                <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="input w-full" />
+              </label>
+              <div className="flex justify-end gap-3 sm:col-span-2 pt-2">
+                <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancelar</button>
+                <button type="submit" disabled={createTenant.isPending} className="btn-primary disabled:opacity-50">
+                  {createTenant.isPending ? 'Creando...' : 'Crear negocio'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -12,8 +12,9 @@ export declare class AuthController {
         access_token: string;
         user: object;
     }>;
-    getProfile(tenantId: string): Promise<{
-        tenantId: string;
-        message: string;
-    }>;
+    getProfile(request: {
+        user: {
+            id: string;
+        };
+    }): Promise<Partial<import("../tenants/entities/user.entity").User>>;
 }

@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  MinLength,
 } from 'class-validator';
 import { TenantStatus } from '../entities/tenant.entity';
 
@@ -13,9 +14,6 @@ export class CreateTenantDto {
   @IsNotEmpty()
   @MaxLength(100)
   business_name: string;
-
-  @IsEmail()
-  owner_email: string;
 
   @IsString()
   @IsOptional()
@@ -35,6 +33,23 @@ export class CreateTenantDto {
   @IsOptional()
   @MaxLength(255)
   logo_url?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  owner_name: string;
+
+  @IsEmail()
+  owner_email: string;
+
+  @IsString()
+  @MinLength(8)
+  owner_password: string;
+
+  /** Plan activo que se asignará durante la provisión inicial. */
+  @IsString()
+  @IsNotEmpty()
+  plan_id: string;
 }
 
 export class UpdateTenantStatusDto {

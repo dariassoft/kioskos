@@ -84,7 +84,7 @@ export class AuthService {
     }
 
     const isSuperAdmin = user.role === UserRole.SUPERADMIN;
-    const tenant = user.tenant_id
+    const tenant = !isSuperAdmin && user.tenant_id
       ? await this.tenantRepo.findOne({ where: { id: user.tenant_id } })
       : null;
     if (!isSuperAdmin && (!tenant || tenant.status === TenantStatus.SUSPENDED || tenant.status === TenantStatus.PAST_DUE)) {
@@ -98,7 +98,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
-      tenant_id: user.tenant_id,
+      tenant_id: user.tenant_id ?? undefined,
       name: user.name,
       referral_code: tenant?.referral_code,
     };

@@ -165,7 +165,6 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const configService = app.get(config_1.ConfigService);
     const dataSource = app.get(typeorm_1.DataSource);
-    await ensureAuxiliaryTables(dataSource);
     if (configService.get('DB_RUN_MIGRATIONS') === 'true') {
         console.log('🔄 [DB] Ejecutando migraciones automáticamente...');
         try {
@@ -176,6 +175,7 @@ async function bootstrap() {
             console.error('❌ [DB] Error en migraciones:', error.message);
         }
     }
+    await ensureAuxiliaryTables(dataSource);
     if (configService.get('DB_RUN_SEED') === 'true') {
         console.log('🌱 [DB] Ejecutando carga de datos iniciales (seed)...');
         try {

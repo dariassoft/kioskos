@@ -103,7 +103,7 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Credenciales incorrectas');
         }
         const isSuperAdmin = user.role === roles_decorator_1.UserRole.SUPERADMIN;
-        const tenant = user.tenant_id
+        const tenant = !isSuperAdmin && user.tenant_id
             ? await this.tenantRepo.findOne({ where: { id: user.tenant_id } })
             : null;
         if (!isSuperAdmin && (!tenant || tenant.status === tenant_entity_2.TenantStatus.SUSPENDED || tenant.status === tenant_entity_2.TenantStatus.PAST_DUE)) {
@@ -116,7 +116,7 @@ let AuthService = class AuthService {
             sub: user.id,
             email: user.email,
             role: user.role,
-            tenant_id: user.tenant_id,
+            tenant_id: user.tenant_id ?? undefined,
             name: user.name,
             referral_code: tenant?.referral_code,
         };

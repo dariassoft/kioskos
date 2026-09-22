@@ -1,6 +1,6 @@
 export declare class User {
     id: string;
-    tenant_id: string;
+    tenant_id: string | null;
     branch_id: string;
     name: string;
     email: string;

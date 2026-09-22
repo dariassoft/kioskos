@@ -99,6 +99,7 @@ let BillingService = BillingService_1 = class BillingService {
     }
     async getAllSubscriptionsWithDetails() {
         const subscriptions = await this.subscriptionRepo.find({
+            where: { tenant_id: (0, typeorm_2.Not)(tenant_entity_1.PLATFORM_TENANT_ID) },
             order: { created_at: 'DESC' },
         });
         const results = await Promise.all(subscriptions.map(async (sub) => {
@@ -118,6 +119,9 @@ let BillingService = BillingService_1 = class BillingService {
         return results;
     }
     async changePlan(dto) {
+        if (dto.tenant_id === tenant_entity_1.PLATFORM_TENANT_ID) {
+            throw new common_1.BadRequestException('La plataforma no puede tener una suscripción comercial');
+        }
         const plan = await this.planRepo.findOne({ where: { id: dto.new_plan_id, is_active: true } });
         if (!plan)
             throw new common_1.NotFoundException('Plan no encontrado o inactivo');
@@ -201,6 +205,7 @@ let BillingService = BillingService_1 = class BillingService {
         limit.setDate(limit.getDate() + days);
         const subs = await this.subscriptionRepo.find({
             where: {
+                tenant_id: (0, typeorm_2.Not)(tenant_entity_1.PLATFORM_TENANT_ID),
                 status: subscription_entity_1.SubscriptionStatus.ACTIVE,
                 next_billing_date: (0, typeorm_2.Between)(today, limit),
             },
@@ -229,6 +234,9 @@ let BillingService = BillingService_1 = class BillingService {
         }));
     }
     async registerPayment(dto) {
+        if (dto.tenant_id === tenant_entity_1.PLATFORM_TENANT_ID) {
+            throw new common_1.BadRequestException('La plataforma no puede recibir pagos de suscripciones');
+        }
         const tenant = await this.tenantRepo.findOne({ where: { id: dto.tenant_id } });
         if (!tenant)
             throw new common_1.NotFoundException('Tenant no encontrado');
@@ -312,7 +320,7 @@ let BillingService = BillingService_1 = class BillingService {
     async getMrr() {
         try {
             const activeSubscriptions = await this.subscriptionRepo.find({
-                where: { status: subscription_entity_1.SubscriptionStatus.ACTIVE },
+                where: { tenant_id: (0, typeorm_2.Not)(tenant_entity_1.PLATFORM_TENANT_ID), status: subscription_entity_1.SubscriptionStatus.ACTIVE },
             });
             let mrr = 0;
             for (const sub of activeSubscriptions) {
@@ -323,11 +331,14 @@ let BillingService = BillingService_1 = class BillingService {
             soon.setDate(soon.getDate() + 7);
             const expiringSoon = await this.subscriptionRepo.count({
                 where: {
+                    tenant_id: (0, typeorm_2.Not)(tenant_entity_1.PLATFORM_TENANT_ID),
                     status: subscription_entity_1.SubscriptionStatus.ACTIVE,
                     end_date: (0, typeorm_2.Between)(today, soon),
                 },
             });
-            const totalTenants = await this.tenantRepo.count();
+            const totalTenants = await this.tenantRepo.count({
+                where: { id: (0, typeorm_2.Not)(tenant_entity_1.PLATFORM_TENANT_ID) },
+            });
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
             sixMonthsAgo.setDate(1);

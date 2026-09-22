@@ -40,14 +40,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || !user.is_active) {
       throw new UnauthorizedException('Token inválido: usuario inactivo o inexistente');
     }
-    if (!payload.tenant_id && user.role !== 'superadmin') {
+    const isSuperAdmin = user.role === 'superadmin';
+    if (!payload.tenant_id && !isSuperAdmin) {
       throw new UnauthorizedException('Token inválido: falta tenant_id');
     }
-    if (user.role !== 'superadmin' && payload.tenant_id !== user.tenant_id) {
+    if (!isSuperAdmin && payload.tenant_id !== user.tenant_id) {
       throw new UnauthorizedException('Token inválido: el negocio no coincide');
     }
-    const isSuperAdmin = user.role === 'superadmin';
-    const tenant = user.tenant_id
+    const tenant = !isSuperAdmin && user.tenant_id
       ? await this.tenantRepo.findOne({ where: { id: user.tenant_id } })
       : null;
     if (!isSuperAdmin && (!tenant || tenant.status === TenantStatus.SUSPENDED || tenant.status === TenantStatus.PAST_DUE)) {
@@ -61,7 +61,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: payload.sub,
       email: user.email,
       role: user.role,
-      tenant_id: user.tenant_id,
+      tenant_id: user.tenant_id ?? undefined,
       name: user.name,
       referral_code: payload.referral_code,
     };
