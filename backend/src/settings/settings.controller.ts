@@ -13,6 +13,8 @@ import {
 import { SaveMercadopagoCredentialsDto } from './dto/mercadopago.dto';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { RolesGuard } from '@common/guards/roles.guard';
+import { Roles, UserRole } from '@common/decorators/roles.decorator';
 @ApiTags('settings')
 @Controller('settings')
 export class SettingsController {
@@ -22,21 +24,24 @@ export class SettingsController {
     private readonly configService: ConfigService,
   ) {}
   // SUCURSALES
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Get('branches')
   @ApiOperation({ summary: 'Listar sucursales del negocio' })
   getBranches(@GetTenantId() tenantId: string) {
     return this.settingsService.getBranches(tenantId);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Post('branches')
   @ApiOperation({ summary: 'Crear nueva sucursal' })
   createBranch(@Body() dto: CreateBranchSettingsDto, @GetTenantId() tenantId: string) {
     return this.settingsService.createBranch(dto, tenantId);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Patch('branches/:id')
   @ApiOperation({ summary: 'Actualizar sucursal' })
@@ -55,21 +60,24 @@ export class SettingsController {
     return this.settingsService.deleteBranch(id, tenantId);
   }
   // USUARIOS
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Get('users')
   @ApiOperation({ summary: 'Listar usuarios del negocio' })
   getUsers(@GetTenantId() tenantId: string) {
     return this.settingsService.getUsers(tenantId);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Post('users')
   @ApiOperation({ summary: 'Crear nuevo usuario en el negocio' })
   createUser(@Body() dto: CreateUserSettingsDto, @GetTenantId() tenantId: string) {
     return this.settingsService.createUser(dto, tenantId);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @Patch('users/:id')
   @ApiOperation({ summary: 'Actualizar usuario (rol, sucursal, activo)' })

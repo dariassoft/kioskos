@@ -70,7 +70,7 @@ async function bootstrap() {
         name: 'Dueño Administrador',
         email: 'demo@kioskos.com',
         password: 'password123',
-      }, tenant.id, UserRole.ADMIN);
+      }, tenant.id, UserRole.ADMIN, false);
       console.log(`✅ Usuario Creado!
         Email: demo@kioskos.com
         Contraseña: password123

@@ -56,12 +56,42 @@ const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const tenant_entity_2 = require("../tenants/entities/tenant.entity");
 const branch_entity_1 = require("../inventory/entities/branch.entity");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const subscription_entity_1 = require("../billing/entities/subscription.entity");
+const plan_entity_1 = require("../billing/entities/plan.entity");
 let AuthService = class AuthService {
-    constructor(userRepo, tenantRepo, branchRepo, jwtService) {
+    constructor(userRepo, tenantRepo, branchRepo, subscriptionRepo, planRepo, jwtService) {
         this.userRepo = userRepo;
         this.tenantRepo = tenantRepo;
         this.branchRepo = branchRepo;
+        this.subscriptionRepo = subscriptionRepo;
+        this.planRepo = planRepo;
         this.jwtService = jwtService;
+    }
+    async validateUserLimit(tenantId) {
+        const today = new Date().toISOString().slice(0, 10);
+        const subscription = await this.subscriptionRepo
+            .createQueryBuilder('subscription')
+            .where('subscription.tenant_id = :tenantId', { tenantId })
+            .andWhere('subscription.status = :status', { status: subscription_entity_1.SubscriptionStatus.ACTIVE })
+            .andWhere('subscription.start_date <= :today', { today })
+            .andWhere('subscription.end_date >= :today', { today })
+            .orderBy('subscription.end_date', 'DESC')
+            .getOne();
+        if (!subscription) {
+            throw new common_1.BadRequestException('El negocio no tiene una suscripción activa para crear usuarios');
+        }
+        const plan = await this.planRepo.findOne({
+            where: { id: subscription.plan_id, is_active: true },
+        });
+        if (!plan) {
+            throw new common_1.BadRequestException('El plan actual no está disponible para crear usuarios');
+        }
+        const activeUsers = await this.userRepo.count({
+            where: { tenant_id: tenantId, is_active: true },
+        });
+        if (activeUsers >= plan.max_users) {
+            throw new common_1.BadRequestException(`Plan "${plan.name}": máximo ${plan.max_users} usuario(s). Actualiza tu plan.`);
+        }
     }
     async login(dto) {
         const user = await this.userRepo.findOne({ where: { email: dto.email } });
@@ -72,11 +102,14 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Credenciales incorrectas');
         }
-        const tenant = await this.tenantRepo.findOne({ where: { id: user.tenant_id } });
-        if (!tenant || tenant.status === tenant_entity_2.TenantStatus.SUSPENDED || tenant.status === tenant_entity_2.TenantStatus.PAST_DUE) {
+        const isSuperAdmin = user.role === roles_decorator_1.UserRole.SUPERADMIN;
+        const tenant = user.tenant_id
+            ? await this.tenantRepo.findOne({ where: { id: user.tenant_id } })
+            : null;
+        if (!isSuperAdmin && (!tenant || tenant.status === tenant_entity_2.TenantStatus.SUSPENDED || tenant.status === tenant_entity_2.TenantStatus.PAST_DUE)) {
             throw new common_1.UnauthorizedException('El negocio está suspendido o tiene la suscripción vencida');
         }
-        if (tenant.status === tenant_entity_2.TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
+        if (!isSuperAdmin && tenant?.status === tenant_entity_2.TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
             throw new common_1.UnauthorizedException('El período de prueba del negocio ha finalizado');
         }
         const payload = {
@@ -101,7 +134,10 @@ let AuthService = class AuthService {
             },
         };
     }
-    async register(dto, tenantId, role = roles_decorator_1.UserRole.CASHIER) {
+    async register(dto, tenantId, role = roles_decorator_1.UserRole.CASHIER, enforcePlanLimit = true) {
+        if (enforcePlanLimit) {
+            await this.validateUserLimit(tenantId);
+        }
         const existing = await this.userRepo.findOne({
             where: { email: dto.email },
         });
@@ -139,7 +175,11 @@ exports.AuthService = AuthService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __param(1, (0, typeorm_1.InjectRepository)(tenant_entity_1.Tenant)),
     __param(2, (0, typeorm_1.InjectRepository)(branch_entity_1.Branch)),
+    __param(3, (0, typeorm_1.InjectRepository)(subscription_entity_1.Subscription)),
+    __param(4, (0, typeorm_1.InjectRepository)(plan_entity_1.Plan)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         jwt_1.JwtService])

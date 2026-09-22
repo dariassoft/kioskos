@@ -10,6 +10,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../tenants/entities/user.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
 import { Branch } from '../inventory/entities/branch.entity';
+import { Subscription } from '../billing/entities/subscription.entity';
+import { Plan } from '../billing/entities/plan.entity';
 
 @Module({
   imports: [
@@ -24,7 +26,7 @@ import { Branch } from '../inventory/entities/branch.entity';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User, Tenant, Branch]),
+    TypeOrmModule.forFeature([User, Tenant, Branch, Subscription, Plan]),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

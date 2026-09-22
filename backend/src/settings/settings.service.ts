@@ -7,7 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { Branch } from '@inventory/entities/branch.entity';
 import { User } from '@tenants/entities/user.entity';
 import { Tenant } from '@tenants/entities/tenant.entity';
-import { Subscription } from '@billing/entities/subscription.entity';
+import { Subscription, SubscriptionStatus } from '@billing/entities/subscription.entity';
 import { Plan } from '@billing/entities/plan.entity';
 import {
   CreateBranchSettingsDto, UpdateBranchSettingsDto,
@@ -28,11 +28,13 @@ export class SettingsService {
     const sub = await this.subscriptionRepo
       .createQueryBuilder('s')
       .where('s.tenant_id = :tenantId', { tenantId })
-      .andWhere('s.end_date > :today', { today })
+      .andWhere('s.status = :status', { status: SubscriptionStatus.ACTIVE })
+      .andWhere('s.start_date <= :today', { today: today.toISOString().slice(0, 10) })
+      .andWhere('s.end_date >= :today', { today: today.toISOString().slice(0, 10) })
       .orderBy('s.end_date', 'DESC')
       .getOne();
     if (!sub) return null;
-    return this.planRepo.findOne({ where: { id: sub.plan_id } });
+    return this.planRepo.findOne({ where: { id: sub.plan_id, is_active: true } });
   }
   private async validateBranchLimit(tenantId: string): Promise<void> {
     const plan = await this.getPlan(tenantId);
@@ -43,7 +45,9 @@ export class SettingsService {
   }
   private async validateUserLimit(tenantId: string): Promise<void> {
     const plan = await this.getPlan(tenantId);
-    if (!plan) return;
+    if (!plan) {
+      throw new BadRequestException('El negocio no tiene un plan activo para crear usuarios');
+    }
     const count = await this.userRepo.count({ where: { tenant_id: tenantId, is_active: true } });
     if (count >= plan.max_users)
       throw new BadRequestException(`Plan "${plan.name}": maximo ${plan.max_users} usuario(s). Actualiza tu plan.`);
@@ -105,6 +109,9 @@ export class SettingsService {
   async updateUser(id: string, dto: UpdateUserSettingsDto, tenantId: string): Promise<any> {
     const user = await this.userRepo.findOne({ where: { id, tenant_id: tenantId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (dto.is_active === true && !user.is_active) {
+      await this.validateUserLimit(tenantId);
+    }
     if (dto.branch_id !== undefined && dto.branch_id !== null && !(await this.branchRepo.findOne({ where: { id: dto.branch_id, tenant_id: tenantId } }))) {
       throw new NotFoundException('La sucursal no pertenece al negocio actual');
     }

@@ -43,11 +43,14 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (user.role !== 'superadmin' && payload.tenant_id !== user.tenant_id) {
             throw new common_1.UnauthorizedException('Token inválido: el negocio no coincide');
         }
-        const tenant = await this.tenantRepo.findOne({ where: { id: user.tenant_id } });
-        if (!tenant || tenant.status === tenant_entity_1.TenantStatus.SUSPENDED || tenant.status === tenant_entity_1.TenantStatus.PAST_DUE) {
+        const isSuperAdmin = user.role === 'superadmin';
+        const tenant = user.tenant_id
+            ? await this.tenantRepo.findOne({ where: { id: user.tenant_id } })
+            : null;
+        if (!isSuperAdmin && (!tenant || tenant.status === tenant_entity_1.TenantStatus.SUSPENDED || tenant.status === tenant_entity_1.TenantStatus.PAST_DUE)) {
             throw new common_1.UnauthorizedException('El negocio está suspendido o tiene la suscripción vencida');
         }
-        if (tenant.status === tenant_entity_1.TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
+        if (!isSuperAdmin && tenant?.status === tenant_entity_1.TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
             throw new common_1.UnauthorizedException('El período de prueba del negocio ha finalizado');
         }
         return {

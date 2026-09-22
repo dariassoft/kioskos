@@ -11,7 +11,7 @@ export interface JwtPayload {
   sub: string;        // user ID
   email: string;
   role: string;
-  tenant_id: string;  // Discriminador multi-tenant
+  tenant_id?: string;  // Discriminador multi-tenant; SuperAdmin tiene acceso global
   name: string;
   referral_code?: string;
 }
@@ -46,11 +46,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (user.role !== 'superadmin' && payload.tenant_id !== user.tenant_id) {
       throw new UnauthorizedException('Token inválido: el negocio no coincide');
     }
-    const tenant = await this.tenantRepo.findOne({ where: { id: user.tenant_id } });
-    if (!tenant || tenant.status === TenantStatus.SUSPENDED || tenant.status === TenantStatus.PAST_DUE) {
+    const isSuperAdmin = user.role === 'superadmin';
+    const tenant = user.tenant_id
+      ? await this.tenantRepo.findOne({ where: { id: user.tenant_id } })
+      : null;
+    if (!isSuperAdmin && (!tenant || tenant.status === TenantStatus.SUSPENDED || tenant.status === TenantStatus.PAST_DUE)) {
       throw new UnauthorizedException('El negocio está suspendido o tiene la suscripción vencida');
     }
-    if (tenant.status === TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
+    if (!isSuperAdmin && tenant?.status === TenantStatus.TRIAL && tenant.trial_ends_at && tenant.trial_ends_at < new Date()) {
       throw new UnauthorizedException('El período de prueba del negocio ha finalizado');
     }
     // Lo que retorna aquí se convierte en req.user

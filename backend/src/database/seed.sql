@@ -5,7 +5,8 @@
 -- 1. Tenant SISTEMA (para el SuperAdmin de la plataforma)
 INSERT INTO tenants (id, business_name, owner_email, tax_id, status)
 VALUES ('00000000-0000-0000-0000-000000000001', 'Kioskos & Despenzas SISTEMA', 'superadmin@kioskos.com', '00-00000000-0', 'active')
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE
+  business_name=VALUES(business_name), owner_email=VALUES(owner_email), tax_id=VALUES(tax_id), status=VALUES(status);
 
 -- 2. Usuario SUPERADMIN (dueño de la plataforma) — password: password123
 INSERT INTO users (id, tenant_id, name, email, password_hash, role, is_active)
@@ -17,12 +18,15 @@ VALUES (
   '$2b$12$qvgXdS1kxeJcygM0dN44nOcgoD.HwSi7T8CASaROv1F4aZH74a/Km',
   'superadmin',
   1
-) ON DUPLICATE KEY UPDATE id=id;
+) ON DUPLICATE KEY UPDATE
+  tenant_id=VALUES(tenant_id), name=VALUES(name), password_hash=VALUES(password_hash),
+  role=VALUES(role), is_active=VALUES(is_active);
 
 -- 3. Tenant DEMO (kiosko de prueba)
 INSERT INTO tenants (id, business_name, owner_email, tax_id, status)
 VALUES ('10000000-0000-0000-0000-000000000001', 'Kiosko Demo Central', 'demo@kioskos.com', '20-12345678-9', 'active')
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE
+  business_name=VALUES(business_name), owner_email=VALUES(owner_email), tax_id=VALUES(tax_id), status=VALUES(status);
 
 -- 4. Usuario ADMIN del Kiosko Demo — password: password123
 INSERT INTO users (id, tenant_id, name, email, password_hash, role, is_active)
@@ -34,7 +38,9 @@ VALUES (
   '$2b$12$qvgXdS1kxeJcygM0dN44nOcgoD.HwSi7T8CASaROv1F4aZH74a/Km',
   'admin',
   1
-) ON DUPLICATE KEY UPDATE id=id;
+) ON DUPLICATE KEY UPDATE
+  tenant_id=VALUES(tenant_id), name=VALUES(name), password_hash=VALUES(password_hash),
+  role=VALUES(role), is_active=VALUES(is_active);
 
 -- 5. Sucursal Principal del Kiosko Demo
 INSERT INTO branches (id, tenant_id, name, address, is_main_branch)

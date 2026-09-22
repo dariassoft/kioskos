@@ -4,8 +4,9 @@ import {
   Plus, Pencil, Loader2, AlertCircle, X, UserCheck, UserX, Eye, EyeOff,
   ShieldCheck, Users, Briefcase,
 } from 'lucide-react'
-import { settingsUsersApi, settingsBranchesApi } from '@/api/settings.api'
+import { settingsUsersApi, settingsBranchesApi, settingsBusinessApi } from '@/api/settings.api'
 import type { UserItem, CreateUserDto, UpdateUserDto, UserRole } from '@/api/settings.types'
+import toast from 'react-hot-toast'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrador',
@@ -152,24 +153,53 @@ export default function UsersTab() {
     queryFn: settingsBranchesApi.list,
   })
 
+  const { data: businessProfile } = useQuery({
+    queryKey: ['settings', 'business'],
+    queryFn: settingsBusinessApi.get,
+  })
+
+  const activeUserCount = users.filter((user) => user.is_active).length
+  const maxUsers = businessProfile?.current_plan?.max_users
+  const userLimitReached = maxUsers !== undefined && activeUserCount >= maxUsers
+
   const createMutation = useMutation({
     mutationFn: settingsUsersApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['settings', 'users'] }); setModal(null) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['settings', 'users'] })
+      qc.invalidateQueries({ queryKey: ['settings', 'business'] })
+      setModal(null)
+      toast.success('Usuario creado correctamente')
+    },
+    onError: (error: any) => toast.error(error.response?.data?.message || 'No se pudo crear el usuario'),
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdateUserDto }) => settingsUsersApi.update(id, dto),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['settings', 'users'] }); setModal(null) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['settings', 'users'] })
+      qc.invalidateQueries({ queryKey: ['settings', 'business'] })
+      setModal(null)
+      toast.success('Usuario actualizado correctamente')
+    },
+    onError: (error: any) => toast.error(error.response?.data?.message || 'No se pudo actualizar el usuario'),
   })
 
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
       settingsUsersApi.update(id, { is_active }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['settings', 'users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['settings', 'users'] })
+      qc.invalidateQueries({ queryKey: ['settings', 'business'] })
+    },
+    onError: (error: any) => toast.error(error.response?.data?.message || 'No se pudo cambiar el estado del usuario'),
   })
 
   const handleSave = async (data: CreateUserDto | UpdateUserDto) => {
     if (modal === 'create') {
+      if (userLimitReached) {
+        toast.error(`El plan actual permite ${maxUsers} usuario(s) activo(s) como máximo`)
+        return
+      }
       await createMutation.mutateAsync(data as CreateUserDto)
     } else if (modal && typeof modal === 'object') {
       await updateMutation.mutateAsync({ id: modal.id, dto: data as UpdateUserDto })
@@ -196,10 +226,20 @@ export default function UsersTab() {
           <div>
             <h2 className="text-lg font-semibold text-foreground">Usuarios del negocio</h2>
             <p className="text-sm text-muted-foreground">
-              {users.filter((u) => u.is_active).length} activo{users.filter((u) => u.is_active).length !== 1 ? 's' : ''} de {users.length} total
+              {activeUserCount} activo{activeUserCount !== 1 ? 's' : ''} de {users.length} total
             </p>
+            {maxUsers !== undefined && (
+              <p className={`text-xs mt-1 ${userLimitReached ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                Plan {businessProfile?.current_plan?.name}: {activeUserCount} de {maxUsers} usuarios permitidos
+              </p>
+            )}
           </div>
-          <button onClick={() => setModal('create')} className="btn-primary flex items-center gap-2">
+          <button
+            onClick={() => setModal('create')}
+            disabled={userLimitReached}
+            title={userLimitReached ? 'Alcanzaste el límite de usuarios de tu plan' : 'Crear usuario'}
+            className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Plus className="w-4 h-4" /> Nuevo usuario
           </button>
         </div>

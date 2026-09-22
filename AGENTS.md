@@ -1523,6 +1523,13 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 - El checkout no permite usar `payment_method = trial` para activar planes pagos; las aprobaciones manuales solo aceptan solicitudes `MANUAL_PENDING` y el listado administrativo no devuelve `temp_password_hash`.
 - Las columnas `tenant_id` deben reforzarse progresivamente con claves foráneas/índices compuestos en migraciones; las validaciones de servicio siguen siendo obligatorias porque las tablas de líneas (`sale_items`, `purchase_order_items`, `recipe_items`, etc.) heredan el aislamiento de su entidad raíz.
 
+### 10.15 | Septiembre 2026 — SuperAdmin y usuarios por plan
+
+- `superadmin@kioskos.com` es la cuenta dueña de la plataforma, no un usuario operativo de un negocio. El login y la validación JWT no deben exigirle una suscripción ni que el tenant técnico del sistema esté activo; los tenants comerciales sí deben validar estado y vigencia.
+- `backend/src/database/seed.sql` es el seed operativo de Docker/MySQL. Las credenciales determinísticas del SuperAdmin y del usuario demo deben actualizarse en `ON DUPLICATE KEY UPDATE`, de modo que volver a ejecutar el seed repare una contraseña, rol o usuario desactivado preexistente.
+- Solo un usuario con rol `admin` puede listar, crear o modificar usuarios desde `/settings/users`. El `tenant_id` siempre proviene del JWT y `branch_id` debe pertenecer al mismo tenant; nunca se permite asignar roles `superadmin` desde formularios o endpoints de negocio.
+- La cantidad de usuarios activos incluye al administrador propietario y se limita por `Subscription -> Plan.max_users`. Crear o reactivar usuarios requiere suscripción activa, plan activo y cupo disponible; al alcanzar el límite, el backend rechaza la operación y el frontend informa el cupo restante.
+
 ---
 
 ### 📝 CHANGELOG
@@ -1549,3 +1556,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.8 | Sept 2026 | Nueva sección `/current-accounts` para consultar movimientos de clientes y proveedores; abonos de clientes auditables con persistencia, asiento contable y migración `AddCustomerAccountPayments`. |
 | 10.9 | Sept 2026 | Se aclara que las cuentas corrientes de clientes son los fiados existentes y se corrige la normalización de fechas del gráfico semanal para evitar ingresos en cero. |
 | 10.10 | Sept 2026 | Auditoría SuperAdmin y multi-tenant: se cerró la creación privilegiada de usuarios, se validaron relaciones por tenant, se endurecieron entitlements, se actualizó el catálogo de módulos y se documentaron los planes actuales. |
+| 10.11 | Sept 2026 | Se corrigió el login de la cuenta SuperAdmin de plataforma, se hizo reparable el seed de credenciales y se implementó la creación de usuarios del tenant con roles restringidos y límite según `max_users` del plan. |
