@@ -13,12 +13,14 @@ const tenant_entity_1 = require("./entities/tenant.entity");
 const user_entity_1 = require("./entities/user.entity");
 const tenant_service_1 = require("./tenant.service");
 const tenant_controller_1 = require("./tenant.controller");
+const billing_history_entity_1 = require("../billing/entities/billing-history.entity");
+const system_settings_module_1 = require("../system-settings/system-settings.module");
 let TenantModule = class TenantModule {
 };
 exports.TenantModule = TenantModule;
 exports.TenantModule = TenantModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, user_entity_1.User])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, user_entity_1.User, billing_history_entity_1.BillingHistory]), system_settings_module_1.SystemSettingsModule],
         controllers: [tenant_controller_1.TenantController],
         providers: [tenant_service_1.TenantService],
         exports: [tenant_service_1.TenantService],

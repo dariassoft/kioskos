@@ -263,7 +263,12 @@ export default function PendingPaymentsPage() {
                               <span className="font-medium text-foreground">Alias/CBU:</span>{' '}
                               {item.transfer_alias ?? '—'}
                             </p>
-                            <p className="line-clamp-3">{item.transfer_notes ?? 'Sin comprobante informado'}</p>
+                            <p className="line-clamp-3">{item.transfer_notes ?? 'Sin referencia informada'}</p>
+                            {item.transfer_voucher && (
+                              <a href={item.transfer_voucher} target="_blank" rel="noreferrer" className="inline-flex text-amber-600 hover:underline font-medium">
+                                Ver comprobante adjunto
+                              </a>
+                            )}
                           </div>
                         ) : (
                           <p>{item.mp_init_point ?? 'Pago vía MercadoPago pendiente de confirmación'}</p>

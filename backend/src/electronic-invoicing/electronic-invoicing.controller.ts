@@ -7,6 +7,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { ElectronicInvoicingService } from './electronic-invoicing.service';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { GetTenantId } from '@common/decorators/get-tenant.decorator';
+import { RequiresFeature } from '@common/decorators/feature.decorator';
+import { FeatureGuard } from '@common/guards/feature.guard';
 import {
   SaveAfipCredentialsDto,
   GenerateInvoiceDto,
@@ -15,8 +17,9 @@ import {
 
 @ApiTags('electronic-invoicing')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, FeatureGuard)
 @Controller('electronic-invoicing')
+@RequiresFeature('electronic_invoicing')
 export class ElectronicInvoicingController {
   constructor(
     private readonly eiService: ElectronicInvoicingService,

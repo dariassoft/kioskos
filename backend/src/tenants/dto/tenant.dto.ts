@@ -4,8 +4,11 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsInt,
+  IsIn,
   MaxLength,
   MinLength,
+  Min,
 } from 'class-validator';
 import { TenantStatus } from '../entities/tenant.entity';
 
@@ -50,6 +53,19 @@ export class CreateTenantDto {
   @IsString()
   @IsNotEmpty()
   plan_id: string;
+
+  @IsIn(['trial', 'paid'])
+  @IsOptional()
+  activation_mode?: 'trial' | 'paid';
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  billing_period_months?: number;
+
+  @IsIn(['cash', 'transfer', 'bank', 'mercadopago'])
+  @IsOptional()
+  payment_method?: 'cash' | 'transfer' | 'bank' | 'mercadopago';
 }
 
 export class UpdateTenantStatusDto {

@@ -9,6 +9,8 @@ import { UserRole } from '../common/decorators/roles.decorator';
 import { Branch } from '../inventory/entities/branch.entity';
 import { Plan } from '../billing/entities/plan.entity';
 import { Subscription, SubscriptionStatus } from '../billing/entities/subscription.entity';
+import { BillingHistory, PaymentStatus } from '../billing/entities/billing-history.entity';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 @Injectable()
 export class TenantService {
@@ -16,6 +18,7 @@ export class TenantService {
     @InjectRepository(Tenant)
     private readonly tenantRepo: Repository<Tenant>,
     private readonly dataSource: DataSource,
+    private readonly systemSettings: SystemSettingsService,
   ) {}
 
   async findAll(): Promise<Tenant[]> {
@@ -57,9 +60,18 @@ export class TenantService {
       const userRepo = manager.getRepository(User);
       const branchRepo = manager.getRepository(Branch);
       const subscriptionRepo = manager.getRepository(Subscription);
+      const billingRepo = manager.getRepository(BillingHistory);
 
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+      const now = new Date();
+      const isPaid = data.activation_mode === 'paid';
+      const periodMonths = data.billing_period_months ?? 1;
+      const periodEndsAt = new Date(now);
+      if (isPaid) {
+        periodEndsAt.setMonth(periodEndsAt.getMonth() + periodMonths);
+      } else {
+        const trialDays = Number(await this.systemSettings.getSetting('trial_days')) || 3;
+        periodEndsAt.setDate(periodEndsAt.getDate() + trialDays);
+      }
 
       const tenant = await tenantRepo.save(tenantRepo.create({
         business_name: data.business_name,
@@ -68,8 +80,8 @@ export class TenantService {
         phone: data.phone,
         address: data.address,
         logo_url: data.logo_url,
-        status: TenantStatus.TRIAL,
-        trial_ends_at: trialEndsAt,
+        status: isPaid ? TenantStatus.ACTIVE : TenantStatus.TRIAL,
+        trial_ends_at: isPaid ? undefined : periodEndsAt,
       }));
 
       const branch = await branchRepo.save(branchRepo.create({
@@ -92,15 +104,29 @@ export class TenantService {
       const subscription = await subscriptionRepo.save(subscriptionRepo.create({
         tenant_id: tenant.id,
         plan_id: plan.id,
-        start_date: new Date(),
-        end_date: trialEndsAt,
-        next_billing_date: trialEndsAt,
-        auto_renew: false,
+        start_date: now,
+        end_date: periodEndsAt,
+        next_billing_date: periodEndsAt,
+        auto_renew: isPaid,
+        last_payment_date: isPaid ? now : undefined,
         locked_price: Number(plan.price_monthly),
         locked_plan_name: plan.name,
         billing_day: 10,
         status: SubscriptionStatus.ACTIVE,
       }));
+
+      if (isPaid) {
+        await billingRepo.save(billingRepo.create({
+          tenant_id: tenant.id,
+          amount: Number(plan.price_monthly) * periodMonths,
+          payment_status: PaymentStatus.PAID,
+          payment_method: data.payment_method ?? 'cash',
+          plan_id: plan.id,
+          plan_name: plan.name,
+          billing_period_start: now,
+          billing_period_end: periodEndsAt,
+        }));
+      }
 
       const { password_hash: _passwordHash, ...ownerProfile } = owner;
       return { tenant, owner: ownerProfile, branch, subscription };

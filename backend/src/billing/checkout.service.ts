@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
-import MercadoPago, { PreApproval, Payment } from 'mercadopago';
+import MercadoPago, { PreApproval, Payment, Preference } from 'mercadopago';
 import { Plan } from '@billing/entities/plan.entity';
 import { Subscription } from '@billing/entities/subscription.entity';
 import { BillingHistory, PaymentStatus } from '@billing/entities/billing-history.entity';
@@ -19,6 +19,7 @@ import { SystemSettingsService } from '../system-settings/system-settings.servic
 import { PromotionService } from './promotion.service';
 import { BillingService } from './billing.service';
 import { SubscriptionStatus } from './entities/subscription.entity';
+import { Branch } from '../inventory/entities/branch.entity';
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
@@ -37,6 +38,8 @@ export class CheckoutService {
     private readonly subscriptionRepo: Repository<Subscription>,
     @InjectRepository(BillingHistory)
     private readonly billingRepo: Repository<BillingHistory>,
+    @InjectRepository(Branch)
+    private readonly branchRepo: Repository<Branch>,
     private readonly notificationsGateway: NotificationsGateway,
     private readonly mailService: MailService,
     private readonly config: ConfigService,
@@ -53,7 +56,7 @@ export class CheckoutService {
   // PLANES PUBLICOS
   // ==========================================
   async getPublicPlans(): Promise<Plan[]> {
-    return this.planRepo.find({ where: { is_active: true }, order: { price_monthly: 'ASC' } });
+    return this.billingService.getEffectivePublicPlans();
   }
   // ==========================================
   // INICIAR CHECKOUT
@@ -82,16 +85,14 @@ export class CheckoutService {
     // Calcular prorrateo día 10
     const { prorated_amount } = this.billingService.calculateProration(finalPrice, new Date());
 
-    // Solo el plan gratuito puede activarse sin un pago confirmado. El cliente
-    // nunca puede convertir un plan pago en una prueba enviando `trial`.
-    if (dto.payment_method === 'trial' && Number(plan.price_monthly) > 0) {
-      throw new BadRequestException('El período de prueba solo está disponible para el plan gratuito');
+    if ((await this.systemSettings.getSetting('allow_registrations')) !== 'true') {
+      throw new BadRequestException('El registro de nuevos negocios está temporalmente deshabilitado');
     }
 
     const temp_password_hash = await bcrypt.hash(dto.password, 12);
     const pending = this.pendingRepo.create({
       plan_id: dto.plan_id,
-      amount: prorated_amount, // Primer cobro = prorrateo
+      amount: dto.payment_method === 'trial' ? 0 : prorated_amount,
       business_name: dto.business_name,
       owner_email: dto.owner_email,
       owner_name: dto.owner_name,
@@ -99,6 +100,7 @@ export class CheckoutService {
       tax_id: dto.tax_id,
       temp_password_hash,
       payment_method: dto.payment_method,
+      auto_renew: dto.payment_method === 'mercadopago' && dto.auto_renew === true,
       status: PendingSubscriptionStatus.PENDING,
       referred_by_code: dto.referred_by_code,
     });
@@ -106,22 +108,31 @@ export class CheckoutService {
 
 
     // Plan gratuito -> activar directo
+    if (dto.payment_method === 'trial') {
+      savedPending.status = PendingSubscriptionStatus.APPROVED;
+      await this.pendingRepo.save(savedPending);
+      await this.activateAccount(savedPending, 'trial', promo);
+      await this.mailService.sendWelcomeEmail(savedPending.owner_email, savedPending.business_name);
+      return { pending_id: savedPending.id, payment_method: 'trial', is_free: true };
+    }
     if (Number(plan.price_monthly) === 0) {
       savedPending.status = PendingSubscriptionStatus.APPROVED;
       await this.pendingRepo.save(savedPending);
       await this.activateAccount(savedPending, dto.payment_method, promo);
       await this.mailService.sendWelcomeEmail(savedPending.owner_email, savedPending.business_name);
-      return { pending_id: savedPending.id, payment_method: dto.payment_method, is_free: Number(plan.price_monthly) === 0 || dto.payment_method === 'trial' };
+      return { pending_id: savedPending.id, payment_method: dto.payment_method, is_free: true };
     }
     if (dto.payment_method === 'mercadopago') {
-      return this.createMercadoPagoSubscription(savedPending, plan, promo);
+      return savedPending.auto_renew
+        ? this.createMercadoPagoSubscription(savedPending, plan, promo)
+        : this.createMercadoPagoOneTimePayment(savedPending, plan, promo);
     }
     return this.createTransferInstructions(savedPending);
   }
   // ─── MercadoPago: suscripcion recurrente mensual ──────────────────────────
   private async createMercadoPagoSubscription(pending: PendingSubscription, plan: Plan, promo?: any): Promise<any> {
     const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
-    const preApprovalClient = new PreApproval(this.mp);
+    const preApprovalClient = new PreApproval(await this.getMercadoPagoClient());
 
     // Precio a cobrar: si hay promo, usar precio promocional
     let chargeAmount = Number(pending.amount); // Ya tiene prorrateo calculado
@@ -153,20 +164,65 @@ export class CheckoutService {
     return {
       pending_id: pending.id,
       payment_method: 'mercadopago',
+      auto_renew: true,
       mp_init_point: preApproval.init_point ?? '',
       sandbox: this.isSandbox,
       promo_applied: promo ? { name: promo.name, price: recurringAmount } : null,
     };
   }
+
+  private async createMercadoPagoOneTimePayment(pending: PendingSubscription, plan: Plan, promo?: any): Promise<any> {
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
+    const preferenceClient = new Preference(await this.getMercadoPagoClient());
+    const amount = Number(pending.amount);
+    const preference = await preferenceClient.create({
+      body: {
+        items: [{
+          id: plan.id,
+          title: `Kioskos & Despenzas - Plan ${plan.name}`,
+          description: promo ? `Primer período con promoción ${promo.name}` : 'Primer período de suscripción',
+          quantity: 1,
+          currency_id: 'ARS',
+          unit_price: amount,
+        }],
+        payer: { email: pending.owner_email },
+        external_reference: pending.id,
+        back_urls: {
+          success: `${frontendUrl}/checkout/success?pending=${pending.id}`,
+          pending: `${frontendUrl}/checkout/pending?pending=${pending.id}`,
+          failure: `${frontendUrl}/checkout/failure?pending=${pending.id}`,
+        },
+        auto_return: 'approved',
+        notification_url: `${this.config.get<string>('APP_URL') ?? 'http://localhost:3000'}/api/v1/checkout/webhook/mercadopago`,
+      },
+    });
+    pending.mp_preference_id = preference.id ?? '';
+    pending.mp_init_point = preference.init_point ?? '';
+    await this.pendingRepo.save(pending);
+    this.logger.log(`Pago único MP creado: ${preference.id} para ${pending.owner_email} ($${amount})`);
+    return {
+      pending_id: pending.id,
+      payment_method: 'mercadopago',
+      auto_renew: false,
+      mp_init_point: preference.init_point ?? '',
+      sandbox: this.isSandbox,
+      promo_applied: promo ? { name: promo.name, price: amount } : null,
+    };
+  }
   private async createTransferInstructions(pending: PendingSubscription): Promise<any> {
-    const alias = this.config.get<string>('TRANSFER_ALIAS') ?? 'kioskos.despenzas';
-    const cbu = this.config.get<string>('TRANSFER_CBU') ?? '0000000000000000000000';
+    const paymentConfig = await this.systemSettings.getPlatformPaymentConfig();
+    const configuredAccounts = paymentConfig.transfer_accounts.filter((account) => account.active !== false);
+    const accounts = configuredAccounts.length > 0
+      ? configuredAccounts
+      : [{ name: 'Cuenta principal', alias: this.config.get<string>('TRANSFER_ALIAS') ?? 'kioskos.despenzas', cbu: this.config.get<string>('TRANSFER_CBU') ?? '' }];
+    const primary = accounts[0];
     const instructions = {
       pending_id: pending.id,
       payment_method: 'transfer',
       transfer_data: {
-        alias,
-        cbu,
+        alias: String(primary.alias ?? ''),
+        cbu: String(primary.cbu ?? ''),
+        accounts,
         amount: Number(pending.amount),
         reference: `KD-${pending.id.split('-')[0].toUpperCase()}`,
       },
@@ -194,7 +250,7 @@ export class CheckoutService {
   private async handlePreApprovalWebhook(preApprovalId: string): Promise<void> {
     if (!preApprovalId) return;
     try {
-      const preApprovalClient = new PreApproval(this.mp);
+      const preApprovalClient = new PreApproval(await this.getMercadoPagoClient());
       const preApproval = await preApprovalClient.get({ id: preApprovalId });
       if (preApproval.status !== 'authorized') return;
       const pendingId = preApproval.external_reference;
@@ -214,13 +270,26 @@ export class CheckoutService {
   private async handlePaymentWebhook(paymentId: string): Promise<void> {
     if (!paymentId) return;
     try {
-      const paymentClient = new Payment(this.mp);
+      const paymentClient = new Payment(await this.getMercadoPagoClient());
       const payment = await paymentClient.get({ id: paymentId as any });
       if (payment.status !== 'approved') return;
       const pendingId = payment.external_reference;
       if (!pendingId) return;
       const pending = await this.pendingRepo.findOne({ where: { id: pendingId as string } });
-      if (!pending || !pending.tenant_id) return;
+      if (!pending) return;
+      if (!pending.tenant_id) {
+        pending.mp_payment_id = String(paymentId);
+        pending.status = PendingSubscriptionStatus.APPROVED;
+        await this.pendingRepo.save(pending);
+        await this.activateAccount(pending, 'mercadopago');
+        await this.mailService.sendWelcomeEmail(pending.owner_email, pending.business_name);
+        this.logger.log(`Pago único aprobado -> cuenta activada: ${pending.owner_email}`);
+        return;
+      }
+      const alreadyRecorded = await this.billingRepo.findOne({
+        where: { tenant_id: pending.tenant_id, invoice_url: String(paymentId) },
+      });
+      if (alreadyRecorded) return;
       const subscription = await this.subscriptionRepo.findOne({
         where: { tenant_id: pending.tenant_id },
         order: { end_date: 'DESC' },
@@ -255,6 +324,7 @@ export class CheckoutService {
     }
     pending.transfer_alias = dto.transfer_alias;
     pending.transfer_notes = dto.transfer_notes ?? '';
+    pending.transfer_voucher = dto.transfer_voucher ?? '';
     pending.status = PendingSubscriptionStatus.MANUAL_PENDING;
     await this.pendingRepo.save(pending);
     this.notificationsGateway.sendPendingPaymentAlert({
@@ -266,6 +336,13 @@ export class CheckoutService {
     });
     this.logger.log(`Transferencia manual notificada: ${pending.owner_email} -> ${dto.transfer_alias}`);
     return { message: 'Tu solicitud fue recibida. Verificaremos la transferencia y activaremos tu cuenta en las proximas horas habiles.' };
+  }
+
+  private async getMercadoPagoClient(): Promise<MercadoPago> {
+    const configuredToken = await this.systemSettings.getSetting('platform_mp_access_token');
+    const accessToken = configuredToken || this.config.get<string>('MP_ACCESS_TOKEN') || '';
+    if (!accessToken) throw new BadRequestException('Mercado Pago de la plataforma no está configurado');
+    return new MercadoPago({ accessToken });
   }
   // ==========================================
   // ESTADO (polling)
@@ -297,23 +374,30 @@ export class CheckoutService {
       if (referrer) referred_by_id = referrer.id;
     }
 
-    const trialDays = await this.systemSettings.getSetting('trial_days');
+    const trialDays = Number(await this.systemSettings.getSetting('trial_days')) || 3;
+    const isTrial = paymentMethod === 'trial';
     const trial_ends_at = new Date();
-    trial_ends_at.setDate(trial_ends_at.getDate() + (Number(trialDays) || 3));
+    trial_ends_at.setDate(trial_ends_at.getDate() + trialDays);
 
     const tenant = this.tenantRepo.create({
       business_name: pending.business_name,
       owner_email: pending.owner_email,
       tax_id: pending.tax_id ?? undefined,
       phone: pending.owner_phone ?? undefined,
-      status: paymentMethod === 'trial' ? TenantStatus.TRIAL : TenantStatus.ACTIVE,
+      status: isTrial ? TenantStatus.TRIAL : TenantStatus.ACTIVE,
       referral_code,
       referred_by_id,
-      trial_ends_at,
+      trial_ends_at: isTrial ? trial_ends_at : undefined,
     });
     const savedTenant = await this.tenantRepo.save(tenant);
+    const branch = await this.branchRepo.save(this.branchRepo.create({
+      tenant_id: savedTenant.id,
+      name: 'Casa Central',
+      is_main_branch: true,
+    }));
     await this.userRepo.save(this.userRepo.create({
       tenant_id: savedTenant.id,
+      branch_id: branch.id,
       name: pending.owner_name,
       email: pending.owner_email,
       password_hash: pending.temp_password_hash,
@@ -339,7 +423,8 @@ export class CheckoutService {
     }
 
     const now = new Date();
-    const { first_end_date } = this.billingService.calculateProration(lockedPrice, now);
+    const { first_end_date: proratedEndDate } = this.billingService.calculateProration(lockedPrice, now);
+    const first_end_date = isTrial ? trial_ends_at : proratedEndDate;
 
     // Referral benefits
     const benefitEnabled = await this.systemSettings.getSetting('referral_benefit_enabled');
@@ -374,7 +459,7 @@ export class CheckoutService {
       billing_day: 10,
       start_date: now,
       end_date: first_end_date,
-      auto_renew: true,
+      auto_renew: pending.auto_renew === true,
       status: SubscriptionStatus.ACTIVE,
       last_payment_date: (paymentMethod !== 'free' && paymentMethod !== 'trial') ? now : (undefined as any),
       next_billing_date: first_end_date,
@@ -383,7 +468,7 @@ export class CheckoutService {
       promotion_id: promoId,
       price_after_promo: priceAfterPromo,
       promo_ends_at: promoEndsAt,
-      mp_preapproval_id: pending.mp_preference_id || undefined,
+      mp_preapproval_id: pending.auto_renew ? (pending.mp_preference_id || undefined) : undefined,
     }));
 
     if (paymentMethod !== 'free' && paymentMethod !== 'trial') {

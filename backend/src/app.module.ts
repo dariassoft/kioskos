@@ -20,6 +20,7 @@ import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { ProductionModule } from './production/production.module';
 import { TenantMiddleware } from './tenants/tenant.middleware';
+import { FeatureGuard } from './common/guards/feature.guard';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { TenantMiddleware } from './tenants/tenant.middleware';
     ExpensesModule,
     ProductionModule,
   ],
+  providers: [FeatureGuard],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

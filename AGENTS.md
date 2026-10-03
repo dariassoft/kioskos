@@ -4,7 +4,7 @@
 
 ---
 
-## 🚦 ESTADO DEL PROYECTO — Última actualización: Septiembre 2026
+## 🚦 ESTADO DEL PROYECTO — Última actualización: Octubre 2026
 
 | Fase | Estado | Descripción |
 |---|---|---|
@@ -22,8 +22,33 @@
 | **Fase 12** — Promociones, Referidos y Billing Avanzado | ✅ **COMPLETA** | Promotions, referral codes, prorrateo, upcoming charges, pending payments |
 | **Fase 13** — Gastos, System Settings y PWA | ✅ **COMPLETA** | Módulo de gastos, system-settings, PWA instalable, mail service |
 | **Fase 14** — Producción y Fraccionamiento | ✅ **COMPLETA** | Recetas (BOM), órdenes de producción, product_type, costeo prorrateado |
+| **Fase 15** — Integridad de planes y entitlements | 🟡 **EN DESARROLLO** | Precios centralizados, catálogo canónico de módulos, llaves globales, trial configurable y provisión manual paga |
 
 > **Estado general:** El sistema es un SaaS completo en producción (deploy con Dokploy + `docker-compose.prod.yml`). Documentación de usuario AFIP en `COMO-USAR-AFIP.md` y resumen técnico en `FASE-9-RESUMEN.md`.
+
+### 🔐 Fase 15 — Integridad de planes, precios y módulos (Octubre 2026)
+
+Implementado:
+
+- La landing y el checkout consumen exclusivamente `GET /checkout/plans`; se eliminó el fallback de precios ficticios.
+- `BillingService` normaliza los planes al catálogo canónico de 18 módulos y sincroniza `locked_price`/`locked_plan_name` de las suscripciones activas al actualizar un plan.
+- `SystemSettingsService` administra una llave global `feature_<modulo>` para cada módulo canónico; la respuesta pública expone su estado efectivo.
+- `FeatureGuard` + `@RequiresFeature()` valida plan, suscripción, tenant, vigencia y llave global para Inventario, POS, Compras, Contabilidad, Reportes, Gastos, Producción, AFIP e integraciones de pago.
+- `trial_days` se usa tanto en checkout como en la provisión manual. `POST /tenants` permite elegir prueba o período pago de 1, 3, 6 o 12 meses y registra el pago manual.
+- La activación por checkout crea la sucursal inicial `Casa Central`, igual que la provisión de SuperAdmin.
+- Settings muestra todos los módulos canónicos y Planes invalida las cachés públicas al guardar cambios.
+- El checkout de MercadoPago permite autorizar explícitamente el débito mensual automático. Con autorización crea una suscripción `PreApproval`; sin autorización crea un pago único mediante `Preference` y la renovación queda manual.
+- `PendingSubscription.auto_renew` conserva el consentimiento del cliente; la suscripción activa refleja `auto_renew` y solo guarda `mp_preapproval_id` cuando corresponde. Los webhooks de pagos únicos activan la cuenta y los recurrentes extienden el período.
+- La migración `AddCheckoutAutoRenew1804000000000` agrega la persistencia del consentimiento de renovación automática.
+- El entorno local tiene las migraciones de IVA y cuentas corrientes aplicadas; la API protegida de Inventario fue verificada con respuesta `200`.
+
+Pendiente / en desarrollo:
+
+- Añadir pruebas automatizadas de contrato para landing→checkout, cambios de precios, trial, provisión paga, aislamiento multi-tenant y llaves globales.
+- Aplicar `FeatureGuard` a endpoints secundarios aún no agrupados por módulo, como algunas operaciones específicas de cuentas corrientes y sucursales.
+- Validar firma e idempotencia completa de webhooks de MercadoPago antes de un entorno productivo.
+- Completar la pantalla de gestión/cancelación de autorizaciones recurrentes para el cliente y probar los webhooks reales de `PreApproval` y pagos aprobados.
+- Mantener `DB_RUN_MIGRATIONS=true` durante el primer arranque de cada entorno VPS nuevo y revisar el estado de migraciones.
 
 ---
 
@@ -1566,3 +1591,4 @@ Si una regla de la carpeta `/skills` contradice una instrucción del usuario, se
 | 10.10 | Sept 2026 | Auditoría SuperAdmin y multi-tenant: se cerró la creación privilegiada de usuarios, se validaron relaciones por tenant, se endurecieron entitlements, se actualizó el catálogo de módulos y se documentaron los planes actuales. |
 | 10.11 | Sept 2026 | Se corrigió el login de la cuenta SuperAdmin de plataforma, se hizo reparable el seed de credenciales y se implementó la creación de usuarios del tenant con roles restringidos y límite según `max_users` del plan. |
 | 10.12 | Sept 2026 | Se separó físicamente la identidad SuperAdmin de cualquier tenant, se agregó provisión atómica de negocios de prueba y se documentó el alcance exclusivo del panel de plataforma. |
+| 10.13 | Oct 2026 | Integridad de planes: catálogo canónico de 18 módulos, precios de planes sincronizados con suscripciones activas, trial configurable en checkout/provisión manual, llaves globales y `FeatureGuard`; landing sin precios fallback y Settings con todos los módulos. |

@@ -369,75 +369,7 @@ function PlanCard({ plan, isPopular, trialDays }: { plan: PublicPlan; isPopular:
 
 function PricingSection({ plans: fetchedPlans, trialDays }: { plans: PublicPlan[]; trialDays: string }) {
   const popularIndex = 1
-  
-  const mockPlans: PublicPlan[] = [
-    { 
-      id: 'plan_emprendedor', 
-      name: 'Emprendedor', 
-      description: 'Ideal para quienes recién comienzan su negocio.', 
-      price_monthly: 8500, 
-      max_branches: 1, 
-      max_users: 1, 
-      features: { 
-        pos_terminal: true, 
-        inventory: true, 
-        barcode_scanner: true, 
-        customers_credit: true, 
-        reports_bi: true,
-        automated_accounting: false,
-        electronic_invoicing: false,
-        email_notifications: true,
-        expenses_management: false,
-      } 
-    },
-    { 
-      id: 'plan_negocio', 
-      name: 'Negocio', 
-      description: 'Para comercios en crecimiento con múltiples empleados.', 
-      price_monthly: 15000, 
-      max_branches: 3, 
-      max_users: 3, 
-      features: { 
-        pos_terminal: true, 
-        inventory: true, 
-        barcode_scanner: true, 
-        customers_credit: true, 
-        reports_bi: true,
-        automated_accounting: true,
-        electronic_invoicing: true,
-        multi_branch: true,
-        export_pdf_excel: true,
-        email_notifications: true,
-        expenses_management: true,
-      } 
-    },
-    { 
-      id: 'plan_profesional', 
-      name: 'Profesional', 
-      description: 'La solución completa para cadenas y grandes comercios.', 
-      price_monthly: 25000, 
-      max_branches: 9999, 
-      max_users: 9999, 
-      features: { 
-        pos_terminal: true, 
-        inventory: true, 
-        barcode_scanner: true, 
-        customers_credit: true, 
-        reports_bi: true,
-        automated_accounting: true,
-        electronic_invoicing: true,
-        multi_branch: true,
-        export_pdf_excel: true,
-        ai_assistant: true,
-        daily_backups: true,
-        email_notifications: true,
-        priority_support: true,
-        expenses_management: true,
-      } 
-    },
-  ]
-
-  const plans: PublicPlan[] = fetchedPlans && fetchedPlans.length > 0 ? fetchedPlans : mockPlans
+  const plans = fetchedPlans
 
   return (
     <section id="planes" className="py-32 px-4 bg-white dark:bg-gray-950 relative">
@@ -569,6 +501,7 @@ export default function LandingPage() {
   const discount = systemInfo.referral_discount_percentage || '5'
   const months = systemInfo.referral_benefit_months || '1'
   const trialDays = systemInfo.trial_days || '3'
+  const referralsEnabled = systemInfo.referral_benefit_enabled !== 'false'
 
   // Smooth scroll para anclas
   useEffect(() => {
@@ -586,7 +519,7 @@ export default function LandingPage() {
       <HeroSection />
       <ShowcaseSection />
       <FeaturesSection />
-      <ReferralSection discount={discount} months={months} />
+      {referralsEnabled && <ReferralSection discount={discount} months={months} />}
       <PricingSection plans={plans} trialDays={trialDays} />
       <CtaSection />
       <Footer />

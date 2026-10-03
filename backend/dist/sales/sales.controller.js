@@ -21,6 +21,8 @@ const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const get_tenant_decorator_1 = require("../common/decorators/get-tenant.decorator");
+const feature_decorator_1 = require("../common/decorators/feature.decorator");
+const feature_guard_1 = require("../common/guards/feature.guard");
 const sales_dto_1 = require("./dto/sales.dto");
 const payment_account_dto_1 = require("./dto/payment-account.dto");
 let SalesController = class SalesController {
@@ -291,8 +293,9 @@ __decorate([
 exports.SalesController = SalesController = __decorate([
     (0, swagger_1.ApiTags)('sales'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, feature_guard_1.FeatureGuard),
     (0, common_1.Controller)('sales'),
+    (0, feature_decorator_1.RequiresFeature)('pos_terminal'),
     __metadata("design:paramtypes", [sales_service_1.SalesService])
 ], SalesController);
 //# sourceMappingURL=sales.controller.js.map

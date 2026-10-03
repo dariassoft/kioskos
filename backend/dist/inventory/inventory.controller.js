@@ -21,6 +21,8 @@ const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const get_tenant_decorator_1 = require("../common/decorators/get-tenant.decorator");
+const feature_decorator_1 = require("../common/decorators/feature.decorator");
+const feature_guard_1 = require("../common/guards/feature.guard");
 const inventory_dto_1 = require("./dto/inventory.dto");
 let InventoryController = class InventoryController {
     constructor(inventoryService) {
@@ -457,8 +459,9 @@ __decorate([
 exports.InventoryController = InventoryController = __decorate([
     (0, swagger_1.ApiTags)('inventory'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, feature_guard_1.FeatureGuard),
     (0, common_1.Controller)('inventory'),
+    (0, feature_decorator_1.RequiresFeature)('inventory'),
     __metadata("design:paramtypes", [inventory_service_1.InventoryService])
 ], InventoryController);
 //# sourceMappingURL=inventory.controller.js.map

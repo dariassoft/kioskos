@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, LessThan, Between, LessThanOrEqual, Not } from 'typeorm';
@@ -15,6 +16,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Tenant, TenantStatus, PLATFORM_TENANT_ID } from '../tenants/entities/tenant.entity';
 import { ConfigService } from '@nestjs/config';
 import MercadoPago, { PreApproval } from 'mercadopago';
+import { canonicalizeFeatures, normalizeFeatures, FeatureKey, FEATURE_DEPENDENCIES, getMissingFeatureDependencies } from './feature-catalog';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 // DTO interno para registrar un pago
 export interface RegisterPaymentDto {
@@ -32,7 +35,7 @@ export interface ChangePlanDto {
 }
 
 @Injectable()
-export class BillingService {
+export class BillingService implements OnModuleInit {
   private readonly logger = new Logger(BillingService.name);
 
   constructor(
@@ -45,12 +48,29 @@ export class BillingService {
     @InjectRepository(Tenant)
     private readonly tenantRepo: Repository<Tenant>,
     private readonly config: ConfigService,
+    private readonly systemSettings: SystemSettingsService,
   ) {
     const accessToken = this.config.get<string>('MP_ACCESS_TOKEN') ?? '';
     this.mp = new MercadoPago({ accessToken });
   }
 
   private readonly mp: MercadoPago;
+
+  async onModuleInit() {
+    const plans = await this.planRepo.find();
+    for (const plan of plans) {
+      const normalizedFeatures = normalizeFeatures(plan.features, plan.name);
+      const changed = JSON.stringify(plan.features ?? {}) !== JSON.stringify(normalizedFeatures);
+      if (changed) {
+        plan.features = normalizedFeatures;
+        await this.planRepo.save(plan);
+      }
+      await this.subscriptionRepo.update(
+        { plan_id: plan.id, status: SubscriptionStatus.ACTIVE },
+        { locked_price: Number(plan.price_monthly), locked_plan_name: plan.name },
+      );
+    }
+  }
 
   // ==========================================
   // PLANES
@@ -59,20 +79,72 @@ export class BillingService {
     return this.planRepo.find({ where: { is_active: true }, order: { price_monthly: 'ASC' } });
   }
 
+  async getEffectivePublicPlans(): Promise<Plan[]> {
+    const plans = await this.getActivePlans();
+    const globalStates = await this.getGlobalFeatureStates();
+    return plans.map((plan) => ({
+      ...plan,
+      features: Object.fromEntries(
+        Object.entries(normalizeFeatures(plan.features)).map(([feature, enabled]) => [
+          feature,
+          enabled
+            && globalStates[feature as FeatureKey]
+            && (FEATURE_DEPENDENCIES[feature as FeatureKey] ?? []).every((dependency) => globalStates[dependency]),
+        ]),
+      ),
+    }));
+  }
+
   async getAllPlans(): Promise<Plan[]> {
-    return this.planRepo.find({ order: { price_monthly: 'ASC' } });
+    const plans = await this.planRepo.find({ order: { price_monthly: 'ASC' } });
+    return plans.map((plan) => ({ ...plan, features: normalizeFeatures(plan.features, plan.name) }));
   }
 
   async createPlan(data: Partial<Plan>): Promise<Plan> {
-    const plan = this.planRepo.create(data);
+    const requestedFeatures = canonicalizeFeatures(data.features, data.name);
+    const missingDependencies = getMissingFeatureDependencies(requestedFeatures);
+    if (missingDependencies.length > 0) {
+      throw new BadRequestException(this.formatFeatureDependencyError(missingDependencies));
+    }
+    const plan = this.planRepo.create({
+      ...data,
+      features: normalizeFeatures(requestedFeatures, data.name),
+    });
     return this.planRepo.save(plan);
+  }
+
+  private formatFeatureDependencyError(missing: Array<{ feature: FeatureKey; requires: FeatureKey }>): string {
+    return `No se puede habilitar ${missing.map((item) => `${item.feature} sin ${item.requires}`).join(', ')}.`;
   }
 
   async updatePlan(id: string, data: Partial<Plan>): Promise<Plan> {
     const plan = await this.planRepo.findOne({ where: { id } });
     if (!plan) throw new NotFoundException(`Plan ${id} no encontrado`);
-    Object.assign(plan, data);
-    return this.planRepo.save(plan);
+    const requestedFeatures = data.features
+      ? canonicalizeFeatures(data.features, data.name ?? plan.name)
+      : plan.features;
+    const missingDependencies = getMissingFeatureDependencies(requestedFeatures);
+    if (missingDependencies.length > 0) {
+      throw new BadRequestException(this.formatFeatureDependencyError(missingDependencies));
+    }
+    Object.assign(plan, {
+      ...data,
+      features: data.features ? normalizeFeatures(requestedFeatures, data.name ?? plan.name) : plan.features,
+    });
+    const savedPlan = await this.planRepo.save(plan);
+
+    // El precio y el nombre vigentes del plan también aplican a suscripciones activas.
+    // Los históricos de BillingHistory conservan su importe original.
+    if (data.price_monthly !== undefined || data.name !== undefined) {
+      await this.subscriptionRepo.update(
+        { plan_id: id, status: SubscriptionStatus.ACTIVE },
+        {
+          ...(data.price_monthly !== undefined ? { locked_price: data.price_monthly } : {}),
+          ...(data.name !== undefined ? { locked_plan_name: data.name } : {}),
+        },
+      );
+    }
+    return savedPlan;
   }
 
   async togglePlanStatus(id: string): Promise<Plan> {
@@ -163,8 +235,23 @@ export class BillingService {
     subscriptionEnd.setHours(23, 59, 59, 999);
     if (subscriptionEnd < new Date()) return false;
     const plan = await this.planRepo.findOne({ where: { id: subscription.plan_id } });
-    if (!plan || !plan.is_active || !plan.features) return false;
-    return plan.features[feature] === true;
+    if (!plan || !plan.is_active) return false;
+    const canonicalFeature = feature.replace(/^feature_/, '') as FeatureKey;
+    const normalizedFeatures = normalizeFeatures(plan.features, plan.name);
+    if (normalizedFeatures[canonicalFeature] !== true) return false;
+    if (!(await this.systemSettings.isFeatureGloballyEnabled(canonicalFeature))) return false;
+    for (const dependency of FEATURE_DEPENDENCIES[canonicalFeature] ?? []) {
+      if (normalizedFeatures[dependency] !== true || !(await this.systemSettings.isFeatureGloballyEnabled(dependency))) return false;
+    }
+    return true;
+  }
+
+  private async getGlobalFeatureStates(): Promise<Record<string, boolean>> {
+    const states: Record<string, boolean> = {};
+    for (const feature of Object.keys(normalizeFeatures({}))) {
+      states[feature] = await this.systemSettings.isFeatureGloballyEnabled(feature);
+    }
+    return states;
   }
 
   // ==========================================
@@ -534,7 +621,7 @@ export class BillingService {
       // 2. Si tiene MercadoPago, intentar actualizar el monto de la suscripción recurrente
       if (sub.mp_preapproval_id) {
         try {
-          const preApprovalClient = new PreApproval(this.mp);
+          const preApprovalClient = new PreApproval(await this.getMercadoPagoClient());
           await preApprovalClient.update({
             id: sub.mp_preapproval_id,
             body: {
@@ -552,6 +639,13 @@ export class BillingService {
 
       await this.subscriptionRepo.save(sub);
     }
+  }
+
+  private async getMercadoPagoClient(): Promise<MercadoPago> {
+    const configuredToken = await this.systemSettings.getSetting('platform_mp_access_token');
+    const accessToken = configuredToken || this.config.get<string>('MP_ACCESS_TOKEN') || '';
+    if (!accessToken) throw new BadRequestException('Mercado Pago de la plataforma no está configurado');
+    return new MercadoPago({ accessToken });
   }
 
   // ==========================================

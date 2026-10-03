@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@api/client'
 import toast from 'react-hot-toast'
 import { CheckCircle, XCircle, X, Calendar, Users, GitBranch, Zap } from 'lucide-react'
+import { FEATURE_LABELS, PLAN_FEATURES } from '@api/checkout.api'
 
 export default function SubscriptionsPage() {
   const queryClient = useQueryClient()
   const [changePlanModal, setChangePlanModal] = useState<{ open: boolean; sub: any }>({ open: false, sub: null })
   const [selectedPlanId, setSelectedPlanId] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired'>('all')
 
   const { data: subscriptions = [], isLoading } = useQuery({
     queryKey: ['billing-subscriptions'],
@@ -17,6 +19,12 @@ export default function SubscriptionsPage() {
   const { data: plans = [] } = useQuery({
     queryKey: ['billing-plans'],
     queryFn: async () => (await apiClient.get('/billing/plans')).data,
+  })
+
+  const visibleSubscriptions = subscriptions.filter((subscription: any) => {
+    if (statusFilter === 'active') return !subscription.is_expired
+    if (statusFilter === 'expired') return subscription.is_expired
+    return true
   })
 
   const changePlan = useMutation({
@@ -45,6 +53,14 @@ export default function SubscriptionsPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Suscripciones</h1>
         <p className="text-muted-foreground text-sm mt-1">Gestión de planes por negocio — cambiar plan, activar o suspender</p>
+      </div>
+
+      <div className="flex justify-end">
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className="input w-full sm:w-48">
+          <option value="all">Todas las suscripciones</option>
+          <option value="active">Solo activas</option>
+          <option value="expired">Solo vencidas</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -78,20 +94,23 @@ export default function SubscriptionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {subscriptions.map((sub: any) => (
+               {visibleSubscriptions.map((sub: any) => (
                 <tr key={sub.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-medium text-foreground">{sub.tenant?.business_name ?? sub.tenant_id}</p>
                     <p className="text-xs text-muted-foreground">{sub.tenant?.owner_email}</p>
                   </td>
-                  <td className="px-4 py-3">
-                    {sub.plan ? (
+                    <td className="px-4 py-3">
+                      {sub.plan ? (
                       <div>
                         <p className="font-medium text-foreground">{sub.plan.name}</p>
                         <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
                           <span><Users className="w-3 h-3 inline mr-0.5" />{sub.plan.max_users}</span>
                           <span><GitBranch className="w-3 h-3 inline mr-0.5" />{sub.plan.max_branches}</span>
                         </div>
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          {PLAN_FEATURES.filter((feature) => sub.plan.features?.[feature]).slice(0, 3).map((feature) => FEATURE_LABELS[feature]).join(' · ')}
+                        </p>
                       </div>
                     ) : <span className="text-muted-foreground text-xs">Sin plan</span>}
                   </td>
@@ -175,6 +194,13 @@ export default function SubscriptionsPage() {
                       <span><Users className="w-3 h-3 inline mr-0.5" />{plan.max_users === 99 ? 'Ilimitados' : plan.max_users} usuarios</span>
                       <span><GitBranch className="w-3 h-3 inline mr-0.5" />{plan.max_branches} sucursal{plan.max_branches > 1 ? 'es' : ''}</span>
                     </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-3 border-t border-border pt-3">
+                      {PLAN_FEATURES.map((feature) => (
+                        <span key={feature} className={`text-xs ${plan.features?.[feature] ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                          {plan.features?.[feature] ? '✓' : '—'} {FEATURE_LABELS[feature]}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </label>
               ))}
@@ -196,4 +222,3 @@ export default function SubscriptionsPage() {
     </div>
   )
 }
-

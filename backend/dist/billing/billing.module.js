@@ -24,6 +24,7 @@ const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const user_entity_1 = require("../tenants/entities/user.entity");
 const notifications_module_1 = require("../notifications/notifications.module");
 const system_settings_module_1 = require("../system-settings/system-settings.module");
+const branch_entity_1 = require("../inventory/entities/branch.entity");
 let BillingModule = class BillingModule {
 };
 exports.BillingModule = BillingModule;
@@ -33,7 +34,7 @@ exports.BillingModule = BillingModule = __decorate([
             notifications_module_1.NotificationsModule,
             system_settings_module_1.SystemSettingsModule,
             typeorm_1.TypeOrmModule.forFeature([
-                plan_entity_1.Plan, subscription_entity_1.Subscription, billing_history_entity_1.BillingHistory, pending_subscription_entity_1.PendingSubscription, promotion_entity_1.Promotion, tenant_entity_1.Tenant, user_entity_1.User,
+                plan_entity_1.Plan, subscription_entity_1.Subscription, billing_history_entity_1.BillingHistory, pending_subscription_entity_1.PendingSubscription, promotion_entity_1.Promotion, tenant_entity_1.Tenant, user_entity_1.User, branch_entity_1.Branch,
             ]),
         ],
         controllers: [billing_controller_1.BillingController, checkout_controller_1.CheckoutController],

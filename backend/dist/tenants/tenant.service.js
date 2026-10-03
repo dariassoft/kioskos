@@ -56,10 +56,13 @@ const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const branch_entity_1 = require("../inventory/entities/branch.entity");
 const plan_entity_1 = require("../billing/entities/plan.entity");
 const subscription_entity_1 = require("../billing/entities/subscription.entity");
+const billing_history_entity_1 = require("../billing/entities/billing-history.entity");
+const system_settings_service_1 = require("../system-settings/system-settings.service");
 let TenantService = class TenantService {
-    constructor(tenantRepo, dataSource) {
+    constructor(tenantRepo, dataSource, systemSettings) {
         this.tenantRepo = tenantRepo;
         this.dataSource = dataSource;
+        this.systemSettings = systemSettings;
     }
     async findAll() {
         return this.tenantRepo.find({
@@ -98,8 +101,18 @@ let TenantService = class TenantService {
             const userRepo = manager.getRepository(user_entity_1.User);
             const branchRepo = manager.getRepository(branch_entity_1.Branch);
             const subscriptionRepo = manager.getRepository(subscription_entity_1.Subscription);
-            const trialEndsAt = new Date();
-            trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+            const billingRepo = manager.getRepository(billing_history_entity_1.BillingHistory);
+            const now = new Date();
+            const isPaid = data.activation_mode === 'paid';
+            const periodMonths = data.billing_period_months ?? 1;
+            const periodEndsAt = new Date(now);
+            if (isPaid) {
+                periodEndsAt.setMonth(periodEndsAt.getMonth() + periodMonths);
+            }
+            else {
+                const trialDays = Number(await this.systemSettings.getSetting('trial_days')) || 3;
+                periodEndsAt.setDate(periodEndsAt.getDate() + trialDays);
+            }
             const tenant = await tenantRepo.save(tenantRepo.create({
                 business_name: data.business_name,
                 owner_email: data.owner_email,
@@ -107,8 +120,8 @@ let TenantService = class TenantService {
                 phone: data.phone,
                 address: data.address,
                 logo_url: data.logo_url,
-                status: tenant_entity_1.TenantStatus.TRIAL,
-                trial_ends_at: trialEndsAt,
+                status: isPaid ? tenant_entity_1.TenantStatus.ACTIVE : tenant_entity_1.TenantStatus.TRIAL,
+                trial_ends_at: isPaid ? undefined : periodEndsAt,
             }));
             const branch = await branchRepo.save(branchRepo.create({
                 tenant_id: tenant.id,
@@ -128,15 +141,28 @@ let TenantService = class TenantService {
             const subscription = await subscriptionRepo.save(subscriptionRepo.create({
                 tenant_id: tenant.id,
                 plan_id: plan.id,
-                start_date: new Date(),
-                end_date: trialEndsAt,
-                next_billing_date: trialEndsAt,
-                auto_renew: false,
+                start_date: now,
+                end_date: periodEndsAt,
+                next_billing_date: periodEndsAt,
+                auto_renew: isPaid,
+                last_payment_date: isPaid ? now : undefined,
                 locked_price: Number(plan.price_monthly),
                 locked_plan_name: plan.name,
                 billing_day: 10,
                 status: subscription_entity_1.SubscriptionStatus.ACTIVE,
             }));
+            if (isPaid) {
+                await billingRepo.save(billingRepo.create({
+                    tenant_id: tenant.id,
+                    amount: Number(plan.price_monthly) * periodMonths,
+                    payment_status: billing_history_entity_1.PaymentStatus.PAID,
+                    payment_method: data.payment_method ?? 'cash',
+                    plan_id: plan.id,
+                    plan_name: plan.name,
+                    billing_period_start: now,
+                    billing_period_end: periodEndsAt,
+                }));
+            }
             const { password_hash: _passwordHash, ...ownerProfile } = owner;
             return { tenant, owner: ownerProfile, branch, subscription };
         });
@@ -162,6 +188,7 @@ exports.TenantService = TenantService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(tenant_entity_1.Tenant)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.DataSource])
+        typeorm_2.DataSource,
+        system_settings_service_1.SystemSettingsService])
 ], TenantService);
 //# sourceMappingURL=tenant.service.js.map

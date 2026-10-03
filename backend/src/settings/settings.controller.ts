@@ -15,6 +15,8 @@ import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles, UserRole } from '@common/decorators/roles.decorator';
+import { RequiresFeature } from '@common/decorators/feature.decorator';
+import { FeatureGuard } from '@common/guards/feature.guard';
 @ApiTags('settings')
 @Controller('settings')
 export class SettingsController {
@@ -111,7 +113,8 @@ export class SettingsController {
   }
 
   // MERCADOPAGO
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FeatureGuard)
+  @RequiresFeature('payment_integrations')
   @ApiBearerAuth('JWT-auth')
   @Get('mercadopago')
   @ApiOperation({ summary: 'Obtener configuración de MercadoPago del negocio' })
@@ -119,7 +122,8 @@ export class SettingsController {
     return this.mercadopagoService.get(tenantId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FeatureGuard)
+  @RequiresFeature('payment_integrations')
   @ApiBearerAuth('JWT-auth')
   @Post('mercadopago')
   @ApiOperation({ summary: 'Guardar configuración de MercadoPago del negocio' })
@@ -131,7 +135,8 @@ export class SettingsController {
   }
 
   // OAUTH MERCADOPAGO
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, FeatureGuard)
+  @RequiresFeature('payment_integrations')
   @ApiBearerAuth('JWT-auth')
   @Get('mercadopago/auth-url')
   @ApiOperation({ summary: 'Obtener URL para vincular cuenta de MercadoPago (OAuth)' })

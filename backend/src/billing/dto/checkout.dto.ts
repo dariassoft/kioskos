@@ -1,6 +1,6 @@
 import {
   IsString, IsEmail, IsNotEmpty, IsUUID,
-  IsOptional, MinLength, MaxLength, IsIn,
+  IsOptional, MinLength, MaxLength, IsIn, IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -47,6 +47,11 @@ export class CreateCheckoutDto {
   @IsIn(['mercadopago', 'transfer', 'trial'])
   payment_method: 'mercadopago' | 'transfer' | 'trial';
 
+  @ApiPropertyOptional({ description: 'Autorizar el débito mensual automático en MercadoPago' })
+  @IsBoolean()
+  @IsOptional()
+  auto_renew?: boolean;
+
   @ApiPropertyOptional({ example: 'ABC12345' })
   @IsString()
   @IsOptional()
@@ -66,6 +71,13 @@ export class ConfirmTransferDto {
   @ApiPropertyOptional({ example: 'Ref: 00012345' })
   @IsString()
   @IsOptional()
+  @MaxLength(500)
   transfer_notes?: string;
+
+  @ApiPropertyOptional({ description: 'Comprobante codificado como data URL' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(7_000_000)
+  transfer_voucher?: string;
 }
 

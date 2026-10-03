@@ -8,6 +8,8 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles, UserRole } from '../common/decorators/roles.decorator';
 import { GetTenantId } from '../common/decorators/get-tenant.decorator';
+import { RequiresFeature } from '../common/decorators/feature.decorator';
+import { FeatureGuard } from '../common/guards/feature.guard';
 import {
   CreateRecipeDto,
   UpdateRecipeDto,
@@ -16,8 +18,9 @@ import {
 
 @ApiTags('production')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureGuard)
 @Controller('production')
+@RequiresFeature('production')
 export class ProductionController {
   constructor(private readonly productionService: ProductionService) {}
 

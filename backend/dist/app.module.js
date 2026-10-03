@@ -28,6 +28,7 @@ const system_settings_module_1 = require("./system-settings/system-settings.modu
 const expenses_module_1 = require("./expenses/expenses.module");
 const production_module_1 = require("./production/production.module");
 const tenant_middleware_1 = require("./tenants/tenant.middleware");
+const feature_guard_1 = require("./common/guards/feature.guard");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -67,6 +68,7 @@ exports.AppModule = AppModule = __decorate([
             expenses_module_1.ExpensesModule,
             production_module_1.ProductionModule,
         ],
+        providers: [feature_guard_1.FeatureGuard],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

@@ -62,6 +62,10 @@ export class PendingSubscription {
   @Column({ type: 'varchar', length: 50 })
   payment_method: string; // 'mercadopago' | 'transfer'
 
+  /** El cliente autorizó cobros mensuales automáticos en MercadoPago. */
+  @Column({ type: 'boolean', default: false })
+  auto_renew: boolean;
+
   // ─── Datos de MercadoPago ─────────────────────────────────────────────────
   @Column({ type: 'varchar', length: 255, nullable: true })
   mp_preference_id: string; // ID de la preferencia MP
@@ -78,6 +82,9 @@ export class PendingSubscription {
 
   @Column({ type: 'text', nullable: true })
   transfer_notes: string; // Número de comprobante, referencia, etc.
+
+  @Column({ type: 'longtext', nullable: true })
+  transfer_voucher: string; // Comprobante enviado como data URL (imagen/PDF)
 
   // ─── Tenant creado tras confirmación ─────────────────────────────────────
   @Column({ type: 'varchar', length: 36, nullable: true })

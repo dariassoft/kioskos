@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient from '@api/client'
 import toast from 'react-hot-toast'
 import { Plus, X, Edit2, ToggleLeft, ToggleRight, Users, GitBranch, Check } from 'lucide-react'
-import { FEATURE_LABELS, PLAN_FEATURES } from '@/api/checkout.api'
+import { FEATURE_DEPENDENCIES, FEATURE_LABELS, PLAN_FEATURES } from '@/api/checkout.api'
 
 const FEATURES_LIST = PLAN_FEATURES.map((key) => ({ key, label: FEATURE_LABELS[key] }))
 
@@ -44,6 +44,7 @@ export default function PlansPage() {
     onSuccess: () => {
       toast.success(modal.plan ? 'Plan actualizado' : 'Plan creado')
       queryClient.invalidateQueries({ queryKey: ['billing-plans'] })
+      queryClient.invalidateQueries({ queryKey: ['public-plans'] })
       setModal({ open: false, plan: null })
     },
     onError: () => toast.error('Error al guardar el plan'),
@@ -54,6 +55,7 @@ export default function PlansPage() {
     onSuccess: () => {
       toast.success('Estado del plan actualizado')
       queryClient.invalidateQueries({ queryKey: ['billing-plans'] })
+      queryClient.invalidateQueries({ queryKey: ['public-plans'] })
     },
   })
 
@@ -75,7 +77,22 @@ export default function PlansPage() {
   }
 
   const toggleFeature = (key: string) => {
-    setForm((f) => ({ ...f, features: { ...f.features, [key]: !f.features[key] } }))
+    const enabling = !form.features[key]
+    const requirements = FEATURE_DEPENDENCIES[key] ?? []
+    if (enabling && requirements.some((requirement) => !form.features[requirement])) {
+      const labels = requirements.filter((requirement) => !form.features[requirement]).map((requirement) => FEATURE_LABELS[requirement]).join(', ')
+      toast.error(`Primero habilitá: ${labels}`)
+      return
+    }
+    setForm((f) => {
+      const features = { ...f.features, [key]: enabling }
+      if (!enabling) {
+        for (const [dependent, dependencies] of Object.entries(FEATURE_DEPENDENCIES)) {
+          if (dependencies.includes(key) && features[dependent]) features[dependent] = false
+        }
+      }
+      return { ...f, features }
+    })
   }
 
   const formatPrice = (v: number) =>
@@ -137,7 +154,7 @@ export default function PlansPage() {
               <div className="flex gap-4 text-sm">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Users className="w-3.5 h-3.5" />
-                  <span>{plan.max_users === 99 ? 'Ilimitados' : plan.max_users} usuarios</span>
+                  <span>{plan.max_users >= 9999 || plan.max_users === 99 ? 'Ilimitados' : plan.max_users} usuarios</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <GitBranch className="w-3.5 h-3.5" />
@@ -219,7 +236,12 @@ export default function PlansPage() {
                         className={`w-9 h-5 rounded-full relative transition-colors cursor-pointer ${form.features[key] ? 'bg-violet-600' : 'bg-muted'}`}>
                         <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${form.features[key] ? 'translate-x-4' : 'translate-x-0.5'}`} />
                       </div>
-                      <span className="text-sm text-foreground">{label}</span>
+                      <span className="text-sm text-foreground">
+                        {label}
+                        {(FEATURE_DEPENDENCIES[key] ?? []).length > 0 && (
+                          <span className="block text-[10px] text-muted-foreground">Requiere: {(FEATURE_DEPENDENCIES[key] ?? []).map((dependency) => FEATURE_LABELS[dependency]).join(', ')}</span>
+                        )}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -243,4 +265,3 @@ export default function PlansPage() {
     </div>
   )
 }
-

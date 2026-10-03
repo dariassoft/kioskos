@@ -11,6 +11,8 @@ import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles, UserRole } from '@common/decorators/roles.decorator';
 import { GetTenantId } from '@common/decorators/get-tenant.decorator';
+import { RequiresFeature } from '@common/decorators/feature.decorator';
+import { FeatureGuard } from '@common/guards/feature.guard';
 
 import {
   CreateSaleDto,
@@ -28,8 +30,9 @@ import { CreatePaymentAccountDto, UpdatePaymentAccountDto } from './dto/payment-
 
 @ApiTags('sales')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, FeatureGuard)
 @Controller('sales')
+@RequiresFeature('pos_terminal')
 export class SalesController {
   constructor(private readonly salesService: SalesService) {}
 

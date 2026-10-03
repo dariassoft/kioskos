@@ -57,33 +57,90 @@ const schedule_1 = require("@nestjs/schedule");
 const tenant_entity_1 = require("../tenants/entities/tenant.entity");
 const config_1 = require("@nestjs/config");
 const mercadopago_1 = __importStar(require("mercadopago"));
+const feature_catalog_1 = require("./feature-catalog");
+const system_settings_service_1 = require("../system-settings/system-settings.service");
 let BillingService = BillingService_1 = class BillingService {
-    constructor(planRepo, subscriptionRepo, billingRepo, tenantRepo, config) {
+    constructor(planRepo, subscriptionRepo, billingRepo, tenantRepo, config, systemSettings) {
         this.planRepo = planRepo;
         this.subscriptionRepo = subscriptionRepo;
         this.billingRepo = billingRepo;
         this.tenantRepo = tenantRepo;
         this.config = config;
+        this.systemSettings = systemSettings;
         this.logger = new common_1.Logger(BillingService_1.name);
         const accessToken = this.config.get('MP_ACCESS_TOKEN') ?? '';
         this.mp = new mercadopago_1.default({ accessToken });
     }
+    async onModuleInit() {
+        const plans = await this.planRepo.find();
+        for (const plan of plans) {
+            const normalizedFeatures = (0, feature_catalog_1.normalizeFeatures)(plan.features, plan.name);
+            const changed = JSON.stringify(plan.features ?? {}) !== JSON.stringify(normalizedFeatures);
+            if (changed) {
+                plan.features = normalizedFeatures;
+                await this.planRepo.save(plan);
+            }
+            await this.subscriptionRepo.update({ plan_id: plan.id, status: subscription_entity_1.SubscriptionStatus.ACTIVE }, { locked_price: Number(plan.price_monthly), locked_plan_name: plan.name });
+        }
+    }
     async getActivePlans() {
         return this.planRepo.find({ where: { is_active: true }, order: { price_monthly: 'ASC' } });
     }
+    async getEffectivePublicPlans() {
+        const plans = await this.getActivePlans();
+        const globalStates = await this.getGlobalFeatureStates();
+        return plans.map((plan) => ({
+            ...plan,
+            features: Object.fromEntries(Object.entries((0, feature_catalog_1.normalizeFeatures)(plan.features)).map(([feature, enabled]) => [
+                feature,
+                enabled
+                    && globalStates[feature]
+                    && (feature_catalog_1.FEATURE_DEPENDENCIES[feature] ?? []).every((dependency) => globalStates[dependency]),
+            ])),
+        }));
+    }
     async getAllPlans() {
-        return this.planRepo.find({ order: { price_monthly: 'ASC' } });
+        const plans = await this.planRepo.find({ order: { price_monthly: 'ASC' } });
+        return plans.map((plan) => ({ ...plan, features: (0, feature_catalog_1.normalizeFeatures)(plan.features, plan.name) }));
     }
     async createPlan(data) {
-        const plan = this.planRepo.create(data);
+        const requestedFeatures = (0, feature_catalog_1.canonicalizeFeatures)(data.features, data.name);
+        const missingDependencies = (0, feature_catalog_1.getMissingFeatureDependencies)(requestedFeatures);
+        if (missingDependencies.length > 0) {
+            throw new common_1.BadRequestException(this.formatFeatureDependencyError(missingDependencies));
+        }
+        const plan = this.planRepo.create({
+            ...data,
+            features: (0, feature_catalog_1.normalizeFeatures)(requestedFeatures, data.name),
+        });
         return this.planRepo.save(plan);
+    }
+    formatFeatureDependencyError(missing) {
+        return `No se puede habilitar ${missing.map((item) => `${item.feature} sin ${item.requires}`).join(', ')}.`;
     }
     async updatePlan(id, data) {
         const plan = await this.planRepo.findOne({ where: { id } });
         if (!plan)
             throw new common_1.NotFoundException(`Plan ${id} no encontrado`);
-        Object.assign(plan, data);
-        return this.planRepo.save(plan);
+        const requestedFeatures = data.features
+            ? (0, feature_catalog_1.canonicalizeFeatures)(data.features, data.name ?? plan.name)
+            : plan.features;
+        const missingDependencies = (0, feature_catalog_1.getMissingFeatureDependencies)(requestedFeatures);
+        if (missingDependencies.length > 0) {
+            throw new common_1.BadRequestException(this.formatFeatureDependencyError(missingDependencies));
+        }
+        Object.assign(plan, {
+            ...data,
+            features: data.features ? (0, feature_catalog_1.normalizeFeatures)(requestedFeatures, data.name ?? plan.name) : plan.features,
+        });
+        const savedPlan = await this.planRepo.save(plan);
+        if (data.price_monthly !== undefined || data.name !== undefined) {
+            await this.subscriptionRepo.update({ plan_id: id, status: subscription_entity_1.SubscriptionStatus.ACTIVE }, {
+                ...(data.price_monthly !== undefined ? { locked_price: data.price_monthly } : {}),
+                ...(data.name !== undefined ? { locked_plan_name: data.name } : {}),
+            });
+        }
+        return savedPlan;
     }
     async togglePlanStatus(id) {
         const plan = await this.planRepo.findOne({ where: { id } });
@@ -170,9 +227,26 @@ let BillingService = BillingService_1 = class BillingService {
         if (subscriptionEnd < new Date())
             return false;
         const plan = await this.planRepo.findOne({ where: { id: subscription.plan_id } });
-        if (!plan || !plan.is_active || !plan.features)
+        if (!plan || !plan.is_active)
             return false;
-        return plan.features[feature] === true;
+        const canonicalFeature = feature.replace(/^feature_/, '');
+        const normalizedFeatures = (0, feature_catalog_1.normalizeFeatures)(plan.features, plan.name);
+        if (normalizedFeatures[canonicalFeature] !== true)
+            return false;
+        if (!(await this.systemSettings.isFeatureGloballyEnabled(canonicalFeature)))
+            return false;
+        for (const dependency of feature_catalog_1.FEATURE_DEPENDENCIES[canonicalFeature] ?? []) {
+            if (normalizedFeatures[dependency] !== true || !(await this.systemSettings.isFeatureGloballyEnabled(dependency)))
+                return false;
+        }
+        return true;
+    }
+    async getGlobalFeatureStates() {
+        const states = {};
+        for (const feature of Object.keys((0, feature_catalog_1.normalizeFeatures)({}))) {
+            states[feature] = await this.systemSettings.isFeatureGloballyEnabled(feature);
+        }
+        return states;
     }
     async cancelSubscription(tenantId, reason) {
         const subscription = await this.getActiveSubscription(tenantId);
@@ -453,7 +527,7 @@ let BillingService = BillingService_1 = class BillingService {
             sub.price_after_promo = null;
             if (sub.mp_preapproval_id) {
                 try {
-                    const preApprovalClient = new mercadopago_1.PreApproval(this.mp);
+                    const preApprovalClient = new mercadopago_1.PreApproval(await this.getMercadoPagoClient());
                     await preApprovalClient.update({
                         id: sub.mp_preapproval_id,
                         body: {
@@ -470,6 +544,13 @@ let BillingService = BillingService_1 = class BillingService {
             }
             await this.subscriptionRepo.save(sub);
         }
+    }
+    async getMercadoPagoClient() {
+        const configuredToken = await this.systemSettings.getSetting('platform_mp_access_token');
+        const accessToken = configuredToken || this.config.get('MP_ACCESS_TOKEN') || '';
+        if (!accessToken)
+            throw new common_1.BadRequestException('Mercado Pago de la plataforma no está configurado');
+        return new mercadopago_1.default({ accessToken });
     }
     calculateProration(fullPrice, subscriptionDate) {
         const billingDay = 10;
@@ -505,6 +586,7 @@ exports.BillingService = BillingService = BillingService_1 = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        system_settings_service_1.SystemSettingsService])
 ], BillingService);
 //# sourceMappingURL=billing.service.js.map

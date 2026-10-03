@@ -6,7 +6,8 @@ import {
   Lock, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Copy,
   QrCode, Banknote, ChevronRight, RefreshCw, FlaskConical,
 } from 'lucide-react'
-import checkoutApi, { type StartCheckoutPayload, type SandboxInfo } from '@api/checkout.api'
+import checkoutApi, { type CheckoutResult, type StartCheckoutPayload, type SandboxInfo } from '@api/checkout.api'
+import systemSettingsApi from '@api/system-settings.api'
 
 // ─── Paso 1: Datos personales ──────────────────────────────────────────────────
 function StepPersonalData({
@@ -70,11 +71,11 @@ function StepPersonalData({
       <button onClick={handleNext} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
         Continuar al pago <ChevronRight className="w-4 h-4" />
       </button>
-      {/* Aviso de suscripción automática */}
+      {/* Información del período contratado */}
       <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-xs">
         <RefreshCw className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
         <p>
-          <strong>Suscripción mensual automática:</strong> Se cobrará <strong>${planPrice.toLocaleString('es-AR')}/mes</strong> de forma recurrente cada 30 días hasta que canceles. Podés cancelar en cualquier momento desde tu cuenta de MercadoPago o contactándonos.
+          <strong>Suscripción mensual:</strong> En el siguiente paso vas a elegir si querés autorizar el débito automático mensual de <strong>${planPrice.toLocaleString('es-AR')}</strong> o pagar solo este período.
         </p>
       </div>
     </div>
@@ -106,15 +107,17 @@ function SandboxPanel({ info }: { info: SandboxInfo }) {
 }
 
 // ─── Paso 2: Método de pago ────────────────────────────────────────────────────
-function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<StartCheckoutPayload>; planPrice: number; onBack: () => void }) {
+function StepPaymentMethod({ formData, planPrice, trialDays, onBack }: { formData: Partial<StartCheckoutPayload>; planPrice: number; trialDays: string; onBack: () => void }) {
   const navigate = useNavigate()
-  const [method, setMethod] = useState<'mercadopago' | 'transfer' | null>(null)
+  const [method, setMethod] = useState<'mercadopago' | 'transfer' | 'trial' | null>(null)
   const [transferAlias, setTransferAlias] = useState('')
   const [transferNotes, setTransferNotes] = useState('')
+  const [transferVoucher, setTransferVoucher] = useState('')
   const [copiedField, setCopiedField] = useState<string | null>(null)
-  const [checkoutResult, setCheckoutResult] = useState<any>(null)
+  const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(null)
   const [transferConfirmed, setTransferConfirmed] = useState(false)
   const [isTrialing, setIsTrialing] = useState(false)
+  const [autoRenew, setAutoRenew] = useState(false)
 
   const { data: sandboxInfo } = useQuery({
     queryKey: ['sandbox-info'],
@@ -137,17 +140,29 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
   })
 
   const confirmTransferMutation = useMutation({
-    mutationFn: () => checkoutApi.confirmTransfer({ pending_id: checkoutResult.pending_id, transfer_alias: transferAlias, transfer_notes: transferNotes }),
+    mutationFn: () => checkoutApi.confirmTransfer({ pending_id: checkoutResult?.pending_id ?? '', transfer_alias: transferAlias, transfer_notes: transferNotes, transfer_voucher: transferVoucher || undefined }),
     onSuccess: () => setTransferConfirmed(true),
   })
 
   const handlePay = (m: 'mercadopago' | 'transfer' | 'trial') => {
-    setMethod(m as any)
+    setMethod(m)
     if (m === 'trial') setIsTrialing(true)
-    startMutation.mutate({ ...formData, payment_method: m } as StartCheckoutPayload)
+    startMutation.mutate({
+      ...formData,
+      payment_method: m,
+      auto_renew: m === 'mercadopago' && autoRenew,
+    } as StartCheckoutPayload)
   }
 
   const copy = (text: string, key: string) => { navigator.clipboard.writeText(text); setCopiedField(key); setTimeout(() => setCopiedField(null), 2000) }
+
+  const handleVoucher = (file?: File) => {
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) return
+    const reader = new FileReader()
+    reader.onload = () => setTransferVoucher(typeof reader.result === 'string' ? reader.result : '')
+    reader.readAsDataURL(file)
+  }
 
   if (transferConfirmed) {
     return (
@@ -187,9 +202,20 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
           </div>
         </div>
         <div className="space-y-3">
+          {(td.accounts ?? []).length > 0 && <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">Elegí una cuenta receptora:</p>}
+          {(td.accounts ?? []).map((account) => (
+            <button key={`${account.name}-${account.alias}-${account.cbu}`} type="button" onClick={() => setTransferAlias(account.alias || account.cbu || '')} className={`w-full text-left p-3 rounded-lg border ${transferAlias === (account.alias || account.cbu) ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
+              <p className="font-semibold text-sm">{account.name}</p>
+              <p className="text-xs text-gray-500">{account.alias || account.cbu}{account.holder ? ` · ${account.holder}` : ''}</p>
+            </button>
+          ))}
           <h4 className="font-medium text-gray-900 dark:text-white">Una vez realizada la transferencia:</h4>
           <input value={transferAlias} onChange={(e) => setTransferAlias(e.target.value)} className="input w-full" placeholder={`¿A qué alias/CBU transferiste? (ej: ${td.alias})`} />
-          <input value={transferNotes} onChange={(e) => setTransferNotes(e.target.value)} className="input w-full" placeholder="Número de comprobante (opcional)" />
+          <input value={transferNotes} onChange={(e) => setTransferNotes(e.target.value)} className="input w-full" placeholder="Número de comprobante o referencia (opcional)" />
+          <label className="block text-xs text-gray-500">
+            Adjuntar comprobante (imagen o PDF, máximo 5 MB)
+            <input type="file" accept="image/*,.pdf" onChange={(event) => handleVoucher(event.target.files?.[0])} className="mt-1 block w-full text-sm" />
+          </label>
           <button onClick={() => confirmTransferMutation.mutate()} disabled={!transferAlias || confirmTransferMutation.isPending}
             className="w-full py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
             {confirmTransferMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -204,11 +230,24 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
     <div className="space-y-5">
       <p className="text-sm text-gray-600 dark:text-gray-400">Elegí cómo pagar tu suscripción mensual:</p>
 
-      {/* Aviso de cobro automático */}
+      {/* Autorización explícita de cobro recurrente */}
       <div className="flex items-start gap-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs">
         <RefreshCw className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-        <p>Tu suscripción se renovará automáticamente cada mes por <strong>${planPrice.toLocaleString('es-AR')}</strong>. MercadoPago realizará el cobro sin intervención. Podés cancelar en cualquier momento.</p>
+        <p>Podés autorizar el débito mensual automático en MercadoPago. Si no lo autorizás, pagarás solamente este período y luego podrás renovar manualmente.</p>
       </div>
+
+      <label className="flex items-start gap-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/10 p-4 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={autoRenew}
+          onChange={(event) => setAutoRenew(event.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-blue-600"
+        />
+        <span className="text-sm text-gray-700 dark:text-gray-300">
+          <strong className="block text-gray-900 dark:text-white">Autorizar renovación automática mensual</strong>
+          MercadoPago cobrará ${planPrice.toLocaleString('es-AR')} por mes mientras la autorización esté activa. Podés cancelarla desde tu cuenta de MercadoPago.
+        </span>
+      </label>
 
       {/* Panel sandbox */}
       {sandboxInfo && <SandboxPanel info={sandboxInfo} />}
@@ -225,7 +264,7 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0"><FlaskConical className="w-6 h-6 text-white" /></div>
           <div className="flex-1">
             <p className="font-bold text-indigo-700 dark:text-indigo-300">Empezar Prueba Gratis</p>
-            <p className="text-sm text-indigo-600/80 dark:text-indigo-400/80">Usá todas las funciones por 3 días sin pagar nada hoy.</p>
+            <p className="text-sm text-indigo-600/80 dark:text-indigo-400/80">Usá todas las funciones por {trialDays} días sin pagar nada hoy.</p>
           </div>
           {startMutation.isPending && isTrialing ? <Loader2 className="w-5 h-5 animate-spin text-indigo-500" /> : <ChevronRight className="w-5 h-5 text-indigo-400 group-hover:text-indigo-500 transition-colors" />}
         </button>
@@ -238,7 +277,7 @@ function StepPaymentMethod({ formData, planPrice, onBack }: { formData: Partial<
         <button onClick={() => handlePay('mercadopago')} disabled={startMutation.isPending}
           className="group flex items-center gap-4 p-5 border-2 border-blue-200 hover:border-blue-500 dark:border-blue-800 dark:hover:border-blue-500 bg-white dark:bg-gray-800 rounded-xl transition-all text-left disabled:opacity-60">
           <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0"><QrCode className="w-6 h-6 text-white" /></div>
-          <div className="flex-1"><p className="font-semibold text-gray-900 dark:text-white">Pagar con MercadoPago</p><p className="text-sm text-gray-500">Tarjeta de crédito, débito o saldo MP. Activación inmediata.</p></div>
+          <div className="flex-1"><p className="font-semibold text-gray-900 dark:text-white">Pagar con MercadoPago</p><p className="text-sm text-gray-500">Tarjeta de crédito, débito o saldo MP. {autoRenew ? 'Se configurará el débito mensual.' : 'Pago único de este período.'}</p></div>
           {startMutation.isPending && method === 'mercadopago' ? <Loader2 className="w-5 h-5 animate-spin text-blue-500" /> : <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />}
         </button>
         <button onClick={() => handlePay('transfer')} disabled={startMutation.isPending}
@@ -266,6 +305,7 @@ export default function CheckoutPage() {
   })
 
   const { data: plans = [], isLoading } = useQuery({ queryKey: ['public-plans'], queryFn: checkoutApi.getPlans })
+  const { data: systemInfo = {} } = useQuery({ queryKey: ['system-public-info'], queryFn: systemSettingsApi.getPublicInfo })
   const selectedPlan = plans.find((p) => p.id === planId)
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
@@ -300,8 +340,8 @@ export default function CheckoutPage() {
             </div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 sm:p-8">
-            {step === 1 && <StepPersonalData planId={selectedPlan.id} planName={selectedPlan.name} planPrice={Number(selectedPlan.price_monthly)} onNext={(d) => { setFormData(d); setStep(2) }} />}
-            {step === 2 && <StepPaymentMethod formData={formData} planPrice={Number(selectedPlan.price_monthly)} onBack={() => setStep(1)} />}
+            {step === 1 && <StepPersonalData planId={selectedPlan.id} planName={selectedPlan.name} planPrice={Number(selectedPlan.price_monthly)} onNext={(d) => { setFormData((previous) => ({ ...previous, ...d, referred_by_code: previous.referred_by_code })); setStep(2) }} />}
+            {step === 2 && <StepPaymentMethod formData={formData} planPrice={Number(selectedPlan.price_monthly)} trialDays={systemInfo.trial_days || '3'} onBack={() => setStep(1)} />}
           </div>
           <p className="text-center text-xs text-gray-500 mt-6">🔒 Tus datos están protegidos. Pagos procesados por MercadoPago.</p>
         </div>

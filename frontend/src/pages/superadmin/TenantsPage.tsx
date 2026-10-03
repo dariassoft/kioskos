@@ -25,6 +25,9 @@ export default function TenantsPage() {
     phone: '',
     address: '',
     plan_id: '',
+    activation_mode: 'trial' as 'trial' | 'paid',
+    billing_period_months: '1',
+    payment_method: 'cash' as 'cash' | 'transfer' | 'bank' | 'mercadopago',
   })
 
   const { data: tenants = [], isLoading } = useQuery({
@@ -47,6 +50,9 @@ export default function TenantsPage() {
         tax_id: form.tax_id || undefined,
         phone: form.phone || undefined,
         address: form.address || undefined,
+        activation_mode: form.activation_mode,
+        billing_period_months: Number(form.billing_period_months),
+        payment_method: form.payment_method,
       }
       return (await apiClient.post('/tenants', payload)).data
     },
@@ -56,9 +62,10 @@ export default function TenantsPage() {
       setShowCreate(false)
       setForm({
         business_name: '', owner_name: '', owner_email: '', owner_password: '',
-        tax_id: '', phone: '', address: '', plan_id: '',
+         tax_id: '', phone: '', address: '', plan_id: '',
+         activation_mode: 'trial', billing_period_months: '1', payment_method: 'cash',
       })
-      toast.success('Negocio creado con prueba de 14 días')
+       toast.success(form.activation_mode === 'paid' ? 'Negocio creado y período cobrado registrado' : 'Negocio creado con período de prueba configurado')
     },
     onError: (error: any) => {
       const message = error.response?.data?.message
@@ -89,8 +96,8 @@ export default function TenantsPage() {
               Gestión de todos los tenants de la plataforma
             </p>
           </div>
-          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2 self-start">
-            <Plus className="w-4 h-4" /> Nuevo negocio de prueba
+             <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2 self-start">
+             <Plus className="w-4 h-4" /> Nuevo negocio
           </button>
         </div>
       </div>
@@ -174,8 +181,8 @@ export default function TenantsPage() {
           <div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-xl">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Crear negocio de prueba</h2>
-                <p className="text-xs text-muted-foreground mt-1">Se crea el tenant, su admin, Casa Central y una prueba de 14 días.</p>
+                 <h2 className="text-lg font-semibold text-foreground">Crear negocio</h2>
+                 <p className="text-xs text-muted-foreground mt-1">Se crea el negocio, su administrador y Casa Central. Podés asignar prueba o registrar un período ya cobrado.</p>
               </div>
               <button onClick={() => setShowCreate(false)} className="p-2 rounded-lg hover:bg-muted" aria-label="Cerrar">
                 <X className="w-5 h-5" />
@@ -201,6 +208,33 @@ export default function TenantsPage() {
                   ))}
                 </select>
               </label>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Modalidad *</span>
+                <select required value={form.activation_mode} onChange={(e) => setForm({ ...form, activation_mode: e.target.value as 'trial' | 'paid' })} className="input w-full">
+                  <option value="trial">Prueba gratuita (días configurados en Settings)</option>
+                  <option value="paid">Período pagado manualmente</option>
+                </select>
+              </label>
+              {form.activation_mode === 'paid' && <>
+                <label className="space-y-1 text-sm">
+                  <span className="text-muted-foreground">Período cobrado</span>
+                  <select value={form.billing_period_months} onChange={(e) => setForm({ ...form, billing_period_months: e.target.value })} className="input w-full">
+                    <option value="1">1 mes</option>
+                    <option value="3">3 meses</option>
+                    <option value="6">6 meses</option>
+                    <option value="12">1 año</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="text-muted-foreground">Medio de pago</span>
+                  <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value as typeof form.payment_method })} className="input w-full">
+                    <option value="cash">Efectivo</option>
+                    <option value="transfer">Transferencia</option>
+                    <option value="bank">Banco</option>
+                    <option value="mercadopago">MercadoPago</option>
+                  </select>
+                </label>
+              </>}
               <label className="space-y-1 text-sm">
                 <span className="text-muted-foreground">Nombre del administrador *</span>
                 <input required value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} className="input w-full" />

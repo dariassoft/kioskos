@@ -16,7 +16,7 @@ export const FEATURE_LABELS: Record<string, string> = {
   inventory: 'Control de Inventario y Stock',
   barcode_scanner: 'Soporte para Código de Barras',
   categories_brands: 'Categorías y Marcas',
-  customers_credit: 'Clientes y Cuentas Corrientes',
+  customers_credit: 'Clientes y fiado (clientes)',
   purchases_suppliers: 'Compras y Proveedores',
   automated_accounting: 'Contabilidad',
   accounting: 'Contabilidad',
@@ -42,8 +42,8 @@ export const FEATURE_LABELS: Record<string, string> = {
   feature_expenses: 'Gestión de Gastos',
   production: 'Producción y Fraccionamiento',
   returns_and_vat: 'Devoluciones e IVA',
-  current_accounts: 'Cuentas Corrientes de Clientes',
-  supplier_current_accounts: 'Cuentas Corrientes de Proveedores',
+  current_accounts: 'Cuenta corriente de clientes (historial y abonos)',
+  supplier_current_accounts: 'Cuenta corriente de proveedores',
   payment_integrations: 'Pagos electrónicos y transferencias',
   // Alias literales (para casos de replace o keys en ingles puro con espacios)
   'pdf export': 'Exportación PDF/Excel',
@@ -72,6 +72,19 @@ export const PLAN_FEATURES = [
   'multi_branch',
 ] as const
 
+export const FEATURE_DEPENDENCIES: Record<string, string[]> = {
+  barcode_scanner: ['inventory'],
+  categories_brands: ['inventory'],
+  current_accounts: ['customers_credit'],
+  payment_integrations: ['pos_terminal'],
+  electronic_invoicing: ['pos_terminal'],
+  supplier_current_accounts: ['purchases_suppliers'],
+  returns_and_vat: ['inventory'],
+  production: ['inventory'],
+  multi_branch: ['inventory'],
+  export_pdf_excel: ['reports_bi'],
+}
+
 export interface StartCheckoutPayload {
   plan_id: string
   business_name: string
@@ -81,6 +94,7 @@ export interface StartCheckoutPayload {
   tax_id?: string
   password: string
   payment_method: 'mercadopago' | 'transfer' | 'trial'
+  auto_renew?: boolean
   referred_by_code?: string
 }
 
@@ -90,11 +104,19 @@ export interface CheckoutResult {
   is_free?: boolean
   sandbox?: boolean
   mp_init_point?: string
+  auto_renew?: boolean
   transfer_data?: {
     alias: string
     cbu: string
     amount: number
     reference: string
+    accounts?: Array<{
+      name: string
+      alias?: string
+      cbu?: string
+      holder?: string
+      bank?: string
+    }>
   }
 }
 
@@ -122,6 +144,7 @@ export interface PendingSubscriptionItem {
   mp_init_point: string | null
   transfer_alias: string | null
   transfer_notes: string | null
+  transfer_voucher: string | null
   tenant_id: string | null
   created_at: string
   updated_at: string
@@ -162,6 +185,7 @@ const checkoutApi = {
     pending_id: string
     transfer_alias: string
     transfer_notes?: string
+    transfer_voucher?: string
   }): Promise<{ message: string }> =>
     apiClient.post('/checkout/confirm-transfer', data).then((r) => r.data),
 
